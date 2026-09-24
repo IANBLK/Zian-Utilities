@@ -47,6 +47,9 @@ dependencies {
 
     compileOnly("thedarkcolour:kotlinforforge-neoforge:${providers.gradleProperty("kotlin_for_forge_version").get()}")
 
+    testCompileOnly("com.cobblemon:neoforge:${providers.gradleProperty("cobblemon_version").get()}") {
+        isTransitive = false
+    }
     testRuntimeOnly("com.cobblemon:neoforge:${providers.gradleProperty("cobblemon_version").get()}") {
         isTransitive = false
     }
