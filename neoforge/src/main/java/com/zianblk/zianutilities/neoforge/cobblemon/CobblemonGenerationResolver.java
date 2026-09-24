@@ -42,13 +42,23 @@ public final class CobblemonGenerationResolver {
             return Set.of();
         }
 
-        ResourceLocation identifier = ResourceLocation.tryParse(speciesId);
+        ResourceLocation identifier = normalizeSpeciesIdentifier(speciesId);
         if (identifier == null) {
             return Set.of();
         }
 
         Species species = PokemonSpecies.INSTANCE.getByIdentifier(identifier);
         return species == null ? Set.of() : resolve(species);
+    }
+
+    static ResourceLocation normalizeSpeciesIdentifier(String speciesId) {
+        if (speciesId == null || speciesId.isBlank()) {
+            return null;
+        }
+
+        return speciesId.indexOf(':') >= 0
+            ? ResourceLocation.tryParse(speciesId)
+            : ResourceLocation.tryParse("cobblemon:" + speciesId);
     }
 
     public void clearCache() {
