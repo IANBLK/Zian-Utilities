@@ -1,0 +1,73 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.147'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+repositories {
+    mavenCentral()
+}
+
+def configuredCobblemonJar = providers.gradleProperty("cobblemonJar")
+        .map { file(it) }
+        .orElse(file("libs/Cobblemon-neoforge-1.8.1+1.21.1.jar"))
+
+if (!configuredCobblemonJar.get().exists()) {
+    logger.lifecycle("Cobblemon research JAR not found at " + configuredCobblemonJar.get())
+    logger.lifecycle("Supply -PcobblemonJar=/absolute/path/to/Cobblemon-neoforge-1.8.1+1.21.1.jar")
+}
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        server {
+            server()
+            programArgument '--nogui'
+            logLevel = org.slf4j.event.Level.INFO
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+dependencies {
+    compileOnly files(configuredCobblemonJar)
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:2.2.20"
+}
+
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+    var replaceProperties = [
+            minecraft_version       : minecraft_version,
+            minecraft_version_range : minecraft_version_range,
+            neo_version             : neo_version,
+            loader_version_range    : loader_version_range,
+            mod_id                  : mod_id,
+            mod_name                : mod_name,
+            mod_license             : mod_license,
+            mod_version             : mod_version
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from "src/main/templates"
+    into "build/generated/sources/modMetadata"
+}
+
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
