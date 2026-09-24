@@ -11,3 +11,4 @@ All notable changes to Zian Utilities will be documented here.
 - Cobblemon 1.8.1 compile-time integration dependency.
 - CI build and pure-core boundary check.
 - Cobblemon Species → Generation resolver with canonical Gen 1-9 labels, `gen7b`/`gen8a` product mappings, caching, unknown-label handling and manual override precedence.
+- Persistent global generation state via NeoForge SavedData, schema versioning, explicit legacy migration and forward-preserved unknown generation IDs.
