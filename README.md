@@ -2,7 +2,7 @@
 
 **Zian Utilities** es un mod modular para **Minecraft 1.21.1**, orientado principalmente a servidores con **Cobblemon 1.8+** sobre **NeoForge 1.21.1**, con compatibilidad final prevista para **Youer 1.21.1**.
 
-> Estado actual: **fase de diseño e investigación**. El repositorio nace desde cero y no reutiliza la implementación del antiguo sistema de control de generaciones.
+> Estado actual: **Milestone 1 en desarrollo**. El bootstrap productivo ya está separado en `core` (JVM puro) y `neoforge`; el repositorio nace desde cero y no reutiliza la implementación del antiguo sistema de control de generaciones.
 
 ## Objetivo
 
@@ -84,4 +84,22 @@ Estos archivos **no forman parte del código productivo de Zian Utilities**. Se 
 
 ## Estado de desarrollo
 
-Todavía no se ha fijado la estructura Gradle ni el layout definitivo de paquetes. Se hará después de cerrar la arquitectura del Milestone 1 para evitar convertir decisiones provisionales en deuda técnica desde el primer commit.
+El bootstrap inicial del Milestone 1 usa dos módulos Gradle:
+
+```text
+core      -> dominio JVM puro, sin Minecraft / NeoForge / Cobblemon
+neoforge  -> plataforma e integración con Minecraft / NeoForge / Cobblemon
+```
+
+Identidad productiva:
+
+```text
+Mod ID: zianutilities
+Base package: com.zianblk.zianutilities
+Java: 21
+Gradle CI: 9.2.1
+NeoForge baseline: 21.1.251
+Cobblemon baseline: 1.8.1
+```
+
+La implementación funcional de Generation Control se construirá en slices posteriores del Milestone 1 sobre esta base.
