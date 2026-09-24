@@ -43,7 +43,7 @@ class GenerationStateSavedDataTest {
         GenerationStateSavedData decoded =
             GenerationStateSavedData.decode(source.encode(new CompoundTag()));
 
-        assertEquals(GenerationState.none(), decoded.state());
+        assertEquals(GenerationState.Companion.none(), decoded.state());
     }
 
     @Test
