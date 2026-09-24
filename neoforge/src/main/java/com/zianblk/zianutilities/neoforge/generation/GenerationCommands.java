@@ -35,7 +35,7 @@ public final class GenerationCommands {
                     Commands.literal("generation")
                         .then(
                             Commands.literal("enable")
-                                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                                .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
                                 .then(
                                     Commands.argument(ARG_GENERATION, StringArgumentType.word())
                                         .suggests((context, builder) ->
@@ -50,7 +50,7 @@ public final class GenerationCommands {
                         )
                         .then(
                             Commands.literal("disable")
-                                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                                .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
                                 .then(
                                     Commands.argument(ARG_GENERATION, StringArgumentType.word())
                                         .suggests((context, builder) ->
