@@ -1,6 +1,7 @@
 package com.zianblk.zianutilities.neoforge;
 
 import com.zianblk.zianutilities.neoforge.generation.FishingSpawnGuard;
+import com.zianblk.zianutilities.neoforge.generation.FinalSpawnDiagnostics;
 import com.zianblk.zianutilities.neoforge.generation.GenerationCommands;
 import com.zianblk.zianutilities.neoforge.generation.NaturalSpawnGuard;
 import com.zianblk.zianutilities.neoforge.generation.PokeSnackSpawnGuard;
@@ -16,5 +17,6 @@ public final class ZianUtilitiesMod {
         NaturalSpawnGuard.install();
         FishingSpawnGuard.install();
         PokeSnackSpawnGuard.install();
+        FinalSpawnDiagnostics.install();
     }
 }
