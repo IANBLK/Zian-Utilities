@@ -23,6 +23,8 @@ public final class NaturalSpawnGuard {
         LoggerFactory.getLogger("ZianUtilities/NaturalSpawnGuard");
 
     private static final AtomicBoolean INSTALLED = new AtomicBoolean(false);
+    private static final boolean RUNTIME_TEST_LOG =
+        Boolean.getBoolean("zianutilities.runtimeTestNatural");
 
     private static final CobblemonGenerationResolver RESOLVER =
         new CobblemonGenerationResolver(null);
@@ -73,19 +75,40 @@ public final class NaturalSpawnGuard {
             UnknownSpeciesPolicy.DENY
         );
 
-        if (decision instanceof SpawnDecision.Deny deny) {
-            event.cancel();
+        String speciesId = pokemonEntity.getPokemon()
+            .getSpecies()
+            .getResourceIdentifier()
+            .toString();
 
-            if (LOGGER.isDebugEnabled()) {
+        if (decision instanceof SpawnDecision.Deny deny) {
+            if (RUNTIME_TEST_LOG) {
+                LOGGER.info(
+                    "[ZIAN-RUNTIME] source=NATURAL decision=DENY species={} generations={} active={} reason={}",
+                    speciesId,
+                    resolved,
+                    state.getEnabled(),
+                    deny.getReason()
+                );
+            } else if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(
                     "[ZIAN-SPAWN] source=NATURAL species={} generations={} reason={}",
-                    pokemonEntity.getPokemon()
-                        .getSpecies()
-                        .getResourceIdentifier(),
+                    speciesId,
                     resolved,
                     deny.getReason()
                 );
             }
+
+            event.cancel();
+            return;
+        }
+
+        if (RUNTIME_TEST_LOG) {
+            LOGGER.info(
+                "[ZIAN-RUNTIME] source=NATURAL decision=ALLOW species={} generations={} active={}",
+                speciesId,
+                resolved,
+                state.getEnabled()
+            );
         }
     }
 
