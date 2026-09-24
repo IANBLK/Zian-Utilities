@@ -14,7 +14,6 @@ import com.zianblk.zianutilities.neoforge.cobblemon.CobblemonGenerationResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -26,7 +25,7 @@ public final class NaturalSpawnGuard {
     private static final AtomicBoolean INSTALLED = new AtomicBoolean(false);
 
     private static final CobblemonGenerationResolver RESOLVER =
-        new CobblemonGenerationResolver(() -> List.of());
+        new CobblemonGenerationResolver(null);
 
     private NaturalSpawnGuard() {
     }
@@ -64,7 +63,7 @@ public final class NaturalSpawnGuard {
 
         GenerationState state =
             new NeoForgeGenerationStateStore(
-                pokemonEntity.getServer().getServer()
+                pokemonEntity.getServer()
             ).load();
 
         SpawnDecision decision = GenerationPolicy.INSTANCE.decide(
@@ -75,7 +74,7 @@ public final class NaturalSpawnGuard {
         );
 
         if (decision instanceof SpawnDecision.Deny deny) {
-            event.setCanceled(true);
+            event.cancel();
 
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(
