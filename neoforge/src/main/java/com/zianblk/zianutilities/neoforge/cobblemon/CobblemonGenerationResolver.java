@@ -5,6 +5,7 @@ import com.cobblemon.mod.common.pokemon.Species;
 import com.zianblk.zianutilities.core.generation.Generation;
 import com.zianblk.zianutilities.core.generation.GenerationOverride;
 import com.zianblk.zianutilities.core.generation.GenerationOverrideStore;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.Map;
 import java.util.Set;
@@ -41,7 +42,12 @@ public final class CobblemonGenerationResolver {
             return Set.of();
         }
 
-        Species species = PokemonSpecies.INSTANCE.getByIdentifier(speciesId);
+        ResourceLocation identifier = ResourceLocation.tryParse(speciesId);
+        if (identifier == null) {
+            return Set.of();
+        }
+
+        Species species = PokemonSpecies.INSTANCE.getByIdentifier(identifier);
         return species == null ? Set.of() : resolve(species);
     }
 
