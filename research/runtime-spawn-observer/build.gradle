@@ -14,15 +14,8 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 repositories {
     mavenCentral()
-}
-
-def configuredCobblemonJar = providers.gradleProperty("cobblemonJar")
-        .map { file(it) }
-        .orElse(file("libs/Cobblemon-neoforge-1.8.1+1.21.1.jar"))
-
-if (!configuredCobblemonJar.get().exists()) {
-    logger.lifecycle("Cobblemon research JAR not found at " + configuredCobblemonJar.get())
-    logger.lifecycle("Supply -PcobblemonJar=/absolute/path/to/Cobblemon-neoforge-1.8.1+1.21.1.jar")
+    maven { url = 'https://thedarkcolour.github.io/KotlinForForge/' }
+    maven { url = 'https://maven.neoforged.net/releases/' }
 }
 
 neoForge {
@@ -44,8 +37,10 @@ neoForge {
 }
 
 dependencies {
-    compileOnly files(configuredCobblemonJar)
-    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:2.2.20"
+    compileOnly("com.cobblemon:neoforge:1.8.1+1.21.1") {
+        transitive = false
+    }
+    compileOnly "thedarkcolour:kotlinforforge-neoforge:5.10.0"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
