@@ -1,0 +1,34 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="ZIANBLK"
+description='''
+Observer-only research mod used to trace Cobblemon 1.8.1 spawn paths for Zian Utilities.
+It does not cancel or mutate spawning.
+'''
+
+[[dependencies.${mod_id}]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="neoforge"
+type="required"
+versionRange="[21,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="cobblemon"
+type="required"
+versionRange="[1.8.1,1.9)"
+ordering="AFTER"
+side="BOTH"
