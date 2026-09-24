@@ -31,6 +31,11 @@ neoForge {
             sourceSet(sourceSets.main.get())
         }
     }
+
+    unitTest {
+        enable()
+        testedMod = mods.getByName(providers.gradleProperty("mod_id").get())
+    }
 }
 
 dependencies {
