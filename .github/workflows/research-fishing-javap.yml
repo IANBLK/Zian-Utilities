@@ -45,21 +45,48 @@ jobs:
           echo "Cobblemon JAR: $JAR" | tee "$OUT/00-source.txt"
           sha256sum "$JAR" | tee -a "$OUT/00-source.txt"
 
-          jar tf "$JAR" \
-            | grep -E 'FishingSpawnerFactory|FishingSpawnCause|PokeRodFishingBobberEntity|Fishing.*Spawner|Spawner.*Fishing' \
-            | grep '\\.class$' \
-            | sort -u \
-            | tee "$OUT/01-class-index.txt"
+          WORK="$OUT/unpacked"
+          mkdir -p "$WORK"
+          unzip -q "$JAR" -d "$WORK/outer"
 
-          while IFS= read -r entry; do
-            cls="${entry%.class}"
-            cls="${cls//\//.}"
-            safe="$(echo "$cls" | tr '.$' '__')"
-            {
-              echo "===== $cls ====="
-              javap -classpath "$JAR" -p -c -s "$cls"
-            } > "$OUT/${safe}.txt"
-          done < "$OUT/01-class-index.txt"
+          {
+            echo "===== OUTER JAR ====="
+            jar tf "$JAR" | grep -E 'FishingSpawnerFactory|FishingSpawnCause|PokeRodFishingBobberEntity|Fishing.*Spawner|Spawner.*Fishing' || true
+
+            while IFS= read -r nested; do
+              echo "===== NESTED JAR: $nested ====="
+              jar tf "$nested" | grep -E 'FishingSpawnerFactory|FishingSpawnCause|PokeRodFishingBobberEntity|Fishing.*Spawner|Spawner.*Fishing' || true
+            done < <(find "$WORK/outer" -type f -name '*.jar' | sort)
+          } | tee "$OUT/01-class-index.txt"
+
+          dump_from_jar() {
+            local candidate="$1"
+            while IFS= read -r entry; do
+              test -n "$entry" || continue
+              cls="${entry%.class}"
+              cls="${cls//\//.}"
+              safe="$(echo "$cls" | tr '.$/' '___')"
+              {
+                echo "===== JAR: $candidate ====="
+                echo "===== CLASS: $cls ====="
+                javap -classpath "$candidate" -p -c -s "$cls" || true
+              } > "$OUT/${safe}.txt"
+            done < <(jar tf "$candidate" | grep -E 'FishingSpawnerFactory|FishingSpawnCause|PokeRodFishingBobberEntity|Fishing.*Spawner|Spawner.*Fishing' | grep '\\.class
+      - name: Upload fishing javap evidence
+        uses: actions/upload-artifact@v6
+        with:
+          name: cobblemon-1.8.1-fishing-javap
+          path: research/runtime-spawn-observer/build/fishing-javap/**
+          if-no-files-found: error
+ | sort -u || true)
+          }
+
+          dump_from_jar "$JAR"
+          while IFS= read -r nested; do
+            dump_from_jar "$nested"
+          done < <(find "$WORK/outer" -type f -name '*.jar' | sort)
+
+          rm -rf "$WORK"
 
           echo "===== references to FishingSpawnerFactory / getSpawner / SpawnCause =====" > "$OUT/02-reference-scan.txt"
           grep -R -n -E 'FishingSpawnerFactory|FishingSpawnCause|getSpawner|Spawner' "$OUT" >> "$OUT/02-reference-scan.txt" || true
