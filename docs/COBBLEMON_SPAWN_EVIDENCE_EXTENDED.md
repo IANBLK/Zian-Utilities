@@ -54,6 +54,38 @@ create(PokeSnackSpawnerFactory.Context)
 
 The factory creates a `PokeSnackBlockEntity.Spawner`.
 
+## Fishing source identity
+
+Additional reproducible `javap` evidence from the published Maven artifact
+`com.cobblemon:neoforge:1.8.1+1.21.1` confirms:
+
+```text
+FishingSpawnerFactory.createSharedSpawner() -> BasicSpawner
+BestSpawner.getFishingSpawner() -> BasicSpawner
+```
+
+The fishing `BasicSpawner` is used to construct a specific:
+
+```text
+com.cobblemon.mod.common.api.spawning.fishing.FishingSpawnCause
+```
+
+Runtime observer evidence independently confirmed the final fishing events as:
+
+```text
+spawner = BasicSpawner
+cause   = FishingSpawnCause
+```
+
+Therefore source classification must **not** use
+`instanceof BasicSpawner -> FISHING`.
+
+For the final barrier, the stronger discriminator is the concrete
+`FishingSpawnCause` (or equivalent complete event context).
+
+Raw/reproducible summary:
+`docs/evidence/cobblemon-1.8.1/FISHING_JAVAP_EVIDENCE.md`.
+
 ## Fishing event path
 
 `PokeRodFishingBobberEntity` bytecode confirms this sequence for the Pokémon fishing path:
@@ -244,7 +276,7 @@ This is useful context but should not become a dependency of the core generation
 | Source | Source-specific hook | SpawnAction convergence | Runtime verification |
 |---|---|---|---|
 | Natural/player spawning | Influence builders confirmed | expected from researched pipeline | Required |
-| Fishing | PRE confirmed | `SpawnAction.complete()` confirmed | Required |
+| Fishing | PRE confirmed | `SpawnAction.complete()` confirmed | Verified on clean NeoForge runtime; final cause = `FishingSpawnCause` |
 | Poké Snack | PRE confirmed | `SpawnAction.complete()` confirmed | Required |
 | Habitat activated | cancellable activation event confirmed | not proven end-to-end here | Required |
 | Habitat natural influence | classes/state confirmed | not proven end-to-end here | Required |
