@@ -47,6 +47,11 @@ dependencies {
 
     compileOnly("thedarkcolour:kotlinforforge-neoforge:${providers.gradleProperty("kotlin_for_forge_version").get()}")
 
+    testRuntimeOnly("com.cobblemon:neoforge:${providers.gradleProperty("cobblemon_version").get()}") {
+        isTransitive = false
+    }
+    testRuntimeOnly("thedarkcolour:kotlinforforge-neoforge:${providers.gradleProperty("kotlin_for_forge_version").get()}")
+
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
