@@ -79,13 +79,14 @@ Do not assume that one hook covers every source.
 Runtime testing is still required for:
 
 - natural spawn lifecycle and cached player spawners
-- fishing end-to-end
 - Poké Snack end-to-end
 - Habitat Block activated spawning
 - Habitat Block natural spawning
 - special/addon spawn paths
 - NeoForge pure runtime
 - Youer 1.21.1 runtime
+
+Fishing has now been verified end-to-end in a clean NeoForge 21.1.251 + Cobblemon 1.8.1 runtime with the research observer. The final event reported `BasicSpawner` plus the specific `FishingSpawnCause`, so final source classification should use cause/event context rather than treating all `BasicSpawner` instances as fishing.
 
 Habitat is not a blocking acceptance requirement for the first Milestone 1 candidate until its path is validated end-to-end.
 
