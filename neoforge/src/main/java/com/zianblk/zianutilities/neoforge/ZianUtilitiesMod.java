@@ -1,5 +1,6 @@
 package com.zianblk.zianutilities.neoforge;
 
+import com.zianblk.zianutilities.neoforge.generation.FishingSpawnGuard;
 import com.zianblk.zianutilities.neoforge.generation.GenerationCommands;
 import com.zianblk.zianutilities.neoforge.generation.NaturalSpawnGuard;
 import net.neoforged.fml.common.Mod;
@@ -12,5 +13,6 @@ public final class ZianUtilitiesMod {
     public ZianUtilitiesMod() {
         NeoForge.EVENT_BUS.addListener(GenerationCommands::onRegisterCommands);
         NaturalSpawnGuard.install();
+        FishingSpawnGuard.install();
     }
 }
