@@ -1,0 +1,72 @@
+name: Research Fishing Javap
+
+on:
+  push:
+    branches:
+      - research/runtime-spawn-observer
+    paths:
+      - '.github/workflows/research-fishing-javap.yml'
+  workflow_dispatch:
+
+jobs:
+  javap:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: research/runtime-spawn-observer
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Resolve Cobblemon dependency
+        run: gradle --no-daemon compileJava
+
+      - name: Dump fishing classes with javap
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$GITHUB_WORKSPACE/research/runtime-spawn-observer/build/fishing-javap"
+          mkdir -p "$OUT"
+
+          JAR="$(find "$HOME/.gradle/caches/modules-2/files-2.1/com.cobblemon/neoforge/1.8.1+1.21.1" -type f -name '*.jar' | head -n 1)"
+          test -n "$JAR"
+          echo "Cobblemon JAR: $JAR" | tee "$OUT/00-source.txt"
+          sha256sum "$JAR" | tee -a "$OUT/00-source.txt"
+
+          jar tf "$JAR" \
+            | grep -E 'FishingSpawnerFactory|FishingSpawnCause|PokeRodFishingBobberEntity|Fishing.*Spawner|Spawner.*Fishing' \
+            | grep '\\.class$' \
+            | sort -u \
+            | tee "$OUT/01-class-index.txt"
+
+          while IFS= read -r entry; do
+            cls="${entry%.class}"
+            cls="${cls//\//.}"
+            safe="$(echo "$cls" | tr '.$' '__')"
+            {
+              echo "===== $cls ====="
+              javap -classpath "$JAR" -p -c -s "$cls"
+            } > "$OUT/${safe}.txt"
+          done < "$OUT/01-class-index.txt"
+
+          echo "===== references to FishingSpawnerFactory / getSpawner / SpawnCause =====" > "$OUT/02-reference-scan.txt"
+          grep -R -n -E 'FishingSpawnerFactory|FishingSpawnCause|getSpawner|Spawner' "$OUT" >> "$OUT/02-reference-scan.txt" || true
+
+      - name: Upload fishing javap evidence
+        uses: actions/upload-artifact@v6
+        with:
+          name: cobblemon-1.8.1-fishing-javap
+          path: research/runtime-spawn-observer/build/fishing-javap/**
+          if-no-files-found: error
