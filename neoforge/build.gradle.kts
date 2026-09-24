@@ -41,6 +41,9 @@ dependencies {
     }
 
     compileOnly("thedarkcolour:kotlinforforge-neoforge:${providers.gradleProperty("kotlin_for_forge_version").get()}")
+
+    testImplementation(platform("org.junit:junit-bom:5.11.4"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 val generateModMetadata by tasks.registering(ProcessResources::class) {
@@ -69,4 +72,9 @@ neoForge.ideSyncTask(generateModMetadata)
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
+}
+
+
+tasks.test {
+    useJUnitPlatform()
 }
