@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle 9.2.1
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Verify core has no external game imports
+        shell: bash
+        run: |
+          if grep -R -n -E '^(import|package) (net\.minecraft|net\.neoforged|com\.cobblemon)' core/src; then
+            echo "core must remain independent from Minecraft, NeoForge and Cobblemon"
+            exit 1
+          fi
+
+      - name: Build and test
+        run: gradle --no-daemon clean build
+
+      - name: Upload NeoForge artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: zian-utilities-neoforge
+          path: neoforge/build/libs/*.jar
+          if-no-files-found: error
