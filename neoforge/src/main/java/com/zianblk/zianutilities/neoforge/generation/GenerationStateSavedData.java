@@ -28,7 +28,7 @@ public final class GenerationStateSavedData extends SavedData {
     private final Set<String> unknownGenerationIds;
 
     public GenerationStateSavedData() {
-        this(GenerationState.none(), Set.of());
+        this(GenerationState.Companion.none(), Set.of());
     }
 
     GenerationStateSavedData(
