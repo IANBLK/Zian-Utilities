@@ -14,3 +14,4 @@ All notable changes to Zian Utilities will be documented here.
 - Persistent global generation state via NeoForge SavedData, schema versioning, explicit legacy migration and forward-preserved unknown generation IDs.
 - `/zian generation` administration commands with autocomplete, Game Master permission fallback, idempotent persistent mutations and structured audit logging.
 - Natural/player spawn guard for Cobblemon `PlayerSpawner`, backed by live persisted generation state and conservative source classification.
+- Fishing spawn guard on `BOBBER_SPAWN_POKEMON_PRE`, using planned species generation and current persisted state without broad `BasicSpawner` classification.
