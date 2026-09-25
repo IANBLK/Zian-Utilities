@@ -6,10 +6,8 @@ import com.cobblemon.mod.common.api.events.entity.SpawnEvent;
 import com.cobblemon.mod.common.api.spawning.spawner.PlayerSpawner;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.zianblk.zianutilities.core.generation.Generation;
-import com.zianblk.zianutilities.core.generation.GenerationPolicy;
 import com.zianblk.zianutilities.core.generation.GenerationState;
 import com.zianblk.zianutilities.core.generation.SpawnDecision;
-import com.zianblk.zianutilities.core.generation.UnknownSpeciesPolicy;
 import com.zianblk.zianutilities.neoforge.cobblemon.CobblemonGenerationResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,12 +66,7 @@ public final class NaturalSpawnGuard {
                 pokemonEntity.getServer()
             ).load();
 
-        SpawnDecision decision = GenerationPolicy.INSTANCE.decide(
-            resolved,
-            state,
-            null,
-            UnknownSpeciesPolicy.DENY
-        );
+        SpawnDecision decision = GenerationEnforcement.decide(resolved, state);
 
         String speciesId = pokemonEntity.getPokemon()
             .getSpecies()
