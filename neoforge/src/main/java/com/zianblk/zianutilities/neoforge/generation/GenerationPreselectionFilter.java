@@ -13,6 +13,8 @@ import com.zianblk.zianutilities.core.generation.SpawnDecision;
 import com.zianblk.zianutilities.core.generation.UnknownSpeciesPolicy;
 import com.zianblk.zianutilities.neoforge.cobblemon.CobblemonGenerationResolver;
 import net.minecraft.server.MinecraftServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Set;
@@ -27,6 +29,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * rerolls encounters, or replaces Cobblemon spawn pools.</p>
  */
 public final class GenerationPreselectionFilter {
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger("ZianUtilities/GenerationPreselectionFilter");
+    private static final boolean RUNTIME_TEST_LOG =
+        Boolean.getBoolean("zianutilities.runtimeTestPreselection");
     private static final AtomicBoolean INSTALLED = new AtomicBoolean(false);
     private static final CobblemonGenerationResolver RESOLVER =
         new CobblemonGenerationResolver(null);
@@ -65,6 +71,9 @@ public final class GenerationPreselectionFilter {
             if (speciesId == null || speciesId.isBlank()) {
                 // Unknown Pokemon details follow the same fail-closed policy used
                 // by the final fishing/snack guards.
+                if (RUNTIME_TEST_LOG) {
+                    LOGGER.info("[ZIAN-RUNTIME] stage=PRESELECTION decision=DENY reason=missing_species");
+                }
                 return false;
             }
 
@@ -78,7 +87,17 @@ public final class GenerationPreselectionFilter {
                 UnknownSpeciesPolicy.DENY
             );
 
-            return decision instanceof SpawnDecision.Allow;
+            boolean allowed = decision instanceof SpawnDecision.Allow;
+            if (RUNTIME_TEST_LOG) {
+                LOGGER.info(
+                    "[ZIAN-RUNTIME] stage=PRESELECTION decision={} species={} generations={} active={}",
+                    allowed ? "ALLOW" : "DENY",
+                    speciesId,
+                    resolved,
+                    state.getEnabled()
+                );
+            }
+            return allowed;
         }
     }
 }
