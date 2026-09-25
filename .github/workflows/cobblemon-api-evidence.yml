@@ -1,0 +1,45 @@
+name: Cobblemon API evidence
+
+on:
+  workflow_dispatch:
+
+jobs:
+  javap:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Resolve Cobblemon 1.8.1 and dump preselection API
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/evidence
+          URL="https://artefacts.cobblemon.com/releases/com/cobblemon/neoforge/1.8.1+1.21.1/neoforge-1.8.1+1.21.1.jar"
+          JAR="build/evidence/cobblemon-neoforge-1.8.1+1.21.1.jar"
+          curl -fL "$URL" -o "$JAR"
+          sha256sum "$JAR" | tee build/evidence/SHA256.txt
+
+          {
+            echo "=== FishingSpawnerFactory ==="
+            javap -classpath "$JAR" -p -c com.cobblemon.mod.common.api.spawning.spawner.FishingSpawnerFactory
+            echo
+            echo "=== PokeSnackSpawnerFactory ==="
+            javap -classpath "$JAR" -p -c com.cobblemon.mod.common.api.spawning.spawner.PokeSnackSpawnerFactory
+            echo
+            echo "=== SpawningInfluence ==="
+            javap -classpath "$JAR" -p -c com.cobblemon.mod.common.api.spawning.influence.SpawningInfluence
+          } | tee build/evidence/PRESELECTION_JAVAP_RAW.txt
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v6
+        with:
+          name: cobblemon-preselection-javap
+          path: build/evidence/*
+          if-no-files-found: error
