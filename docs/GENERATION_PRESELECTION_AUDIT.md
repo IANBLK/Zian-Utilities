@@ -7,7 +7,7 @@ Scope: early generation filtering for Fishing and Poke Snack.
 
 No data-integrity blocker was found. The approach uses Cobblemon's public spawning influence extension points and keeps the existing PRE guards as final enforcement.
 
-Runtime validation on Youer has passed for mixed-generation filtering and live generation-state freshness. The PR remains open while the remaining empty-pool/diagnostic checks and formal M1 baseline bookkeeping are completed.
+Runtime validation on Youer has passed for mixed-generation filtering, live generation-state freshness, empty-pool behavior, candidate diagnostics and thread-affinity observation. Formal M1 baseline bookkeeping remains separate from this focused PR.
 
 ## Upstream API checks
 
@@ -44,7 +44,7 @@ If all PokemonSpawnDetail candidates for the selected conditions are rejected, Z
 
 The intended result is no valid Pokemon SpawnAction for that selection.
 
-This must still be runtime-tested because the exact user-visible fishing/snack lifecycle is owned by Cobblemon.
+This behavior was runtime-tested on Youer: with no active generations, fishing and Poké Snack produced no Pokémon and no crash, recursion or stuck lifecycle was observed.
 
 ## State freshness
 
@@ -100,14 +100,17 @@ Validated on Youer 1.21.1 with Cobblemon 1.8.1:
 - no post-switch Gen3 leak was observed in the tested paths;
 - no crash, duplication or recursive spawn behavior was observed.
 
-Still required before merge:
+Focused runtime evidence:
 
 1. Candidate-level diagnostics: PASS on Youer with `-Dzianutilities.runtimeTestPreselection=true`. With active `[GEN_2, GEN_7]`, allowed candidates included Corsola/GEN_2, Wimpod/GEN_7, Golisopod/GEN_7, Wooper/GEN_2 and Qwilfish/GEN_2. Blocked candidates included Magikarp/GEN_1, Barbaracle/GEN_6, Staryu/GEN_1, Relicanth/GEN_3, Grapploct/GEN_8, Inkay/GEN_6, Starmie/GEN_1, Veluza/GEN_9 and Dratini/GEN_1.
 2. Empty allowed pool: PASS on Youer. With no active generations, no new natural Pokémon appeared in the fresh area, Poké Snack produced no Pokémon, and fishing produced no Pokémon. No crash or recursive spawn behavior was observed. The log confirmed `Generaciones activas: ninguna`; previously loaded entities were reported only as entity loads.
-3. Keep the explicit forced PRE fallback test for fishing cleanup as regression coverage.
+3. Thread affinity: PASS on the supplied Youer runtime log. `GenerationPreselectionFilter.affectSpawnable()` emitted 70,665 `PRESELECTION_THREAD` observations; all 70,665 reported `sameServerThread=true` and zero reported `false`. This closes the audit concurrency concern for the tested Youer/Cobblemon path without adding synchronization.
+4. Keep the explicit forced PRE fallback test for fishing cleanup as regression coverage.
+
+The temporary `PRESELECTION_THREAD` logger was removed after collecting this evidence. Candidate ALLOW/DENY diagnostics remain behind the opt-in runtime flag.
 
 ## Audit decision
 
 CI and the main Youer runtime behavior have passed.
 
-The focused preselection runtime gate is now satisfied. Keep the existing PRE fishing cleanup regression evidence attached to the M1 record. PR #33 is ready for final review/merge; formal M1 release-candidate acceptance remains separately gated by the pure-NeoForge baseline in `M1_RUNTIME_PROTOCOL.md`.
+The focused preselection runtime gate is now satisfied. Keep the existing PRE fishing cleanup regression evidence attached to the M1 record. PR #33 has satisfied its focused runtime gate and is ready for final CI/delta review; formal M1 release-candidate acceptance remains separately gated by the pure-NeoForge baseline in `M1_RUNTIME_PROTOCOL.md`.
