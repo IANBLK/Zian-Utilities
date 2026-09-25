@@ -1,6 +1,5 @@
 package com.zianblk.zianutilities.neoforge.generation;
 
-import com.cobblemon.mod.common.api.spawning.BestSpawner;
 import com.cobblemon.mod.common.api.spawning.detail.PokemonSpawnDetail;
 import com.cobblemon.mod.common.api.spawning.detail.SpawnDetail;
 import com.cobblemon.mod.common.api.spawning.influence.SpawningInfluence;
@@ -16,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -46,61 +44,19 @@ public final class GenerationPreselectionFilter {
         }
 
         FishingSpawnerFactory.INSTANCE.getPositionInfluenceBuilders().add(
-            context -> List.of(new GenerationInfluence(context.getWorld().getServer(), true))
+            context -> List.of(new GenerationInfluence(context.getWorld().getServer()))
         );
 
         PokeSnackSpawnerFactory.INSTANCE.getInfluenceBuilders().add(
-            context -> new GenerationInfluence(context.getWorld().getServer(), true)
+            context -> new GenerationInfluence(context.getWorld().getServer())
         );
     }
 
     private static final class GenerationInfluence implements SpawningInfluence {
         private final MinecraftServer server;
-        private final boolean renormalizeBuckets;
 
-        private GenerationInfluence(MinecraftServer server, boolean renormalizeBuckets) {
+        private GenerationInfluence(MinecraftServer server) {
             this.server = server;
-            this.renormalizeBuckets = renormalizeBuckets;
-        }
-
-        @Override
-        public void affectBucketWeights(Map<String, Float> bucketWeights) {
-            if (!renormalizeBuckets || bucketWeights.isEmpty()) {
-                return;
-            }
-
-            GenerationState state = new NeoForgeGenerationStateStore(server).load();
-            for (Map.Entry<String, Float> entry : bucketWeights.entrySet()) {
-                if (entry.getValue() <= 0.0F) {
-                    continue;
-                }
-
-                boolean hasEligibleCandidate = BestSpawner.INSTANCE.getFishingSpawner()
-                    .getSpawnPool()
-                    .getDetails()
-                    .stream()
-                    .filter(detail -> entry.getKey().equals(detail.getBucket()))
-                    .filter(PokemonSpawnDetail.class::isInstance)
-                    .map(PokemonSpawnDetail.class::cast)
-                    .map(detail -> detail.getPokemon().getSpecies())
-                    .filter(speciesId -> speciesId != null && !speciesId.isBlank())
-                    .map(RESOLVER::resolve)
-                    .anyMatch(resolved -> GenerationEnforcement.decide(resolved, state) instanceof SpawnDecision.Allow);
-
-                if (!hasEligibleCandidate) {
-                    entry.setValue(0.0F);
-                }
-            }
-
-            float total = bucketWeights.values().stream()
-                .filter(weight -> weight > 0.0F)
-                .reduce(0.0F, Float::sum);
-
-            if (total > 0.0F) {
-                bucketWeights.replaceAll((bucket, weight) ->
-                    weight <= 0.0F ? 0.0F : (weight / total) * 100.0F
-                );
-            }
         }
 
         @Override
