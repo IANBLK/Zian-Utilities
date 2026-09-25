@@ -1,5 +1,6 @@
 package com.zianblk.zianutilities.neoforge.generation;
 
+import com.cobblemon.mod.common.api.spawning.SpawnBucket;
 import com.cobblemon.mod.common.api.spawning.detail.PokemonSpawnDetail;
 import com.cobblemon.mod.common.api.spawning.detail.SpawnDetail;
 import com.cobblemon.mod.common.api.spawning.influence.SpawningInfluence;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -54,9 +56,48 @@ public final class GenerationPreselectionFilter {
 
     private static final class GenerationInfluence implements SpawningInfluence {
         private final MinecraftServer server;
+        private SpawnablePosition currentPosition;
 
         private GenerationInfluence(MinecraftServer server) {
             this.server = server;
+        }
+
+        @Override
+        public void affectSpawnablePosition(SpawnablePosition spawnablePosition) {
+            this.currentPosition = spawnablePosition;
+        }
+
+        @Override
+        public void affectBucketWeights(Map<SpawnBucket, Float> bucketWeights) {
+            SpawnablePosition position = currentPosition;
+            if (position == null || bucketWeights.isEmpty()) {
+                return;
+            }
+
+            for (Map.Entry<SpawnBucket, Float> entry : bucketWeights.entrySet()) {
+                if (entry.getValue() <= 0.0F) {
+                    continue;
+                }
+
+                boolean hasEligibleCandidate = position.getSpawner()
+                    .getMatchingSpawns(entry.getKey(), position)
+                    .stream()
+                    .anyMatch(detail -> affectSpawnable(detail, position));
+
+                if (!hasEligibleCandidate) {
+                    entry.setValue(0.0F);
+                }
+            }
+
+            float total = bucketWeights.values().stream()
+                .filter(weight -> weight > 0.0F)
+                .reduce(0.0F, Float::sum);
+
+            if (total > 0.0F) {
+                bucketWeights.replaceAll((bucket, weight) ->
+                    weight <= 0.0F ? 0.0F : (weight / total) * 100.0F
+                );
+            }
         }
 
         @Override
