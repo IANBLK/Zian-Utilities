@@ -103,7 +103,7 @@ Validated on Youer 1.21.1 with Cobblemon 1.8.1:
 Still required before merge:
 
 1. Run with `-Dzianutilities.runtimeTestPreselection=true` and capture candidate-level ALLOW/DENY evidence.
-2. Test an empty allowed pool and confirm no blocked Pokemon, recursion or incorrect snack/bobber lifecycle.
+2. Empty allowed pool: PASS on Youer. With no active generations, no new natural Pokémon appeared in the fresh area, Poké Snack produced no Pokémon, and fishing produced no Pokémon. No crash or recursive spawn behavior was observed. The log confirmed `Generaciones activas: ninguna`; previously loaded entities were reported only as entity loads.
 3. Keep the explicit forced PRE fallback test for fishing cleanup as regression coverage.
 
 ## Audit decision
