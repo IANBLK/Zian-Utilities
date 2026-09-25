@@ -7,10 +7,8 @@ import com.cobblemon.mod.common.api.spawning.position.SpawnablePosition;
 import com.cobblemon.mod.common.api.spawning.spawner.FishingSpawnerFactory;
 import com.cobblemon.mod.common.api.spawning.spawner.PokeSnackSpawnerFactory;
 import com.zianblk.zianutilities.core.generation.Generation;
-import com.zianblk.zianutilities.core.generation.GenerationPolicy;
 import com.zianblk.zianutilities.core.generation.GenerationState;
 import com.zianblk.zianutilities.core.generation.SpawnDecision;
-import com.zianblk.zianutilities.core.generation.UnknownSpeciesPolicy;
 import com.zianblk.zianutilities.neoforge.cobblemon.CobblemonGenerationResolver;
 import net.minecraft.server.MinecraftServer;
 import org.slf4j.Logger;
@@ -79,22 +77,9 @@ public final class GenerationPreselectionFilter {
 
             Set<Generation> resolved = RESOLVER.resolve(speciesId);
 
-            if (RUNTIME_TEST_LOG) {
-                LOGGER.info(
-                    "[ZIAN-RUNTIME] stage=PRESELECTION_THREAD sameServerThread={} thread={}",
-                    server.isSameThread(),
-                    Thread.currentThread().getName()
-                );
-            }
-
             GenerationState state = new NeoForgeGenerationStateStore(server).load();
 
-            SpawnDecision decision = GenerationPolicy.INSTANCE.decide(
-                resolved,
-                state,
-                null,
-                UnknownSpeciesPolicy.DENY
-            );
+            SpawnDecision decision = GenerationEnforcement.decide(resolved, state);
 
             boolean allowed = decision instanceof SpawnDecision.Allow;
             if (RUNTIME_TEST_LOG) {
