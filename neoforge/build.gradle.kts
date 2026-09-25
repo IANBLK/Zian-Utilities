@@ -88,6 +88,15 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
 }
 
+tasks.jar {
+    // Core stays a separate Gradle module for architecture/testing, while the
+    // published NeoForge mod remains a single deployable JAR.
+    dependsOn(project(":core").tasks.named("jar"))
+    from({
+        project(":core").tasks.named<Jar>("jar").get().archiveFile.get().asFile.let { zipTree(it) }
+    })
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
 
 tasks.test {
     useJUnitPlatform()
