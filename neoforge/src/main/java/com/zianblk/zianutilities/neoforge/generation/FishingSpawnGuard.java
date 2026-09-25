@@ -88,7 +88,21 @@ public final class FishingSpawnGuard {
                 );
             }
 
+            // Cobblemon 1.8.1 returns immediately from PokeRodFishingBobberEntity#retrieve
+            // when BOBBER_SPAWN_POKEMON_PRE is cancelled. That early return happens before
+            // the normal bobber discard at the end of retrieve(), leaving the rod visually
+            // stuck in a cast state. Close the denied attempt explicitly.
             event.cancel();
+            event.getBobber().setCast(false);
+            event.getBobber().discard();
+
+            if (RUNTIME_TEST_LOG) {
+                LOGGER.info(
+                    "[ZIAN-RUNTIME] source=FISHING cleanup=BOBBER_DISCARDED species={} bobber={}",
+                    speciesId,
+                    event.getBobber().getUUID()
+                );
+            }
             return;
         }
 
