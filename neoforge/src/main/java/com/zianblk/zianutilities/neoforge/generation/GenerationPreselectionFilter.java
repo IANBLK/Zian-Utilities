@@ -78,6 +78,15 @@ public final class GenerationPreselectionFilter {
             }
 
             Set<Generation> resolved = RESOLVER.resolve(speciesId);
+
+            if (RUNTIME_TEST_LOG) {
+                LOGGER.info(
+                    "[ZIAN-RUNTIME] stage=PRESELECTION_THREAD sameServerThread={} thread={}",
+                    server.isSameThread(),
+                    Thread.currentThread().getName()
+                );
+            }
+
             GenerationState state = new NeoForgeGenerationStateStore(server).load();
 
             SpawnDecision decision = GenerationPolicy.INSTANCE.decide(
