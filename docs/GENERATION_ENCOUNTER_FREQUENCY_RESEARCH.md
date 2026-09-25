@@ -1,6 +1,6 @@
 # Generation-filter encounter frequency research
 
-Status: root cause identified; no gameplay patch applied yet.
+Status: root cause narrowed; unsafe global-bucket prototype rejected; no gameplay patch applied yet.
 
 ## Reported symptom
 
@@ -107,3 +107,21 @@ If an independent review is requested, provide this document plus the exact-arti
 ## Decision
 
 The observed frequency difference is plausible and technically explained by bucket selection preceding/being independent from generation-filtered local candidate availability. The correct direction is conditional bucket renormalization. Implementation remains blocked on confirming the exact Cobblemon 1.8.1 interception surface; no speculative gameplay change should be merged before that evidence is reviewed.
+
+
+## Prototype result
+
+An experimental `affectBucketWeights` implementation was compiled successfully in CI #171, but it was deliberately removed before runtime testing.
+
+Reason: `affectBucketWeights` receives only the bucket-weight map. A naive implementation can determine whether an enabled generation exists somewhere in a bucket, but it cannot prove that the bucket has an enabled-generation candidate that is valid for the **exact local SpawnablePosition** (biome, time, weather, fishing context, bait, and other conditions). Keeping that prototype would therefore hide some globally empty buckets but would not solve the reported local empty-bucket case reliably.
+
+The prototype was reverted rather than handing a misleading build to runtime testers.
+
+### Refined requirement
+
+The intervention point must have both:
+
+- the mutable bucket weights before the bucket roll; and
+- the exact local `SpawnablePosition` (or an equivalent context sufficient to run Cobblemon's own matching logic).
+
+If Cobblemon 1.8.1 exposes no stable public extension point with both pieces, prefer a narrowly-scoped compatibility hook/mixin at the bucket-choice boundary over global spawn-pool mutation, species-weight inflation, or unbounded rerolls.
