@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - research/generation-preselection-filter
+      - research/generation-bucket-frequency
     paths:
       - '.github/workflows/cobblemon-api-evidence.yml'
 
@@ -40,6 +41,24 @@ jobs:
             echo
             echo "=== SpawningInfluence ==="
             javap -classpath "$JAR" -p -c com.cobblemon.mod.common.api.spawning.influence.SpawningInfluence
+            echo
+            echo "=== Spawner ==="
+            javap -classpath "$JAR" -p -c com.cobblemon.mod.common.api.spawning.spawner.Spawner
+            echo
+            echo "=== FlatSpawnablePositionWeightedSelector ==="
+            javap -classpath "$JAR" -p -c com.cobblemon.mod.common.api.spawning.selection.FlatSpawnablePositionWeightedSelector
+            echo
+            echo "=== SpawnablePosition ==="
+            javap -classpath "$JAR" -p -c com.cobblemon.mod.common.api.spawning.position.SpawnablePosition
+            echo
+            echo "=== PokeRodFishingBobberEntity ==="
+            javap -classpath "$JAR" -p -c com.cobblemon.mod.common.entity.fishing.PokeRodFishingBobberEntity
+            echo
+            echo "=== BucketNormalizingInfluence ==="
+            javap -classpath "$JAR" -p -c com.cobblemon.mod.common.api.spawning.influence.BucketNormalizingInfluence
+            echo
+            echo "=== BucketMultiplyingInfluence ==="
+            javap -classpath "$JAR" -p -c com.cobblemon.mod.common.api.spawning.influence.BucketMultiplyingInfluence
           } | tee build/evidence/PRESELECTION_JAVAP_RAW.txt
 
       - name: Upload evidence
