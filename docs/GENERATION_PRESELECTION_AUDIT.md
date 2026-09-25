@@ -7,7 +7,7 @@ Scope: early generation filtering for Fishing and Poke Snack.
 
 No data-integrity blocker was found. The approach uses Cobblemon's public spawning influence extension points and keeps the existing PRE guards as final enforcement.
 
-The PR remains draft until runtime validation.
+Runtime validation on Youer has passed for mixed-generation filtering and live generation-state freshness. The PR remains open while the remaining empty-pool/diagnostic checks and formal M1 baseline bookkeeping are completed.
 
 ## Upstream API checks
 
@@ -88,20 +88,26 @@ They log ALLOW/DENY candidate decisions with species, resolved generations and c
 
 This flag is intended only for runtime validation because candidate-level logging can be noisy.
 
-## Remaining runtime gate
+## Runtime validation status
 
-Before merge:
+Validated on Youer 1.21.1 with Cobblemon 1.8.1:
 
-1. Start with a mixed-generation fishing pool and only one generation enabled.
-2. Confirm PRESELECTION DENY appears for blocked candidates while actual encounters remain enabled-generation Pokemon.
-3. Confirm normal successful fishing no longer relies on repeated FishingSpawnGuard DENY/bobber cleanup.
-4. Test Poke Snack with the same generation restriction.
-5. Disable the active generation while an existing snack/spawner is present and confirm subsequent candidate decisions use the new state.
-6. Test an empty allowed pool and confirm no blocked Pokemon, no recursion and no incorrect snack/bobber lifecycle.
-7. Keep the explicit forced PRE fallback test for fishing cleanup.
+- mixed-generation fishing with one enabled generation produced enabled-generation encounters;
+- normal fishing completed without a stuck bobber;
+- Poke Snack produced enabled-generation encounters;
+- an already-placed Poke Snack respected a live Gen3 -> Gen4 switch without restart;
+- natural spawning and fishing also reflected the live switch;
+- no post-switch Gen3 leak was observed in the tested paths;
+- no crash, duplication or recursive spawn behavior was observed.
+
+Still required before merge:
+
+1. Run with `-Dzianutilities.runtimeTestPreselection=true` and capture candidate-level ALLOW/DENY evidence.
+2. Test an empty allowed pool and confirm no blocked Pokemon, recursion or incorrect snack/bobber lifecycle.
+3. Keep the explicit forced PRE fallback test for fishing cleanup as regression coverage.
 
 ## Audit decision
 
-Ready for CI and runtime validation.
+CI and the main Youer runtime behavior have passed.
 
-Not ready to merge to main until the runtime gate above passes.
+Keep the PR open until the remaining focused runtime checks above are recorded. Formal M1 release-candidate acceptance also remains gated by the pure-NeoForge baseline in `M1_RUNTIME_PROTOCOL.md`.
