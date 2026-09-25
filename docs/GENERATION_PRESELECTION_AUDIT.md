@@ -102,7 +102,7 @@ Validated on Youer 1.21.1 with Cobblemon 1.8.1:
 
 Still required before merge:
 
-1. Run with `-Dzianutilities.runtimeTestPreselection=true` and capture candidate-level ALLOW/DENY evidence.
+1. Candidate-level diagnostics: PASS on Youer with `-Dzianutilities.runtimeTestPreselection=true`. With active `[GEN_2, GEN_7]`, allowed candidates included Corsola/GEN_2, Wimpod/GEN_7, Golisopod/GEN_7, Wooper/GEN_2 and Qwilfish/GEN_2. Blocked candidates included Magikarp/GEN_1, Barbaracle/GEN_6, Staryu/GEN_1, Relicanth/GEN_3, Grapploct/GEN_8, Inkay/GEN_6, Starmie/GEN_1, Veluza/GEN_9 and Dratini/GEN_1.
 2. Empty allowed pool: PASS on Youer. With no active generations, no new natural Pokémon appeared in the fresh area, Poké Snack produced no Pokémon, and fishing produced no Pokémon. No crash or recursive spawn behavior was observed. The log confirmed `Generaciones activas: ninguna`; previously loaded entities were reported only as entity loads.
 3. Keep the explicit forced PRE fallback test for fishing cleanup as regression coverage.
 
@@ -110,4 +110,4 @@ Still required before merge:
 
 CI and the main Youer runtime behavior have passed.
 
-Keep the PR open until the remaining focused runtime checks above are recorded. Formal M1 release-candidate acceptance also remains gated by the pure-NeoForge baseline in `M1_RUNTIME_PROTOCOL.md`.
+The focused preselection runtime gate is now satisfied. Keep the existing PRE fishing cleanup regression evidence attached to the M1 record. PR #33 is ready for final review/merge; formal M1 release-candidate acceptance remains separately gated by the pure-NeoForge baseline in `M1_RUNTIME_PROTOCOL.md`. Formal M1 release-candidate acceptance also remains gated by the pure-NeoForge baseline in `M1_RUNTIME_PROTOCOL.md`.
