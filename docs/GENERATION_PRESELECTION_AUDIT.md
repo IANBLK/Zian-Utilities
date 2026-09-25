@@ -110,4 +110,4 @@ Still required before merge:
 
 CI and the main Youer runtime behavior have passed.
 
-The focused preselection runtime gate is now satisfied. Keep the existing PRE fishing cleanup regression evidence attached to the M1 record. PR #33 is ready for final review/merge; formal M1 release-candidate acceptance remains separately gated by the pure-NeoForge baseline in `M1_RUNTIME_PROTOCOL.md`. Formal M1 release-candidate acceptance also remains gated by the pure-NeoForge baseline in `M1_RUNTIME_PROTOCOL.md`.
+The focused preselection runtime gate is now satisfied. Keep the existing PRE fishing cleanup regression evidence attached to the M1 record. PR #33 is ready for final review/merge; formal M1 release-candidate acceptance remains separately gated by the pure-NeoForge baseline in `M1_RUNTIME_PROTOCOL.md`.
