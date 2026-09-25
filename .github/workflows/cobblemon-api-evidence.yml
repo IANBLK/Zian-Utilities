@@ -2,6 +2,11 @@ name: Cobblemon API evidence
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - research/generation-preselection-filter
+    paths:
+      - '.github/workflows/cobblemon-api-evidence.yml'
 
 jobs:
   javap:
