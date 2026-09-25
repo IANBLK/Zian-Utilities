@@ -89,6 +89,8 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.jar {
+    archiveFileName.set("Zian-Utilities-${providers.gradleProperty(\"mod_version\").get()}-NeoForge-1.21.1.jar")
+
     // Core stays a separate Gradle module for architecture/testing, while the
     // published NeoForge mod remains a single deployable JAR.
     dependsOn(project(":core").tasks.named("jar"))
