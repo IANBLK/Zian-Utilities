@@ -42,3 +42,23 @@ enabled when the event is processed. Unknown-generation captures do not count.
 The capture event does not prove whether a Pokémon was naturally spawned, so
 the operator must use a naturally encountered Pokémon for this test.
 
+## First Youer runtime observation — PASS for capture and normal restart
+
+The operator supplied in-game captures and a Pterodactyl console transcript
+from Youer 1.21.1 with the alpha.5 trial flag enabled:
+
+- `/zian generation active` showed gen7. Starting the trial returned
+  assignment `7e125e5f-6f97-45ef-829a-1291eb7ce09f` at `0/1 ACTIVO`;
+  the repeated start/status output retained the same assignment and progress.
+- At 22:34:36, the console recorded
+  `event=capture species=cobblemon:komala result=COMPLETED`. The in-game
+  status then showed the same assignment at `1/1 COMPLETADO`, gen7,
+  `species=cobblemon:komala`, and `sin recompensa`.
+- Pterodactyl performed a normal stop at 22:37:18 with player and world saves.
+  After Youer restarted, the operator's in-game status still showed the same
+  assignment ID, `1/1 COMPLETADO`, and Komala.
+
+The supplied evidence supports a single successful capture and persistence
+across a normal restart. It does not show a separate AVECOINS balance check,
+a second capture after completion, an abrupt kill, or the trial flag removed.
+Player network addresses from the console are omitted here.
