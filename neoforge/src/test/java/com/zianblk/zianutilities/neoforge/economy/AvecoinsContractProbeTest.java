@@ -25,6 +25,13 @@ class AvecoinsContractProbeTest {
         assertEquals("estructura de cartera incompatible", result.detail());
     }
 
+    @Test
+    void rejectsWalletMethodsWithWrongReturnTypes() throws Exception {
+        var result = AvecoinsContractProbe.inspectLayout(Crafting.class, WrongStore.class, Data.class);
+        assertFalse(result.compatible());
+        assertEquals("firmas de cartera incompatibles", result.detail());
+    }
+
     public static final class Crafting {
         public static final Set<String> MANAGED_RESULTS = Set.of("token", "coin");
     }
@@ -33,6 +40,11 @@ class AvecoinsContractProbeTest {
         public static Data get() { throw new AssertionError("probe must not read wallet"); }
         public static boolean save(Data data) { throw new AssertionError("probe must not save wallet"); }
         public static boolean save(WrongData data) { throw new AssertionError("probe must not save wallet"); }
+    }
+
+    public static final class WrongStore {
+        public static Data get() { throw new AssertionError("probe must not read wallet"); }
+        public static void save(Data data) { throw new AssertionError("probe must not save wallet"); }
     }
 
     public static class Data {
