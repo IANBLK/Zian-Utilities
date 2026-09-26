@@ -8,6 +8,8 @@ import com.zianblk.zianutilities.neoforge.generation.NaturalSpawnGuard;
 import com.zianblk.zianutilities.neoforge.generation.PokeSnackSpawnGuard;
 import com.zianblk.zianutilities.neoforge.rewards.RewardCommands;
 import com.zianblk.zianutilities.neoforge.quests.CaptureEventProbe;
+import com.zianblk.zianutilities.neoforge.quests.CaptureTrialCommands;
+import com.zianblk.zianutilities.neoforge.quests.CaptureTrialListener;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 
@@ -18,12 +20,14 @@ public final class ZianUtilitiesMod {
     public ZianUtilitiesMod() {
         NeoForge.EVENT_BUS.addListener(GenerationCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(RewardCommands::onRegisterCommands);
+        NeoForge.EVENT_BUS.addListener(CaptureTrialCommands::onRegisterCommands);
         GenerationPreselectionFilter.install();
         NaturalSpawnGuard.install();
         FishingSpawnGuard.install();
         PokeSnackSpawnGuard.install();
         FinalSpawnDiagnostics.install();
         CaptureEventProbe.install();
+        CaptureTrialListener.install();
     }
 }
 
