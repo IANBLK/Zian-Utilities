@@ -2,6 +2,7 @@ package com.zianblk.zianutilities.neoforge.quests;
 
 import com.mojang.brigadier.Command;
 import com.zianblk.zianutilities.core.generation.Generation;
+import com.zianblk.zianutilities.core.quests.CaptureEligibilityPlan;
 import com.zianblk.zianutilities.core.quests.CaptureTrial;
 import com.zianblk.zianutilities.neoforge.generation.NeoForgeGenerationStateStore;
 import net.minecraft.commands.CommandSourceStack;
@@ -28,6 +29,9 @@ public final class CaptureTrialCommands {
         event.getDispatcher().register(
             Commands.literal("zian")
                 .then(Commands.literal("quest")
+                    .then(Commands.literal("plan")
+                        .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .executes(context -> plan(context.getSource())))
                     .then(Commands.literal("trial")
                         .requires(source -> source.hasPermission(3) && Boolean.getBoolean(TEST_FLAG))
                         .then(Commands.literal("start")
@@ -37,6 +41,34 @@ public final class CaptureTrialCommands {
                     )
                 )
         );
+    }
+
+    private static int plan(CommandSourceStack source) {
+        try {
+            Set<Generation> enabled = new NeoForgeGenerationStateStore(source.getServer())
+                .load().getEnabled();
+            CaptureEligibilityPlan capturePlan = new CaptureEligibilityPlan(enabled);
+            if (!capturePlan.getAssignable()) {
+                source.sendSuccess(
+                    () -> Component.literal("Vista previa de captura: PAUSADA; no hay generaciones activas."),
+                    false
+                );
+                return Command.SINGLE_SUCCESS;
+            }
+            String generations = generationIds(capturePlan.getEnabledGenerations());
+            source.sendSuccess(
+                () -> Component.literal(
+                    "Vista previa (sin asignar): captura 1 Pokémon de cualquier generación activa ("
+                        + generations + "). Objetivos por tipo: desactivados."
+                ),
+                false
+            );
+            return Command.SINGLE_SUCCESS;
+        } catch (Exception error) {
+            LOGGER.error("[ZIAN-QUEST-PLAN] result=error", error);
+            source.sendFailure(Component.literal("No se pudo leer el plan de captura."));
+            return 0;
+        }
     }
 
     private static int start(CommandSourceStack source) {
@@ -72,12 +104,14 @@ public final class CaptureTrialCommands {
             return 0;
         }
         try {
+            Set<Generation> enabled = new NeoForgeGenerationStateStore(source.getServer())
+                .load().getEnabled();
             CaptureTrial trial = CaptureTrialRuntime.service(source.getServer())
-                .inspect(player.getUUID());
+                .synchronize(player.getUUID(), enabled);
             if (trial == null) {
                 source.sendSuccess(() -> Component.literal("Ensayo de captura: no iniciado."), false);
             } else {
-                showTrial(source, trial);
+                showTrial(source, trial, enabled);
             }
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
@@ -87,12 +121,30 @@ public final class CaptureTrialCommands {
         }
     }
 
-    private static void showTrial(CommandSourceStack source, CaptureTrial trial) {
-        String generations = trial.getTargetGenerations().stream()
+    private static String generationIds(Set<Generation> generations) {
+        return generations.stream()
             .sorted(Comparator.comparingInt(Enum::ordinal))
             .map(Generation::getId)
             .collect(Collectors.joining(","));
-        String progress = trial.getCapturedSpeciesId() == null ? "0/1 ACTIVO" : "1/1 COMPLETADO";
+    }
+
+    private static void showTrial(CommandSourceStack source, CaptureTrial trial) {
+        Set<Generation> enabled = new NeoForgeGenerationStateStore(source.getServer())
+            .load().getEnabled();
+        showTrial(source, trial, enabled);
+    }
+
+    private static void showTrial(
+        CommandSourceStack source,
+        CaptureTrial trial,
+        Set<Generation> currentlyEnabled
+    ) {
+        String generations = trial.getCapturedSpeciesId() == null && currentlyEnabled.isEmpty()
+            ? "ninguna"
+            : generationIds(trial.getTargetGenerations());
+        String progress = trial.getCapturedSpeciesId() != null
+            ? "1/1 COMPLETADO"
+            : currentlyEnabled.isEmpty() ? "0/1 PAUSADO" : "0/1 ACTIVO";
         String species = trial.getCapturedSpeciesId() == null
             ? "" : " especie=" + trial.getCapturedSpeciesId();
         source.sendSuccess(

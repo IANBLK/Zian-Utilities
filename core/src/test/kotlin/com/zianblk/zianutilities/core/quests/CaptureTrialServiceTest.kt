@@ -46,7 +46,7 @@ class CaptureTrialServiceTest {
     }
 
     @Test
-    fun `only a started trial with a target that is still enabled can complete`() {
+    fun `unfinished trial follows currently enabled generations without changing assignment ID`() {
         val service = CaptureTrialService(FileCaptureTrialStore(directory))
         assertEquals(
             CaptureTrialResult.NOT_STARTED,
@@ -55,7 +55,12 @@ class CaptureTrialServiceTest {
                 setOf(Generation.GEN_7), setOf(Generation.GEN_7),
             ),
         )
-        service.start(player, setOf(Generation.GEN_7))
+        val original = service.start(player, setOf(Generation.GEN_7))
+        val retargeted = assertNotNull(
+            service.synchronize(player, setOf(Generation.GEN_1, Generation.GEN_2))
+        )
+        assertEquals(original.assignmentId, retargeted.assignmentId)
+        assertEquals(setOf(Generation.GEN_1, Generation.GEN_2), retargeted.targetGenerations)
         assertEquals(
             CaptureTrialResult.IGNORED_GENERATION,
             service.recordCapture(
@@ -66,11 +71,39 @@ class CaptureTrialServiceTest {
         assertEquals(
             CaptureTrialResult.IGNORED_GENERATION,
             service.recordCapture(
+                player, "cobblemon:rookidee",
+                setOf(Generation.GEN_8), setOf(Generation.GEN_2),
+            ),
+        )
+        assertFalse(assertNotNull(service.inspect(player)).completed)
+        assertEquals(
+            CaptureTrialResult.COMPLETED,
+            service.recordCapture(
                 player, "cobblemon:sentret",
                 setOf(Generation.GEN_2), setOf(Generation.GEN_2),
             ),
         )
-        assertFalse(assertNotNull(service.inspect(player)).completed)
+        val finished = assertNotNull(service.synchronize(player, setOf(Generation.GEN_8)))
+        assertEquals(setOf(Generation.GEN_2), finished.targetGenerations)
+        assertEquals("cobblemon:sentret", finished.capturedSpeciesId)
+    }
+
+    @Test
+    fun `trial pauses with no active generations and resumes when one is enabled`() {
+        val service = CaptureTrialService(FileCaptureTrialStore(directory))
+        val original = service.start(player, setOf(Generation.GEN_7))
+        assertEquals(original, service.synchronize(player, emptySet()))
+        assertEquals(
+            CaptureTrialResult.IGNORED_GENERATION,
+            service.recordCapture(
+                player, "cobblemon:yungoos",
+                setOf(Generation.GEN_7), emptySet(),
+            ),
+        )
+        val resumed = assertNotNull(service.synchronize(player, setOf(Generation.GEN_1)))
+        assertEquals(original.assignmentId, resumed.assignmentId)
+        assertEquals(setOf(Generation.GEN_1), resumed.targetGenerations)
+        assertFalse(resumed.completed)
     }
 
     @Test

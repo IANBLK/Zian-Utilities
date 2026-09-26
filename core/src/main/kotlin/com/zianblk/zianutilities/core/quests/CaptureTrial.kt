@@ -34,13 +34,21 @@ interface CaptureTrialStore {
 class CaptureTrialService(private val store: CaptureTrialStore) {
     fun start(playerId: UUID, targets: Set<Generation>): CaptureTrial =
         store.withPlayerLock(playerId) {
-            store.load(playerId) ?: CaptureTrial(
+            val existing = store.load(playerId)
+            if (existing != null) return@withPlayerLock retargetIfActive(existing, targets)
+            CaptureTrial(
                 UUID.randomUUID(), playerId, targets.toSet()
             ).also(store::save)
         }
 
     fun inspect(playerId: UUID): CaptureTrial? =
         store.withPlayerLock(playerId) { store.load(playerId) }
+
+    /** Refreshes an unfinished capture-any assignment without changing its identity. */
+    fun synchronize(playerId: UUID, currentlyEnabled: Set<Generation>): CaptureTrial? =
+        store.withPlayerLock(playerId) {
+            store.load(playerId)?.let { retargetIfActive(it, currentlyEnabled) }
+        }
 
     fun recordCapture(
         playerId: UUID,
@@ -51,11 +59,19 @@ class CaptureTrialService(private val store: CaptureTrialStore) {
         require(speciesId.isNotBlank()) { "speciesId must not be blank" }
         val trial = store.load(playerId) ?: return@withPlayerLock CaptureTrialResult.NOT_STARTED
         if (trial.completed) return@withPlayerLock CaptureTrialResult.ALREADY_COMPLETED
-        if (resolved.intersect(trial.targetGenerations).intersect(currentlyEnabled).isEmpty()) {
+        val plan = CaptureEligibilityPlan(currentlyEnabled)
+        if (!plan.assignable) {
             return@withPlayerLock CaptureTrialResult.IGNORED_GENERATION
         }
-        store.save(trial.copy(capturedSpeciesId = speciesId))
+        val current = retargetIfActive(trial, plan.enabledGenerations)
+        if (!plan.accepts(resolved)) return@withPlayerLock CaptureTrialResult.IGNORED_GENERATION
+        store.save(current.copy(capturedSpeciesId = speciesId))
         CaptureTrialResult.COMPLETED
+    }
+
+    private fun retargetIfActive(trial: CaptureTrial, enabled: Set<Generation>): CaptureTrial {
+        if (trial.completed || enabled.isEmpty() || trial.targetGenerations == enabled) return trial
+        return trial.copy(targetGenerations = enabled.toSet()).also(store::save)
     }
 }
 
