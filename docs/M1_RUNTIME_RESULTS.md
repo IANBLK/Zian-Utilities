@@ -17,7 +17,7 @@ Runtime evidence has already been collected on the Aventura 2 Youer 1.21.1 test 
 | Fishing | PASS | PASS | PR #35 focused NeoForge runtime validation passed. Encounter frequency improved without guaranteeing every cast; generation filtering remained correct. |
 | Poké Snack | PASS | PASS | PR #35 focused NeoForge runtime validation passed, including simultaneous Fishing + Poké Snack operation and generation filtering. |
 | Safety exclusions | PARTIAL PASS | PARTIAL PASS | Existing Pokémon, party send, PC withdraw, /givepokemon, battle, evolution and Zian GTS receive were exercised without Generation Control interference. Breeding remains N/A when no breeding system is installed. |
-| Diagnostics | PARTIAL PASS | PASS | DIAG-02 PASS (documentary closure): useful candidate/source evidence and 70,665/70,665 server-thread evaluations. DIAG-01 PASS on Youer with debug off; the clean-NeoForge DIAG-01 check remains pending. |
+| Diagnostics | PASS | PASS | DIAG-01 passed on Youer and a NeoForge integrated-server run with debug off; DIAG-02 closed with accepted candidate/source evidence and 70,665/70,665 server-thread evaluations. |
 | Performance sanity | OBSERVED OK | OBSERVED OK | No obvious tick degradation or recursive spawn behavior observed. PERF-01/02 still need formal closure. |
 | Habitat research | NOT REQUIRED | NOT REQUIRED | Research-only and non-blocking for M1. |
 | Youer compatibility | N/A | PARTIAL PASS | Commands, natural spawning, Fishing, Poké Snack and Zian GTS coexistence have been exercised. Formal YOUER-01..03 is the final compatibility subset after NeoForge acceptance. |
@@ -95,7 +95,7 @@ Evidence provenance: the accepted diagnostic runs summarized above, preserved in
 
 ### DIAG-01
 
-Youer 1.21.1 / NeoForge 21.1.251, Cobblemon 1.8.1, Java 21. The operator provided a server launch command without any `-Dzianutilities.runtimeTest*` flags and the run's `latest.log`. This is a Youer result; the clean-NeoForge DIAG-01 check remains a separate gate.
+Youer 1.21.1 / NeoForge 21.1.251, Cobblemon 1.8.1, Java 21. The operator provided a server launch command without any `-Dzianutilities.runtimeTest*` flags and the run's `latest.log`. This is the Youer result.
 
 Observed sequence in the supplied log:
 
@@ -104,14 +104,22 @@ Observed sequence in the supplied log:
 3. At 04:09:22, the player teleported to another area. From then until disconnect at 04:13:47 (about four minutes 25 seconds), the log contains no repeated Zian candidate/denial diagnostics or Zian errors. Other mods emitted isolated warnings; they are outside this logging gate.
 4. At 04:13:53, the server stopped normally and saved worlds.
 
-Result: `DIAG-01 PASS on Youer (operator observation plus supplied log)`. Normal command audit output is allowed. For clean NeoForge, repeat the short check with diagnostic flags and Zian DEBUG/TRACE logging off, at least one generation blocked, visible natural spawning from an enabled generation, and no repeated per-candidate/per-denial Zian log lines.
+Result: `DIAG-01 PASS on Youer (operator observation plus supplied log)`. Normal command audit output is allowed.
+
+The operator also supplied `latest.log` from a NeoForge 21.1.251 / Minecraft 1.21.1 local client with an integrated server, Cobblemon 1.8.1 and Zian Utilities 0.1.0-alpha.1. This instance contains additional mods and is not a minimal two-mod installation; it does not use Youer. The log does not list JVM diagnostic properties, so the debug-off conclusion rests on normal INFO logging and the absence of opt-in Zian diagnostic output.
+
+1. At 23:21:56 the active-generation response was `ninguna`; at 23:22:13 Gen2 was enabled and at 23:22:14 the response was `gen2`.
+2. At 23:23:47 Gen2 was disabled; at 23:23:49 the response was `ninguna`; at 23:23:53 Gen7 was enabled. The operator reported that newly appearing Pokémon matched whichever generation was active in each interval. The log confirms command state, while the spawn observation comes from the operator.
+3. During the Gen2 and Gen7 observation windows, no repeated Zian candidate/denial diagnostic lines or Zian errors appeared. The three `[ZIAN-AUDIT]` lines correspond to the explicit enable/disable commands. Warnings from other mods are outside this gate.
+4. The integrated server saved normally and stopped at 23:28:04.
+
+Result: `DIAG-01 PASS on NeoForge integrated server (operator observation plus supplied log)`. Together with the Youer result, the debug-off/no-spam gate is closed for the tested M1 implementation baseline.
 
 ## Remaining required gates before M1 release-candidate acceptance
 
 1. Close the formal evidence side of `PERSIST-03`.
-2. Execute the small debug-off/no-spam check for `DIAG-01` on clean NeoForge. The Youer result is recorded above; `DIAG-02` is closed using accepted evidence.
-3. Formally close `PERF-01` and `PERF-02` against the matrix criteria, reusing existing runtime evidence where equivalent rather than repeating unnecessary stress work.
-4. After NeoForge acceptance, execute `YOUER-01` through `YOUER-03`.
+2. Formally close `PERF-01` and `PERF-02` against the matrix criteria, reusing existing runtime evidence where equivalent rather than repeating unnecessary stress work.
+3. After NeoForge acceptance, execute `YOUER-01` through `YOUER-03`.
 
 Do not repeat already accepted natural-spawn, Fishing, Poké Snack or PERSIST-02 tests unless a later code change touches their relevant paths.
 
