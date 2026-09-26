@@ -29,3 +29,10 @@ instance, not multiple running server processes.
 The next functional slice is the AVECOINS adapter and a controlled recovery
 workflow, followed by item delivery and quest progress persistence.
 
+The first NeoForge integration gate is read-only: `/zian reward status` checks
+the installed AVECOINS version and the inspected wallet method/layout contract
+without reading or changing player balances. `/zian reward inspect <claimId>`
+reads a saved claim journal. Both commands require operator level 2; no claim
+or economy mutation command is registered yet. See `M2_YOUER_PROBE.md` for the
+test-server procedure.
+
