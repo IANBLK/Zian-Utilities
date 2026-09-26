@@ -49,7 +49,7 @@ sealed interface RewardDeliveryResult {
 }
 
 /** A delivery attempt is one journaled component, never an entire composite claim. */
-interface RewardDeliveryPort {
-    fun deliver(claim: RewardClaim, component: RewardComponent): RewardDeliveryResult
+fun interface RewardDeliveryPort {
+    fun deliver(claim: RewardClaim, component: RewardComponent, operationId: UUID): RewardDeliveryResult
 }
 
