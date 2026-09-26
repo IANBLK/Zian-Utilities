@@ -26,3 +26,19 @@ fails. No player balance or item count needs to change during this test.
 `/zian reward inspect <claimId>` is reserved for future claim diagnostics; it
 will report “not found” until a reward-producing feature creates claims.
 
+## Runtime result — PASS (read-only gate)
+
+On the Youer 1.21.1 test server, the operator's in-game output showed:
+
+- `M2 recompensas: registro preparado; entrega desactivada.`
+- `AVECOINS 2.3 compatible`
+- Eight managed currencies: `avecoins:coppercoin`, `avecoins:diamondcoin`,
+  `avecoins:diamondticket`, `avecoins:goldcoin`, `avecoins:goldticket`,
+  `avecoins:ironcoin`, `avecoins:netheritecoin`, and
+  `avecoins:netheriteticket`.
+- `Generaciones activas: gen7` after the new command was registered.
+
+This accepts provider discovery and the existing generation command on Youer.
+It does not validate wallet reads, credits, debits, reward delivery, crash
+recovery, or item rewards. No `latest.log` was supplied for this gate.
+
