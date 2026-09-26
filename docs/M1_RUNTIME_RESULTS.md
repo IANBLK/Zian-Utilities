@@ -72,7 +72,7 @@ Result: `PERSIST-02 PASS`.
 
 ## PERSIST-03 status
 
-Functional recovery after a forced process termination has been observed: the subsequent launch recovered the expected Gen2 + Gen7 state. However, the archived pre-restart `.log.gz` could not be parsed in the available evidence path, so the abrupt termination itself is not yet formally demonstrated by log evidence.
+Functional recovery after a forced process termination has been observed: the subsequent launch recovered the expected Gen2 + Gen7 state. The operator also reports successful normal-restart and forced-close recovery on both server and local client. These additional observations are operator reports, not independent proof of the stop mode. The archived pre-restart `.log.gz` could not be parsed in the available evidence path. The later Youer and NeoForge logs supplied for DIAG-01 both end with normal world saves, so neither can establish the earlier forced termination.
 
 Status: `PERSIST-03 FUNCTIONAL PASS / FORMAL EVIDENCE PENDING`.
 
@@ -115,11 +115,24 @@ The operator also supplied `latest.log` from a NeoForge 21.1.251 / Minecraft 1.2
 
 Result: `DIAG-01 PASS on NeoForge integrated server (operator observation plus supplied log)`. Together with the Youer result, the debug-off/no-spam gate is closed for the tested M1 implementation baseline.
 
+## Remaining evidence audit
+
+This audit separates runtime behavior already observed from the specific proof required to close each matrix ID. It adds no new runtime acceptance.
+
+| ID | Evidence already available | Formal gap |
+|---|---|---|
+| PERSIST-03 | Correct Gen2 + Gen7 recovery after the reported forced stop; operator also reports successful server and client forced-close recovery. | A readable pre-restart log or hosting-panel termination record identifying the abnormal stop, paired with the already observed post-restart state. The two later `latest.log` files show normal stops and cannot substitute. No functional retest is required if the earlier stop record can be recovered. |
+| PERF-01 | No obvious tick degradation or recursive spawn behavior was reported during the accepted runs. | Evidence from natural spawning with multiple players, including a short contemporaneous tick/TPS observation. The supplied DIAG-01 logs document one player only. |
+| PERF-02 | 70,665/70,665 preselection evaluations stayed on the server thread, and no runaway behavior was observed. | Thread affinity does not measure allocation. A short repeated-denial run with memory/GC and tick observations, or an equivalent existing performance trace, is needed to assess excessive allocation. The high-volume diagnostic run need not be repeated. |
+| YOUER-01 | Enable/disable/active/status/list and live mutation were exercised on Youer; the supplied log also shows a successful Gen2 disable and active-state commands. | Map the accepted command observations and responses to the formal case once the NeoForge baseline is accepted. The supplied server log does not contain chat responses for `active`. |
+| YOUER-02 | Youer natural generation filtering was operator-observed; Fishing and Poké Snack both have accepted functional observations, including their simultaneous use. | Map the accepted natural, Fishing and Poké Snack results to the formal Youer case after NeoForge acceptance; rerun only a path whose evidence cannot be recovered or whose implementation changed. |
+| YOUER-03 | Existing Pokémon and Zian GTS receive were previously exercised without Generation Control interference. | Preserve or reference the accepted GTS transaction result alongside active generation state for formal case closure. A new transaction is needed only if that evidence cannot be recovered. |
+
 ## Remaining required gates before M1 release-candidate acceptance
 
-1. Close the formal evidence side of `PERSIST-03`.
-2. Formally close `PERF-01` and `PERF-02` against the matrix criteria, reusing existing runtime evidence where equivalent rather than repeating unnecessary stress work.
-3. After NeoForge acceptance, execute `YOUER-01` through `YOUER-03`.
+1. Recover the abnormal-stop record for `PERSIST-03` and pair it with the accepted post-restart state; repeat the forced stop only if no usable stop record exists and formal proof is still required.
+2. Supply the small, targeted performance evidence missing for `PERF-01` (multiple players and tick behavior) and `PERF-02` (repeated denials and allocation behavior).
+3. After NeoForge acceptance, map the already observed Youer command, spawn and GTS behavior to `YOUER-01` through `YOUER-03`; rerun only an unproven path.
 
 Do not repeat already accepted natural-spawn, Fishing, Poké Snack or PERSIST-02 tests unless a later code change touches their relevant paths.
 
