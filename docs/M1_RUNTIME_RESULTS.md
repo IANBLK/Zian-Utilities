@@ -17,7 +17,7 @@ Runtime evidence has already been collected on the Aventura 2 Youer 1.21.1 test 
 | Fishing | PASS | PASS | PR #35 focused NeoForge runtime validation passed. Encounter frequency improved without guaranteeing every cast; generation filtering remained correct. |
 | Poké Snack | PASS | PASS | PR #35 focused NeoForge runtime validation passed, including simultaneous Fishing + Poké Snack operation and generation filtering. |
 | Safety exclusions | PARTIAL PASS | PARTIAL PASS | Existing Pokémon, party send, PC withdraw, /givepokemon, battle, evolution and Zian GTS receive were exercised without Generation Control interference. Breeding remains N/A when no breeding system is installed. |
-| Diagnostics | PARTIAL PASS | PARTIAL PASS | DIAG-02 PASS (documentary closure): candidate/source diagnostics were useful and thread-affinity sampling recorded 70,665/70,665 preselection evaluations on the server thread. DIAG-01 still needs one explicit debug-off/no-spam closure. |
+| Diagnostics | PARTIAL PASS | PASS | DIAG-02 PASS (documentary closure): useful candidate/source evidence and 70,665/70,665 server-thread evaluations. DIAG-01 PASS on Youer with debug off; the clean-NeoForge DIAG-01 check remains pending. |
 | Performance sanity | OBSERVED OK | OBSERVED OK | No obvious tick degradation or recursive spawn behavior observed. PERF-01/02 still need formal closure. |
 | Habitat research | NOT REQUIRED | NOT REQUIRED | Research-only and non-blocking for M1. |
 | Youer compatibility | N/A | PARTIAL PASS | Commands, natural spawning, Fishing, Poké Snack and Zian GTS coexistence have been exercised. Formal YOUER-01..03 is the final compatibility subset after NeoForge acceptance. |
@@ -95,22 +95,21 @@ Evidence provenance: the accepted diagnostic runs summarized above, preserved in
 
 ### DIAG-01
 
-The remaining missing diagnostic proof is deliberately small: run the final build with Zian diagnostic launch flags removed, keep at least one generation blocked while normal natural spawning occurs, and verify the log does not emit per-candidate/per-denial Zian spam during ordinary gameplay.
+Youer 1.21.1 / NeoForge 21.1.251, Cobblemon 1.8.1, Java 21. The operator provided a server launch command without any `-Dzianutilities.runtimeTest*` flags and the run's `latest.log`. This is a Youer result; the clean-NeoForge DIAG-01 check remains a separate gate.
 
-Required evidence:
+Observed sequence in the supplied log:
 
-1. No `-Dzianutilities.runtimeTest*` diagnostic flags enabled, and normal production logging with Zian DEBUG/TRACE logging disabled.
-2. Generation Control active with at least one generation blocked.
-3. Normal natural spawn activity for a short observation window.
-4. No repeated Zian per-candidate/per-denial diagnostic lines when debug is off.
-5. Ordinary audit lines caused by explicit generation commands are allowed and are not considered spam.
+1. At 04:09:00, `/zian generation disable gen2` succeeded. The one `[ZIAN-AUDIT]` line records that explicit command.
+2. At 04:09:04 and 04:09:58, the operator checked `/zian generation active`; the log records the commands but does not include their chat responses. The operator reported that while Gen2 was enabled only Gen2 Pokémon were seen, and during the Gen7-only state only Gen7 Pokémon were seen. This is player observation, not a spawn count extracted from the log.
+3. At 04:09:22, the player teleported to another area. From then until disconnect at 04:13:47 (about four minutes 25 seconds), the log contains no repeated Zian candidate/denial diagnostics or Zian errors. Other mods emitted isolated warnings; they are outside this logging gate.
+4. At 04:13:53, the server stopped normally and saved worlds.
 
-If those conditions hold, record `DIAG-01 PASS`.
+Result: `DIAG-01 PASS on Youer (operator observation plus supplied log)`. Normal command audit output is allowed. For clean NeoForge, repeat the short check with diagnostic flags and Zian DEBUG/TRACE logging off, at least one generation blocked, visible natural spawning from an enabled generation, and no repeated per-candidate/per-denial Zian log lines.
 
 ## Remaining required gates before M1 release-candidate acceptance
 
 1. Close the formal evidence side of `PERSIST-03`.
-2. Execute the small debug-off/no-spam check for `DIAG-01`. `DIAG-02` is closed above using accepted evidence.
+2. Execute the small debug-off/no-spam check for `DIAG-01` on clean NeoForge. The Youer result is recorded above; `DIAG-02` is closed using accepted evidence.
 3. Formally close `PERF-01` and `PERF-02` against the matrix criteria, reusing existing runtime evidence where equivalent rather than repeating unnecessary stress work.
 4. After NeoForge acceptance, execute `YOUER-01` through `YOUER-03`.
 
