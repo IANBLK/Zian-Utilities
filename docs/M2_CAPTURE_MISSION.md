@@ -24,3 +24,14 @@ Optional generation-switch check before step 4: accept under Gen7, then switch t
 
 Stop the test and retain the world, console log, and assignment file if the server fails startup, the assignment disappears, an inactive-generation capture completes it, balance changes, or generation control changes unexpectedly. Do not remove or edit the record to retry on the same world.
 
+## Youer runtime evidence (2026-09-26)
+
+User-provided Pterodactyl console output and in-game screenshots show alpha.7 starting on Youer 1.21.1 with Cobblemon 1.8.1 and the opt-in flag. The console reports `capture_mission=enabled rewards=disabled` and reaches `Done` without a Zian Utilities error.
+
+- Gen7 remained the only active generation. Initial capture status was not assigned; reward balance was 1 coppercoin.
+- Two `/zian quest capture accept` calls returned the same ID `52d22b97-34cd-44d2-8e15-89a0a65ae094` at 0/1. The console logged both accepts with `completed=false`.
+- Capturing Yungoos produced one `event=capture ... species=cobblemon:yungoos result=COMPLETED` line. Status showed the same ID at 1/1 with `generation=gen7`; balance remained 1.
+- A normal stop and restart with the same JAR and flag reached `Done`. After reconnecting, status still showed that ID, species, and generation at 1/1; balance was still 1 and Gen7 was still active.
+
+This confirms initial acceptance, live completion, normal-restart persistence, and no reward on that completion. A second post-completion capture and a restart with the flag removed have not yet been observed; keep this PR in draft until those checks are complete.
+
