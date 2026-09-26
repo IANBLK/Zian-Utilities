@@ -76,7 +76,7 @@ Functional recovery after a forced process termination has been observed: the su
 
 Status: `PERSIST-03 FUNCTIONAL PASS / FORMAL EVIDENCE PENDING`.
 
-Do not repeat the functional recovery test unless needed. To close the formal gate, preserve readable evidence showing that the pre-restart log terminates without Minecraft's normal `Stopping server` / `Saving worlds` sequence, paired with the already observed correct post-restart state.
+The operator confirmed that the old pre-restart log is unavailable. To close the formal gate, perform one controlled abnormal-stop check in a disposable test copy: record active generations, terminate the process without Minecraft's normal `stop` command, retain the pre-restart log or hosting-panel kill event before the next launch, restart, verify the same state and that it remains writable, then retain the post-restart log. This repetition is only to document the stop mode and recovery; the earlier functional recovery observation remains accepted.
 
 ## Diagnostic gate audit
 
@@ -121,8 +121,8 @@ This audit separates runtime behavior already observed from the specific proof r
 
 | ID | Evidence already available | Formal gap |
 |---|---|---|
-| PERSIST-03 | Correct Gen2 + Gen7 recovery after the reported forced stop; operator also reports successful server and client forced-close recovery. | A readable pre-restart log or hosting-panel termination record identifying the abnormal stop, paired with the already observed post-restart state. The two later `latest.log` files show normal stops and cannot substitute. No functional retest is required if the earlier stop record can be recovered. |
-| PERF-01 | No obvious tick degradation or recursive spawn behavior was reported during the accepted runs. | Evidence from natural spawning with multiple players, including a short contemporaneous tick/TPS observation. The supplied DIAG-01 logs document one player only. |
+| PERSIST-03 | Correct Gen2 + Gen7 recovery after the reported forced stop; operator also reports successful server and client forced-close recovery. | The old stop record is unavailable, so one controlled abnormal-stop check with preserved pre/post evidence is required for formal closure. The two later `latest.log` files show normal stops and cannot substitute. |
+| PERF-01 | No obvious tick degradation or recursive spawn behavior was reported during the accepted runs. | A short Youer run with two players (satisfying the matrix's multiple-player condition), both in areas with active natural spawning, and contemporaneous tick/TPS observations. The supplied DIAG-01 logs document one player only. |
 | PERF-02 | 70,665/70,665 preselection evaluations stayed on the server thread, and no runaway behavior was observed. | Thread affinity does not measure allocation. A short repeated-denial run with memory/GC and tick observations, or an equivalent existing performance trace, is needed to assess excessive allocation. The high-volume diagnostic run need not be repeated. |
 | YOUER-01 | Enable/disable/active/status/list and live mutation were exercised on Youer; the supplied log also shows a successful Gen2 disable and active-state commands. | Map the accepted command observations and responses to the formal case once the NeoForge baseline is accepted. The supplied server log does not contain chat responses for `active`. |
 | YOUER-02 | Youer natural generation filtering was operator-observed; Fishing and Poké Snack both have accepted functional observations, including their simultaneous use. | Map the accepted natural, Fishing and Poké Snack results to the formal Youer case after NeoForge acceptance; rerun only a path whose evidence cannot be recovered or whose implementation changed. |
@@ -130,8 +130,8 @@ This audit separates runtime behavior already observed from the specific proof r
 
 ## Remaining required gates before M1 release-candidate acceptance
 
-1. Recover the abnormal-stop record for `PERSIST-03` and pair it with the accepted post-restart state; repeat the forced stop only if no usable stop record exists and formal proof is still required.
-2. Supply the small, targeted performance evidence missing for `PERF-01` (multiple players and tick behavior) and `PERF-02` (repeated denials and allocation behavior).
+1. Perform one controlled abnormal-stop check for `PERSIST-03` because the old stop record is unavailable; preserve both the termination evidence and post-restart state.
+2. Supply the small, targeted performance evidence missing for `PERF-01` (two players and tick behavior) and `PERF-02` (repeated denials and allocation behavior).
 3. After NeoForge acceptance, map the already observed Youer command, spawn and GTS behavior to `YOUER-01` through `YOUER-03`; rerun only an unproven path.
 
 Do not repeat already accepted natural-spawn, Fishing, Poké Snack or PERSIST-02 tests unless a later code change touches their relevant paths.
