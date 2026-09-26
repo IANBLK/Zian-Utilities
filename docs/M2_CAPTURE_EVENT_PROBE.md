@@ -41,3 +41,12 @@ Youer. The supplied line alone does not establish that this was a natural
 encounter, prove that only one line was emitted for the capture, or verify the
 probe is silent after the startup flag is removed. No quest progress or reward
 was created by this probe.
+
+## Probe disabled and generation state retained — PASS (operator report)
+
+The operator reported removing the capture-probe Java startup flag, then
+capturing another Pokémon without a `[ZIAN-QUEST-PROBE] event=capture` console
+line. The operator also confirmed that gen7 remained active. This closes the
+opt-in/off smoke test as reported from the Youer server. No post-disable
+console transcript or screenshot was supplied, so this result is attributed
+to the operator report rather than to independently inspected log lines.
