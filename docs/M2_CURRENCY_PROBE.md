@@ -67,3 +67,12 @@ from this report. This proves one-credit delivery and duplicate suppression
 across a normal restart on this Youer test server. It does not exercise an
 abrupt process kill or the `RECOVERY_REQUIRED` path. After the test, remove
 the Java test flag and restart; retain the claim journal.
+
+## Test flag removal — PASS
+
+After the controlled credit test, the operator removed
+`-Dzianutilities.rewardTestCreditEnabled=true` and restarted the Youer test
+server. An in-game status capture showed `prueba de crédito desactivada`,
+`AVECOINS 2.3 compatible`, and missions still disabled. The status capture
+does not include a post-removal balance check; the last observed balance of
+**1** was from the prior restart test.
