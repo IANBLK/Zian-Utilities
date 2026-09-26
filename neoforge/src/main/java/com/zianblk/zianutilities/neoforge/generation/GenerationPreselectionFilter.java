@@ -1,6 +1,5 @@
 package com.zianblk.zianutilities.neoforge.generation;
 
-import com.cobblemon.mod.common.api.spawning.SpawnBucket;
 import com.cobblemon.mod.common.api.spawning.detail.PokemonSpawnDetail;
 import com.cobblemon.mod.common.api.spawning.detail.SpawnDetail;
 import com.cobblemon.mod.common.api.spawning.influence.SpawningInfluence;
@@ -68,13 +67,13 @@ public final class GenerationPreselectionFilter {
         }
 
         @Override
-        public void affectBucketWeights(Map<SpawnBucket, Float> bucketWeights) {
+        public void affectBucketWeights(Map<String, Float> bucketWeights) {
             SpawnablePosition position = currentPosition;
             if (position == null || bucketWeights.isEmpty()) {
                 return;
             }
 
-            for (Map.Entry<SpawnBucket, Float> entry : bucketWeights.entrySet()) {
+            for (Map.Entry<String, Float> entry : bucketWeights.entrySet()) {
                 if (entry.getValue() <= 0.0F) {
                     continue;
                 }
