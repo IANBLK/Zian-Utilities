@@ -33,3 +33,12 @@ error, **stop the test**. Do not use a new claim ID or attempt another payment.
 Send the command output, claim UUID, and `latest.log` for analysis. No debit,
 item reward, or quest reward is exercised by this test.
 
+## Alpha.3 read-only baseline — PASS
+
+On the Youer 1.21.1 test server, the operator's in-game output showed the
+credit probe disabled, `AVECOINS 2.3 compatible`, the eight previously accepted
+managed currencies, `Saldo de avecoins:coppercoin: 0`, and
+`Generaciones activas: gen7`. No wallet mutation was requested. This is the
+before-balance for the one-coppercoin test; a successful first credit should
+show `1`, and duplicate/restart checks should remain `1`.
+
