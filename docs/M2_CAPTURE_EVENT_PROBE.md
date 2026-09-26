@@ -26,3 +26,18 @@ Stop the test if startup fails or a capture logs the wrong player, species, or
 generation. This probe does not prove quest progress persistence or reward
 delivery. Those remain disabled until separate tests cover them.
 
+## First Youer capture observation — PASS for event delivery
+
+The operator supplied one console line from the alpha.4 Youer test at 22:05:24:
+
+```text
+[ZIAN-QUEST-PROBE] event=capture playerUuid=<operator> species=cobblemon:yungoos generations=gen7
+```
+
+The player UUID matched the operator previously observed on this test server.
+The probe resolved Yungoos to gen7. This establishes that one Cobblemon
+capture event reached the listener with a player, species and generation on
+Youer. The supplied line alone does not establish that this was a natural
+encounter, prove that only one line was emitted for the capture, or verify the
+probe is silent after the startup flag is removed. No quest progress or reward
+was created by this probe.
