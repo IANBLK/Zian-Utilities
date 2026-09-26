@@ -62,3 +62,19 @@ The supplied evidence supports a single successful capture and persistence
 across a normal restart. It does not show a separate AVECOINS balance check,
 a second capture after completion, an abrupt kill, or the trial flag removed.
 Player network addresses from the console are omitted here.
+
+## Second capture and unchanged wallet — PASS (operator report)
+
+After the normal restart, the operator reported capturing a second Pokémon,
+Mudbray. In-game output before and after that capture showed the same trial
+assignment `7e125e5f-6f97-45ef-829a-1291eb7ce09f` at `1/1 COMPLETADO`
+with the original `cobblemon:komala` species. The visible
+`avecoins:coppercoin` balance was **1** on repeated reads. The console
+transcript records the status and balance commands; it does not log this
+second capture because the trial listener logs only the transition to
+`COMPLETED`. The player identified Mudbray as the second captured Pokémon.
+
+This supports no additional trial progress and no wallet credit from the
+second capture on the Youer test server. Disabling the startup flag and
+confirming the trial command is unavailable after restart is the final
+operational cleanup check.
