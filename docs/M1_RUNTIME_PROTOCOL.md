@@ -3,31 +3,39 @@
 This document is the execution sheet for issue #10. Automated compilation is not
 runtime acceptance. The matrix must be executed on a real game/server runtime.
 
-## Frozen baseline
+## Current final-validation baseline
 
 ```text
 Minecraft: 1.21.1
 Java: 21
 NeoForge baseline: 21.1.251
 Cobblemon baseline: 1.8.1+1.21.1
-Zian Utilities baseline commit: acb47642c9e23c99aff98e75575e328f03d6f928
+Zian Utilities implementation baseline: 95c64f42f96b0afc2adf7db747344ac90f4c0c72
+Validation tracking baseline: main after PR #36
 ```
+
+The implementation baseline is the PR #35 merge that contains the validated
+Fishing/Poké Snack bucket fix. PR #36 only refreshed validation documentation and
+did not change runtime behavior.
 
 Run NeoForge first. Do not mark Youer accepted until the NeoForge baseline has
 passed the required M1 scenarios.
 
 ## Diagnostic launch flags
 
-For the validation build, enable:
+For the validation build, enable only the flags required by the scenario being
+recorded. For the remaining natural-spawn/diagnostic validation, use:
 
 ```text
 -Dzianutilities.runtimeTestNatural=true
--Dzianutilities.runtimeTestFishing=true
--Dzianutilities.runtimeTestPokeSnack=true
 -Dzianutilities.runtimeTestFinalBarrier=true
 ```
 
-Remove these flags after acceptance testing. They are intentionally noisy.
+Fishing and Poké Snack focused runtime validation already passed on the current
+implementation baseline. Do not repeat those noisy diagnostics unless a later
+code change touches their spawn-selection path.
+
+Remove diagnostic flags after acceptance testing. They are intentionally noisy.
 
 ## Required order
 
@@ -41,7 +49,77 @@ Remove these flags after acceptance testing. They are intentionally noisy.
 8. PERF-01 and PERF-02.
 9. Repeat the accepted core subset on Youer as YOUER-01 through YOUER-03.
 
-Habitat remains research-only for this milestone.
+Previously accepted scenarios do not need to be repeated unless a later code
+change affects their path. Habitat remains research-only for this milestone.
+
+## NAT-03: player-spawner cache timing
+
+`RUNTIME_TEST_MATRIX.md` defines NAT-03 as:
+
+> disable after player spawner already active -> blocked generation remains denied
+
+Purpose: prove that disabling a generation takes effect for **new natural spawn
+attempts even when Cobblemon's PlayerSpawner for the player is already active**.
+The test must not rely on restarting the world/server, moving to a fresh world,
+or recreating the player spawner after the disable command.
+
+### Preconditions
+
+- Environment: clean NeoForge 21.1.251 baseline.
+- Cobblemon: 1.8.1+1.21.1.
+- Zian Utilities: current final-validation build from `main`.
+- Start with one test generation enabled. Prefer a generation that produces
+  natural spawns reliably in the chosen biome.
+- Keep the player in one suitable loaded test area long enough to observe at
+  least one natural Pokémon from that enabled generation. This establishes that
+  the player's natural spawning pipeline is already active.
+- Enable `-Dzianutilities.runtimeTestNatural=true` for evidence. The final
+  barrier flag may also remain enabled for source classification evidence.
+
+### Actions
+
+1. Run `/zian generation active` and record the enabled generation.
+2. Stay in the same loaded test area until at least one **natural** spawn from
+   that generation is observed. Do not use `/givepokemon`, Fishing or Poké Snack
+   as the establishing spawn.
+3. Without restarting, leaving the world, changing dimension or deliberately
+   moving to fresh chunks, run `/zian generation disable <generation>`.
+4. Run `/zian generation active` again and confirm that generation is inactive.
+5. Remain in the same loaded area for a normal observation window. Existing
+   Pokémon that spawned before the disable are allowed to remain; NAT-03 judges
+   only new natural spawn attempts after the state change.
+6. Preserve `latest.log` covering the establishing natural spawn, disable
+   command, post-disable active-state output and post-disable natural-spawn
+   diagnostics.
+
+### Expected result
+
+- The generation state changes immediately without restart.
+- Pokémon that already existed before the disable are not removed.
+- No **new natural spawn** from the disabled generation succeeds after the
+  disable command.
+- Natural candidates from the disabled generation are denied by Generation
+  Control even though the player's Cobblemon PlayerSpawner was already active.
+- No recursive spawning, repeated-action loop, exception or server crash is
+  attributable to Zian Utilities.
+
+### PASS criteria
+
+Record NAT-03 as PASS only when all of the following are true:
+
+1. A natural spawn from the generation was observed before disabling it,
+   establishing an active PlayerSpawner path.
+2. The generation was disabled in-place with no restart/dimension reset.
+3. `/zian generation active` confirmed the new state.
+4. No post-disable natural spawn from that generation succeeded during the
+   observation window.
+5. The log contains enough natural-spawn evidence to distinguish post-disable
+   denied candidates from unrelated/admin/fishing/snack flows.
+6. No stop condition from this protocol occurred.
+
+If no useful natural spawn/candidate activity occurs after the disable, record
+`BLOCKED` rather than PASS and repeat in a more suitable biome/time. Absence of
+all spawn activity is not proof that the cache-timing guard worked.
 
 ## Result record
 
