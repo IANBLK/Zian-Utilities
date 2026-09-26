@@ -43,3 +43,20 @@ Generation Control fails to restore. Passing the preview validates
 generation filtering on Youer, not actual mission rotation or spawn-pool
 availability.
 
+## Alpha.6 Youer runtime preview — PASS
+
+The operator supplied an in-game capture from the Youer 1.21.1 test server:
+
+- With only gen7 active, `/zian quest plan` showed an unassigned
+  capture-any-active-generation preview for `gen7`; type objectives were
+  disabled.
+- After disabling gen7 and enabling gen1 and gen2, `/zian generation
+  active` showed `gen1, gen2`. The preview showed `gen1,gen2` and did not
+  offer gen7 or gen8.
+- The operator disabled gen1 and gen2, re-enabled gen7, and confirmed both
+  `/zian generation active` and the preview returned to gen7 only.
+
+This proves the read-only preview follows generation changes on the intended
+Youer server and that the original active-generation state was restored. No
+quest assignment, capture, reward, or type-filtered objective was exercised
+in this test.
