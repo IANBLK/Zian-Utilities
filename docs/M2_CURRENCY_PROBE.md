@@ -42,3 +42,28 @@ managed currencies, `Saldo de avecoins:coppercoin: 0`, and
 before-balance for the one-coppercoin test; a successful first credit should
 show `1`, and duplicate/restart checks should remain `1`.
 
+## Alpha.3 one-coppercoin test on Youer — PASS
+
+Tested on the Youer 1.21.1 test server with the alpha.3 build and
+`-Dzianutilities.rewardTestCreditEnabled=true`. Normal mission rewards stayed
+disabled. The previously recorded coppercoin balance was **0**.
+
+- At 21:27:43, the first `/zian reward testcredit` returned `CLAIMED` for
+  claim `777299f6-db3b-3a76-89d6-3f828533b206`; the in-game balance was **1**.
+- At 21:28:58, the second invocation used the same claim ID. The balance
+  remained **1**, and `/zian reward inspect` showed
+  `CLAIMED [copper=APPLIED]`.
+- Pterodactyl stopped the server normally at 21:30:20, including player and
+  world saves. Youer restarted with the same Java test flag. After login,
+  `/zian reward balance` showed **1** before a third invocation at 21:31:31.
+  The audit log again used the same claim ID and returned `CLAIMED`. The
+  subsequent balance remained **1**, and inspect still showed
+  `CLAIMED [copper=APPLIED]`.
+
+Evidence: the operator supplied the console transcript covering both starts,
+the normal stop, command timestamps, and audit entries, plus in-game captures
+showing the balances and inspect result. Player network addresses are omitted
+from this report. This proves one-credit delivery and duplicate suppression
+across a normal restart on this Youer test server. It does not exercise an
+abrupt process kill or the `RECOVERY_REQUIRED` path. After the test, remove
+the Java test flag and restart; retain the claim journal.
