@@ -1,0 +1,44 @@
+# Alpha.5 one-capture trial for Youer 1.21.1
+
+This is a deliberately limited server-side quest progress test. It accepts one
+capture for one operator, saves progress immediately in the world at
+`data/zianutilities/capture_trials/<player UUID>.properties`, and never pays a
+reward. Normal campaign, daily, and weekly quests remain disabled. The trial
+does not reset or create a second assignment for the same player.
+
+The code is off by default. It is active only when the Java startup includes
+`-Dzianutilities.questTrialEnabled=true` before `-jar`. The old capture
+probe and coppercoin credit flags must stay absent.
+
+## Controlled test
+
+1. Back up the Youer test world and stop the server normally. Replace alpha.4
+   with the alpha.5 Zian Utilities JAR. Keep just one Zian Utilities JAR.
+2. Add the trial flag to the startup command and start the server. Confirm
+   `[ZIAN-QUEST-TRIAL] capture=enabled rewards=disabled` appears once.
+3. As the operator in-game, run `/zian generation active`. With gen7 active,
+   run `/zian quest trial start`, then `/zian quest trial status`. Expect
+   the same assignment ID and `0/1 ACTIVO generaciones=gen7; sin recompensa`.
+   Starting again must return the same ID, without resetting progress.
+4. Capture one naturally encountered Gen7 Pokémon. The console should have
+   one `[ZIAN-QUEST-TRIAL] event=capture ... result=COMPLETED` line. Run
+   `/zian quest trial status`; expect `1/1 COMPLETADO` and the captured
+   species. Check that AVECOINS balance has not changed.
+5. Stop and restart normally with the same alpha.5 JAR and trial flag. Run
+   `/zian quest trial status` again; the assignment ID, `1/1`, and species
+   must persist. Another capture must leave the trial at `1/1`.
+6. Remove the trial flag and restart. The trial command should no longer be
+   available. Keep the saved trial file; do not delete it to rerun this test.
+
+If startup fails, the assignment cannot be saved, the wrong player/species is
+recorded, progress disappears after restart, or any reward/balance changes,
+stop the test and send the relevant console lines and command outputs. This
+trial is one capture only; it does not establish repeated quest rotation,
+automatic mission assignment, abrupt-crash durability, or reward delivery.
+
+The assignment snapshots the generations active when it starts. A capture
+counts only when its resolved generation is in that snapshot **and** is still
+enabled when the event is processed. Unknown-generation captures do not count.
+The capture event does not prove whether a Pokémon was naturally spawned, so
+the operator must use a naturally encountered Pokémon for this test.
+
