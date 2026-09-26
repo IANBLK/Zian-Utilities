@@ -3,6 +3,8 @@ package com.zianblk.zianutilities.neoforge.economy;
 import net.neoforged.fml.ModList;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -39,26 +41,58 @@ public final class AvecoinsContractProbe {
     static ProbeResult inspectLayout(Class<?> crafting, Class<?> store, Class<?> data)
         throws ReflectiveOperationException {
             Field managedField = crafting.getField("MANAGED_RESULTS");
+            if (!Modifier.isStatic(managedField.getModifiers())) {
+                return incompatible("MANAGED_RESULTS no es estático");
+            }
             Object managedValue = managedField.get(null);
             if (!(managedValue instanceof Set<?> managed)
-                || managed.stream().anyMatch(value -> !(value instanceof String))) {
-                return new ProbeResult(false, "MANAGED_RESULTS incompatible", List.of());
+                || managed.isEmpty()
+                || managed.stream().anyMatch(value -> !(value instanceof String text) || text.isBlank())) {
+                return incompatible("MANAGED_RESULTS incompatible");
             }
             List<String> currencies = managed.stream().map(String.class::cast).sorted().toList();
 
-            store.getMethod("get");
-            store.getMethod("save", data);
-            data.getMethod("copy");
-            data.getMethod("balance", UUID.class, String.class);
-            data.getMethod("balances", UUID.class);
+            var get = store.getMethod("get");
+            var save = store.getMethod("save", data);
+            var copy = data.getMethod("copy");
+            var balance = data.getMethod("balance", UUID.class, String.class);
+            var balances = data.getMethod("balances", UUID.class);
             data.getMethod("credit", UUID.class, String.class, long.class);
-            data.getMethod("debit", UUID.class, String.class, long.class);
-            int slots = data.getField("SLOT_COUNT").getInt(null);
-            int stackSize = data.getField("STACK_SIZE").getInt(null);
+            var debit = data.getMethod("debit", UUID.class, String.class, long.class);
+            if (!Modifier.isStatic(get.getModifiers())
+                || !data.isAssignableFrom(get.getReturnType())
+                || !Modifier.isStatic(save.getModifiers())
+                || !booleanType(save.getReturnType())
+                || !data.isAssignableFrom(copy.getReturnType())
+                || !longType(balance.getReturnType())
+                || !Map.class.isAssignableFrom(balances.getReturnType())
+                || !booleanType(debit.getReturnType())) {
+                return incompatible("firmas de cartera incompatibles");
+            }
+            Field slotsField = data.getField("SLOT_COUNT");
+            Field stackSizeField = data.getField("STACK_SIZE");
+            if (!Modifier.isStatic(slotsField.getModifiers())
+                || !Modifier.isStatic(stackSizeField.getModifiers())) {
+                return incompatible("estructura de cartera incompatible");
+            }
+            int slots = slotsField.getInt(null);
+            int stackSize = stackSizeField.getInt(null);
             if (slots != 27 || stackSize != 64) {
-                return new ProbeResult(false, "estructura de cartera incompatible", List.of());
+                return incompatible("estructura de cartera incompatible");
             }
             return new ProbeResult(true, "AVECOINS 2.3 compatible", currencies);
+    }
+
+    private static boolean booleanType(Class<?> type) {
+        return type == boolean.class || type == Boolean.class;
+    }
+
+    private static boolean longType(Class<?> type) {
+        return type == long.class || type == Long.class;
+    }
+
+    private static ProbeResult incompatible(String detail) {
+        return new ProbeResult(false, detail, List.of());
     }
 
     public record ProbeResult(boolean compatible, String detail, List<String> currencies) {
