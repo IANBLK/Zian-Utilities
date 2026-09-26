@@ -2,6 +2,7 @@ package com.zianblk.zianutilities.neoforge.quests;
 
 import com.mojang.brigadier.Command;
 import com.zianblk.zianutilities.core.generation.Generation;
+import com.zianblk.zianutilities.core.quests.CaptureEligibilityPlan;
 import com.zianblk.zianutilities.core.quests.CaptureTrial;
 import com.zianblk.zianutilities.neoforge.generation.NeoForgeGenerationStateStore;
 import net.minecraft.commands.CommandSourceStack;
@@ -46,14 +47,15 @@ public final class CaptureTrialCommands {
         try {
             Set<Generation> enabled = new NeoForgeGenerationStateStore(source.getServer())
                 .load().getEnabled();
-            if (enabled.isEmpty()) {
+            CaptureEligibilityPlan capturePlan = new CaptureEligibilityPlan(enabled);
+            if (!capturePlan.getAssignable()) {
                 source.sendSuccess(
                     () -> Component.literal("Vista previa de captura: PAUSADA; no hay generaciones activas."),
                     false
                 );
                 return Command.SINGLE_SUCCESS;
             }
-            String generations = generationIds(enabled);
+            String generations = generationIds(capturePlan.getEnabledGenerations());
             source.sendSuccess(
                 () -> Component.literal(
                     "Vista previa (sin asignar): captura 1 Pokémon de cualquier generación activa ("
