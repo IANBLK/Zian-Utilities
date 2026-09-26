@@ -18,7 +18,7 @@ Runtime evidence has already been collected on the Aventura 2 Youer 1.21.1 test 
 | Poké Snack | PASS | PASS | PR #35 focused NeoForge runtime validation passed, including simultaneous Fishing + Poké Snack operation and generation filtering. |
 | Safety exclusions | PARTIAL PASS | PARTIAL PASS | Existing Pokémon, party send, PC withdraw, /givepokemon, battle, evolution and Zian GTS receive were exercised without Generation Control interference. Breeding remains N/A when no breeding system is installed. |
 | Diagnostics | PASS | PASS | DIAG-01 passed on Youer and a NeoForge integrated-server run with debug off; DIAG-02 closed with accepted candidate/source evidence and 70,665/70,665 server-thread evaluations. |
-| Performance sanity | OBSERVED OK | PARTIAL PASS | PERF-01 PASS on Youer with two players and 20 TPS across supplied spark snapshots; PERF-02 allocation remains unmeasured. |
+| Performance sanity | OBSERVED OK | PARTIAL PASS | PERF-01 and PERF-02 PASS on Youer: two-player 20 TPS sanity plus a three-minute allocation profile with only 0.01% of sampled allocations directly attributed to Zian Utilities. Pure-NeoForge multi-player performance was not measured. |
 | Habitat research | NOT REQUIRED | NOT REQUIRED | Research-only and non-blocking for M1. |
 | Youer compatibility | N/A | PARTIAL PASS | Commands, natural spawning, Fishing, Poké Snack and Zian GTS coexistence have been exercised. Formal YOUER-01..03 is the final compatibility subset after NeoForge acceptance. |
 
@@ -129,11 +129,13 @@ In `latest (1).log`, player IANBLK joined at 04:50:32 and ZIANBLK at 04:52:11; b
 
 Result: `PERF-01 PASS on Youer` for the matrix's two-player natural-spawn sanity criterion. This does not establish PERF-02 allocation behavior or a corresponding NeoForge multi-player performance result.
 
-## PERF-02 status
+## PERF-02 Youer allocation evidence
 
-The operator supplied a Gen7-only screenshot from the same two-player session, showing 20.0 TPS during the blocked-generation configuration. This is favorable tick evidence, but no allocation profile or memory/GC trend was supplied. The prior 70,665/70,665 server-thread evaluations establish thread affinity rather than allocation rate.
+The earlier Gen7-only snapshot showed 20.0 TPS. The operator then supplied the [spark allocation profile](https://spark.lucko.me/oizamoD3ge) and `latest (3).log` (SHA-256 `18E1CEE33299BDF23A9F5157D86100F1152B74A97CC3FD45B539094C5D2773AF`). The operator confirmed that only Gen7 was active and natural Pokemon appeared during this run. This configuration exercised generation filtering; the server log itself does not record active-generation chat responses or a count of denied candidates.
 
-Status: `PERF-02 TICK SANITY OBSERVED / ALLOCATION EVIDENCE PENDING`. A short spark allocation profile during repeated denied candidates, or equivalent memory/GC evidence, is still required for formal closure.
+The profiler ran from 05:15:10 to 05:18:10 (viewer: 3m 1s / 3,600 ticks) with two connected players. It was an async allocation profile sampled at 512 KB. The viewer reported 20.00 TPS, 32.2 ms 95th-percentile MSPT, 2.9 GB / 4 GB process memory at completion, three G1 Young collections during the profile averaging 44.7 ms, two G1 Concurrent collections averaging 10.5 ms, and zero G1 Old collections. In the spark Mods view, `zianutilities` accounted for 0.01% of sampled allocations (one 512 KB sample on the server thread), under `NaturalSpawnGuard.onEntitySpawn` and a debug logging formatting path. No sustained TPS loss or Zian exception appeared in the log. The Java-agent warning at profile completion came from spark's instrumentation and is not a Zian error.
+
+Result: `PERF-02 PASS on Youer` for the short generation-denial allocation-sanity gate. This sampled profile is evidence against a visible allocation hotspot in the tested window; it does not prove zero allocations, quantify all indirect allocations, or establish long-duration memory stability. The earlier 70,665/70,665 server-thread audit is separate thread-affinity evidence, not an allocation measurement.
 
 ## Remaining evidence audit
 
@@ -143,7 +145,7 @@ This audit separates runtime behavior already observed from the specific proof r
 |---|---|---|
 | PERSIST-03 | Correct Gen2 + Gen7 recovery was previously observed. The new Stop-then-Kill attempt also restarted cleanly. | Both supplied logs show normal saves. Stop-then-Kill did not establish an abnormal termination; direct termination evidence is still missing. |
 | PERF-01 | PASS on Youer: two players in separate natural-spawn areas for about nine minutes 32 seconds; supplied spark snapshots show 20.0 TPS and no sustained tick degradation. | No Youer rerun required for this matrix case unless the relevant runtime path changes. |
-| PERF-02 | Gen7-only spark snapshot retained 20.0 TPS; 70,665/70,665 preselection evaluations stayed on the server thread. | Neither tick rate nor thread affinity measures allocation. A short allocation profile or equivalent memory/GC trend under denied candidates remains required. |
+| PERF-02 | PASS on Youer: three-minute spark allocation profile with only Gen7 active, natural appearances, two players, 20 TPS and 0.01% of sampled allocations directly attributed to Zian Utilities. | No Youer rerun required for this short allocation-sanity case unless the relevant runtime path changes. This is not a long-duration leak test. |
 | YOUER-01 | Enable/disable/active/status/list and live mutation were exercised on Youer; the supplied log also shows a successful Gen2 disable and active-state commands. | Map the accepted command observations and responses to the formal case once the NeoForge baseline is accepted. The supplied server log does not contain chat responses for `active`. |
 | YOUER-02 | Youer natural generation filtering was operator-observed; Fishing and Poké Snack both have accepted functional observations, including their simultaneous use. | Map the accepted natural, Fishing and Poké Snack results to the formal Youer case after NeoForge acceptance; rerun only a path whose evidence cannot be recovered or whose implementation changed. |
 | YOUER-03 | Existing Pokémon and Zian GTS receive were previously exercised without Generation Control interference. | Preserve or reference the accepted GTS transaction result alongside active generation state for formal case closure. A new transaction is needed only if that evidence cannot be recovered. |
@@ -151,8 +153,7 @@ This audit separates runtime behavior already observed from the specific proof r
 ## Remaining required gates before M1 release-candidate acceptance
 
 1. For `PERSIST-03`, obtain direct abnormal-termination evidence on a disposable test copy. The available panel Stop-then-Kill path produced normal saves; do not repeat that path as proof.
-2. For `PERF-02`, capture a short allocation profile or equivalent memory/GC trend under repeated denied candidates. `PERF-01` is closed on Youer.
-3. After NeoForge acceptance, map the already observed Youer command, spawn and GTS behavior to `YOUER-01` through `YOUER-03`; rerun only an unproven path.
+2. After NeoForge acceptance, map the already observed Youer command, spawn and GTS behavior to `YOUER-01` through `YOUER-03`; rerun only an unproven path. `PERF-01` and `PERF-02` are closed on Youer.
 
 Do not repeat already accepted natural-spawn, Fishing, Poké Snack or PERSIST-02 tests unless a later code change touches their relevant paths.
 
