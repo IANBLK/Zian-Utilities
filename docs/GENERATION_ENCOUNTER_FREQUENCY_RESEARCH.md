@@ -1,127 +1,102 @@
 # Generation-filter encounter frequency research
 
-Status: root cause narrowed; unsafe global-bucket prototype rejected; no gameplay patch applied yet.
+Status: IMPLEMENTED AND RUNTIME VALIDATED on the focused NeoForge baseline; pending final PR review/merge.
 
 ## Reported symptom
 
-With generation filtering enabled, some generations (for example Gen2 in the observed NeoForge test) can produce many fishing attempts ending in Cobblemon's no-bite result, while another enabled generation such as Gen7 can produce encounters much more often in the same general workflow. Poké Snack frequency can show the same class of imbalance.
+With generation filtering enabled, some generations (notably Gen2 in the observed NeoForge test) could produce many fishing attempts ending in Cobblemon's no-bite result, while another enabled generation such as Gen7 produced encounters much more often in the same workflow. Poké Snack could suffer the same class of imbalance.
 
-The server owner also intends to reduce normal world Pokémon spawning by about 60%. Generation Control must not compensate for that world-spawn tuning. Fishing and Poké Snack are deliberate player interactions and should not receive an accidental second penalty purely because disabled generations were removed.
+Aventura 2 also plans to reduce normal world Pokémon spawning by about 60%. Generation Control must not compensate for that world-spawn tuning. Fishing and Poké Snack are deliberate player interactions and should not receive an accidental second penalty purely because disabled generations were removed.
 
-## Current Zian behavior
+## Root cause
 
-`GenerationPreselectionFilter` contributes a `SpawningInfluence` to Fishing and Poké Snack and overrides only `affectSpawnable`.
+Cobblemon chooses among rarity buckets while Zian's generation filter removes disabled-generation candidates from the concrete local candidate set. A bucket that originally had candidates can therefore become empty for the exact fishing/snack position after generation filtering.
 
-It does not alter:
+That creates this outcome:
 
-- spawn detail weights;
-- bucket weights;
-- bait effects;
-- rarity;
-- shiny odds;
-- level ranges;
-- spawn actions.
+1. Cobblemon prepares bucket weights for the interaction.
+2. The exact SpawnablePosition supplies biome/time/weather/fishing/snack context.
+3. Zian filters disabled-generation candidates.
+4. Some buckets can have zero locally valid enabled-generation candidates.
+5. If an empty bucket remains eligible for the roll, selection can produce no spawn action.
+6. Fishing reports the normal no-bite result; Poké Snack can likewise produce no Pokémon.
 
-Blocked generations are therefore removed from candidate eligibility, while Cobblemon retains control of bucket selection and weighted selection.
+Different generations distribute their locally valid species differently across buckets, so the extra no-encounter probability can be strongly generation-dependent.
 
-## Root-cause hypothesis
+## Rejected approaches
 
-Cobblemon chooses a rarity bucket independently from Zian's generation filter. Candidate filtering happens when the selected bucket is evaluated for the concrete spawnable position.
+A blind species-weight multiplier was rejected because it cannot repair an empty selected bucket and can distort relative Pokémon rarity.
 
-This creates a valid empty-bucket outcome:
+Increasing natural spawning is out of scope because Aventura 2 intentionally plans a lower global Pokémon spawn rate.
 
-1. Cobblemon rolls a bucket.
-2. The current biome/time/fishing or snack conditions produce a local candidate set.
-3. Zian removes candidates belonging to disabled generations.
-4. The selected bucket can now contain zero eligible candidates.
-5. Selection returns no spawn action.
-6. Fishing reports the normal no-bite result; a Poké Snack pass can likewise produce no Pokémon.
+Unbounded rerolls were rejected because they can distort probability, create recursion/performance risk, and make addon compatibility harder to reason about.
 
-Different generations have different species distributions across common/uncommon/rare/ultra-rare buckets and different local conditions, so the probability that a rolled bucket becomes empty is generation-dependent.
+An earlier global-bucket prototype was also rejected before runtime testing because it could only determine whether an enabled generation existed somewhere in a bucket, not whether an enabled candidate was valid for the exact SpawnablePosition.
 
-This explains why the generation restriction can be correct while encounter frequency still differs sharply between generations.
+## Implemented solution
 
-## Why a blind weight multiplier is rejected
+`GenerationPreselectionFilter.GenerationInfluence` now keeps the exact `SpawnablePosition` supplied by Cobblemon through `affectSpawnablePosition(...)`.
 
-Multiplying remaining Pokémon weights cannot repair an empty selected bucket. It also risks changing relative species rarity.
+Before Cobblemon rolls the bucket, `affectBucketWeights(...)` evaluates each positive-weight bucket with Cobblemon's own `getMatchingSpawns(bucket, position)` for that exact position and then applies the existing generation `affectSpawnable` decision.
 
-Increasing natural spawning is explicitly out of scope because Aventura 2 intentionally plans a lower global Pokémon spawn rate.
+Buckets with no locally valid enabled-generation candidate receive weight 0. Remaining positive bucket weights are normalized while preserving their relative proportions.
 
-Retry loops are also rejected because they can distort bucket rarity, create recursion/performance problems, and make integration with Cobblemon/addons harder to reason about.
-
-## Required solution semantics
-
-A production fix should:
-
-1. preserve the configured global natural-spawn reduction;
-2. preserve biome, time, weather, lure/bait, rod and other Cobblemon conditions;
-3. preserve relative Pokémon weights inside an eligible bucket;
-4. preserve Cobblemon's relative rarity-bucket weights among buckets that actually contain an eligible enabled-generation candidate;
-5. exclude buckets that are empty only because no enabled-generation candidate is valid for the concrete interaction;
-6. return no encounter when every bucket is genuinely empty;
-7. avoid manual spawn creation and unbounded rerolls;
-8. keep the existing PRE guards as defense-in-depth.
-
-The desired operation is therefore **conditional bucket renormalization**, not species-weight inflation.
-
-Example:
+Conceptually:
 
 ```text
-Cobblemon fishing bucket weights
-common      83.25
-uncommon    11.25
-rare         4.125
-ultra-rare   1.375
-
-For this exact cast, after normal conditions + generation filtering:
-common       empty
-uncommon     valid
-rare         valid
-ultra-rare   empty
-
-Desired roll:
-renormalize only uncommon + rare using their existing relative weights.
-Do not promote individual species and do not invent candidates.
+Cobblemon conditions + exact SpawnablePosition
+                    |
+                    v
+          original bucket weights
+                    |
+                    v
+       getMatchingSpawns(bucket, position)
+                    |
+                    v
+          generation eligibility filter
+                    |
+          +---------+---------+
+          |                   |
+       empty                valid
+      weight 0          keep old weight
+          |                   |
+          +---------+---------+
+                    |
+                    v
+        normalize remaining buckets
+                    |
+                    v
+        Cobblemon normal selection
 ```
 
-## Exact-artifact evidence
+This does not modify individual Pokémon weights, shiny odds, level ranges, bait/rod conditions, or natural-spawn frequency. Existing PRE guards remain defense-in-depth.
 
-The repository workflow `Cobblemon API evidence` is extended on this research branch to dump the exact resolved Cobblemon 1.8.1 NeoForge artifact for:
+## CI evidence
 
-- `Spawner`;
-- `FlatSpawnablePositionWeightedSelector`;
-- `SpawnablePosition`;
-- `PokeRodFishingBobberEntity`;
-- `BucketNormalizingInfluence`;
-- `BucketMultiplyingInfluence`;
-- Fishing/Poké Snack factories and `SpawningInfluence`.
+The corrected local-position implementation compiled successfully against the project's Cobblemon 1.8.1 / NeoForge baseline in CI #179 at commit `2b0c8000dc2c170b6f7bb6240da5ae16bfe072b3`.
 
-Do not implement a production hook until this exact 1.8.1 bytecode confirms a stable interception point that can renormalize eligible buckets without replacing Cobblemon's selector or spawn pools.
+The repository's Cobblemon API evidence workflow was also extended during this investigation to inspect the exact resolved 1.8.1 artifact for `Spawner`, `FlatSpawnablePositionWeightedSelector`, `SpawnablePosition`, `PokeRodFishingBobberEntity`, `BucketNormalizingInfluence`, `BucketMultiplyingInfluence`, Fishing/Poké Snack factories, and `SpawningInfluence`.
 
-## Claude review question
+## Runtime evidence
 
-If an independent review is requested, provide this document plus the exact-artifact javap output and ask:
+Focused runtime validation was performed on the clean NeoForge baseline using Cobblemon 1.8.1 and the CI #179 Zian Utilities build.
 
-> In Cobblemon 1.8.1, what is the narrowest stable extension point that lets a side-mod exclude rarity buckets with zero locally valid candidates after a generation `affectSpawnable` filter, then renormalize the remaining bucket weights, without replacing the spawn pool/selector, rerolling SpawnActions, or changing relative species weights? Please identify any thread-safety, recursion, compatibility, or probability-distribution risks.
+Observed results:
 
-## Decision
+- Gen2 fishing encounter frequency improved substantially compared with the pre-fix run.
+- Fishing still produced legitimate no-bite outcomes; the patch does not guarantee an encounter on every cast.
+- Gen2 -> Gen7 generation filtering continued to block disabled generations correctly.
+- Gen1 was also exercised successfully afterward.
+- Poké Snack was active near the player during fishing and continued to produce Pokémon while the fishing tests ran.
+- Poké Snack respected the active-generation filtering in the observed run.
+- Fishing and Poké Snack operated simultaneously without observed interference.
+- No stuck fishing bobber, recursion, Zian-attributed exception, crash, or obvious duplication was observed.
+- Normal world-spawn tuning was not changed by this patch.
 
-The observed frequency difference is plausible and technically explained by bucket selection preceding/being independent from generation-filtered local candidate availability. The correct direction is conditional bucket renormalization. Implementation remains blocked on confirming the exact Cobblemon 1.8.1 interception surface; no speculative gameplay change should be merged before that evidence is reviewed.
+## Acceptance decision
 
+Focused Fishing and Poké Snack validation: PASS.
 
-## Prototype result
+The implementation solves the observed generation-dependent empty-bucket penalty without turning every cast/snack cycle into a guaranteed encounter and without intentionally changing individual species rarity.
 
-An experimental `affectBucketWeights` implementation was compiled successfully in CI #171, but it was deliberately removed before runtime testing.
-
-Reason: `affectBucketWeights` receives only the bucket-weight map. A naive implementation can determine whether an enabled generation exists somewhere in a bucket, but it cannot prove that the bucket has an enabled-generation candidate that is valid for the **exact local SpawnablePosition** (biome, time, weather, fishing context, bait, and other conditions). Keeping that prototype would therefore hide some globally empty buckets but would not solve the reported local empty-bucket case reliably.
-
-The prototype was reverted rather than handing a misleading build to runtime testers.
-
-### Refined requirement
-
-The intervention point must have both:
-
-- the mutable bucket weights before the bucket roll; and
-- the exact local `SpawnablePosition` (or an equivalent context sufficient to run Cobblemon's own matching logic).
-
-If Cobblemon 1.8.1 exposes no stable public extension point with both pieces, prefer a narrowly-scoped compatibility hook/mixin at the bucket-choice boundary over global spawn-pool mutation, species-weight inflation, or unbounded rerolls.
+Before release promotion, retain the normal M1 persistence/diagnostic/performance gates and the broader Youer compatibility pass. This focused result closes the encounter-frequency regression itself; it does not replace those unrelated M1 gates.
