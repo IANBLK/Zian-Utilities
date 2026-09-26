@@ -11,15 +11,19 @@ Java: 21
 NeoForge baseline: 21.1.251
 Cobblemon baseline: 1.8.1+1.21.1
 Zian Utilities implementation baseline: 95c64f42f96b0afc2adf7db747344ac90f4c0c72
-Validation tracking baseline: main after PR #36
+Validation tracking baseline: main after PR #38
 ```
 
 The implementation baseline is the PR #35 merge that contains the validated
-Fishing/Poké Snack bucket fix. PR #36 only refreshed validation documentation and
-did not change runtime behavior.
+Fishing/Poké Snack bucket fix. PR #36 refreshed validation documentation;
+PR #38 added accepted NAT-03 runtime evidence without changing runtime behavior.
 
-Run NeoForge first. Do not mark Youer accepted until the NeoForge baseline has
-passed the required M1 scenarios.
+Deployment target: the operator's Minecraft 1.21.1 Youer server. Prioritize
+observed behavior and acceptance on that environment. Reuse the focused clean
+NeoForge results as a regression reference, but do not require a duplicate
+pure-NeoForge abnormal-stop test merely to accept the Youer deployment when the
+same persistence case has direct Youer Kill/recovery evidence. Keep the broader
+cross-loader M1 release-candidate gate separate from Youer deployment acceptance.
 
 ## Diagnostic launch flags
 
@@ -37,17 +41,20 @@ code change touches their spawn-selection path.
 
 Remove diagnostic flags after acceptance testing. They are intentionally noisy.
 
-## Required order
+## Cross-loader M1 matrix order
+
+This is the broader matrix sequence. For the intended Youer deployment, use the
+accepted Youer results and its remaining focused evidence gaps directly.
 
 1. GEN-01 through GEN-10.
 2. PERSIST-01 and PERSIST-03. PERSIST-02 is also required on the production-like scheduled-restart environment.
 3. NAT-01 through NAT-03.
 4. FISH-01 and FISH-02.
 5. SNACK-01 and SNACK-02.
-6. SAFE-01 through SAFE-08.
+6. SAFE-01 through SAFE-07. SAFE-08 is N/A because Zian GTS is a separate mod.
 7. DIAG-01 and DIAG-02.
 8. PERF-01 and PERF-02.
-9. Repeat the accepted core subset on Youer as YOUER-01 through YOUER-03.
+9. Repeat the accepted core subset on Youer as YOUER-01 and YOUER-02. YOUER-03 is N/A for the external GTS mod.
 
 Previously accepted scenarios do not need to be repeated unless a later code
 change affects their path. Habitat remains research-only for this milestone.
@@ -150,11 +157,20 @@ Stop the matrix and preserve logs/world before continuing if any test shows:
 - Pokémon duplication;
 - item or currency duplication;
 - generation state corruption;
-- party/PC/admin/battle/evolution/breeding/GTS interference;
+- party/PC/admin/battle/evolution/breeding interference attributable to Zian Utilities;
 - repeated or recursive spawn actions;
 - server crash attributable to Zian Utilities.
 
-## M1 release-candidate gate
+## Acceptance gates
 
-M1 may move to release-candidate status only after the required NeoForge baseline
-passes and the Youer core subset shows no compatibility regression.
+For the intended Youer server deployment, evaluate the Youer results directly:
+commands and live generation state, natural/Fishing/Poké Snack filtering,
+persistence including direct Kill/recovery, debug-off logging, and
+performance sanity. Preserve existing accepted evidence and rerun only an
+unproven or changed path. The Youer direct-Kill recovery closes that environment's
+PERSIST-03 case; the older pure-NeoForge stop-mode archive is not a blocker for
+this deployment decision.
+
+For a broader cross-loader M1 release-candidate claim, retain the original
+NeoForge-first baseline requirement and record any remaining NeoForge evidence
+separately. Neither track is accepted automatically by compilation alone.
