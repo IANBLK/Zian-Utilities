@@ -51,10 +51,10 @@ accepted Youer results and its remaining focused evidence gaps directly.
 3. NAT-01 through NAT-03.
 4. FISH-01 and FISH-02.
 5. SNACK-01 and SNACK-02.
-6. SAFE-01 through SAFE-08.
+6. SAFE-01 through SAFE-07. SAFE-08 is N/A because Zian GTS is a separate mod.
 7. DIAG-01 and DIAG-02.
 8. PERF-01 and PERF-02.
-9. Repeat the accepted core subset on Youer as YOUER-01 through YOUER-03.
+9. Repeat the accepted core subset on Youer as YOUER-01 and YOUER-02. YOUER-03 is N/A for the external GTS mod.
 
 Previously accepted scenarios do not need to be repeated unless a later code
 change affects their path. Habitat remains research-only for this milestone.
@@ -157,15 +157,15 @@ Stop the matrix and preserve logs/world before continuing if any test shows:
 - Pokémon duplication;
 - item or currency duplication;
 - generation state corruption;
-- party/PC/admin/battle/evolution/breeding/GTS interference;
+- party/PC/admin/battle/evolution/breeding interference attributable to Zian Utilities;
 - repeated or recursive spawn actions;
 - server crash attributable to Zian Utilities.
 
 ## Acceptance gates
 
 For the intended Youer server deployment, evaluate the Youer results directly:
-commands and live generation state, natural/Fishing/Poké Snack filtering, GTS
-coexistence, persistence including direct Kill/recovery, debug-off logging, and
+commands and live generation state, natural/Fishing/Poké Snack filtering,
+persistence including direct Kill/recovery, debug-off logging, and
 performance sanity. Preserve existing accepted evidence and rerun only an
 unproven or changed path. The Youer direct-Kill recovery closes that environment's
 PERSIST-03 case; the older pure-NeoForge stop-mode archive is not a blocker for
