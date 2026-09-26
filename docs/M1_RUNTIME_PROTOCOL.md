@@ -18,8 +18,12 @@ The implementation baseline is the PR #35 merge that contains the validated
 Fishing/Poké Snack bucket fix. PR #36 only refreshed validation documentation and
 did not change runtime behavior.
 
-Run NeoForge first. Do not mark Youer accepted until the NeoForge baseline has
-passed the required M1 scenarios.
+Deployment target: the operator's Minecraft 1.21.1 Youer server. Prioritize
+observed behavior and acceptance on that environment. Reuse the focused clean
+NeoForge results as a regression reference, but do not require a duplicate
+pure-NeoForge abnormal-stop test merely to accept the Youer deployment when the
+same persistence case has direct Youer Kill/recovery evidence. Keep the broader
+cross-loader M1 release-candidate gate separate from Youer deployment acceptance.
 
 ## Diagnostic launch flags
 
@@ -154,7 +158,16 @@ Stop the matrix and preserve logs/world before continuing if any test shows:
 - repeated or recursive spawn actions;
 - server crash attributable to Zian Utilities.
 
-## M1 release-candidate gate
+## Acceptance gates
 
-M1 may move to release-candidate status only after the required NeoForge baseline
-passes and the Youer core subset shows no compatibility regression.
+For the intended Youer server deployment, evaluate the Youer results directly:
+commands and live generation state, natural/Fishing/Poké Snack filtering, GTS
+coexistence, persistence including direct Kill/recovery, debug-off logging, and
+performance sanity. Preserve existing accepted evidence and rerun only an
+unproven or changed path. The Youer direct-Kill recovery closes that environment's
+PERSIST-03 case; the older pure-NeoForge stop-mode archive is not a blocker for
+this deployment decision.
+
+For a broader cross-loader M1 release-candidate claim, retain the original
+NeoForge-first baseline requirement and record any remaining NeoForge evidence
+separately. Neither track is accepted automatically by compilation alone.
