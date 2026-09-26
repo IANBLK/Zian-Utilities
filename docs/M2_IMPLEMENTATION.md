@@ -36,3 +36,13 @@ reads a saved claim journal. Both commands require operator level 2; no claim
 or economy mutation command is registered yet. See `M2_YOUER_PROBE.md` for the
 test-server procedure.
 
+The next controlled test build (`alpha.3`) includes a reflective AVECOINS 2.3
+adapter and a currency reward bridge. Normal quest rewards remain disabled.
+`/zian reward balance` reads the operator's coppercoin balance. A single
+`/zian reward testcredit` command is available only with the startup property
+`-Dzianutilities.rewardTestCreditEnabled=true` and operator level 3. It credits
+one coppercoin to the executing operator using a stable per-player claim ID;
+repeating it, including after restart, must not issue another credit. The
+claim journal is written before calling AVECOINS, and uncertain results block
+automatic replay. See `M2_CURRENCY_PROBE.md` before enabling the test command.
+
