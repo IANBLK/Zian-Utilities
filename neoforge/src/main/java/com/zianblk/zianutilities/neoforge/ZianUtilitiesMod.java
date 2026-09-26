@@ -7,6 +7,7 @@ import com.zianblk.zianutilities.neoforge.generation.GenerationPreselectionFilte
 import com.zianblk.zianutilities.neoforge.generation.NaturalSpawnGuard;
 import com.zianblk.zianutilities.neoforge.generation.PokeSnackSpawnGuard;
 import com.zianblk.zianutilities.neoforge.rewards.RewardCommands;
+import com.zianblk.zianutilities.neoforge.quests.CaptureEventProbe;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 
@@ -22,6 +23,7 @@ public final class ZianUtilitiesMod {
         FishingSpawnGuard.install();
         PokeSnackSpawnGuard.install();
         FinalSpawnDiagnostics.install();
+        CaptureEventProbe.install();
     }
 }
 
