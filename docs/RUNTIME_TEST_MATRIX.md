@@ -2,8 +2,8 @@
 
 Target environments:
 
-1. NeoForge 1.21.1
-2. Youer 1.21.1 after NeoForge validation
+1. Youer 1.21.1 — intended server deployment
+2. NeoForge 1.21.1 — separate cross-loader regression baseline
 
 Cobblemon baseline:
 
@@ -56,14 +56,14 @@ Cobblemon baseline:
 | SAFE-05 | Battle | battle Pokémon entities | unaffected |
 | SAFE-06 | Evolution | evolve Pokémon | unaffected |
 | SAFE-07 | Breeding | obtain Pokémon/egg through breeding | unaffected |
-| SAFE-08 | GTS | receive Pokémon through Zian GTS | unaffected |
+| SAFE-08 | External integration (N/A) | Zian GTS is a separate mod | excluded from Zian Utilities M1 acceptance |
 | DIAG-01 | Logging | blocked spawn with debug off | no spam |
 | DIAG-02 | Logging | debug on | useful source/species/reason data |
 | PERF-01 | Load | multiple players spawning naturally | no obvious tick degradation |
 | PERF-02 | Load | repeated denied generations | resolver/filter does not allocate excessively |
 | YOUER-01 | Youer | repeat core command tests | behavior matches NeoForge |
 | YOUER-02 | Youer | repeat natural/fishing/snack tests | behavior matches NeoForge |
-| YOUER-03 | Youer | GTS + Generation Control | no cross-system interference |
+| YOUER-03 | External integration (N/A) | Zian GTS is a separate mod | excluded from Zian Utilities Youer acceptance |
 
 ## Habitat acceptance
 
@@ -98,6 +98,6 @@ A first usable Milestone 1 candidate should not be considered ready until:
 - Natural spawning passes allowed/denied tests.
 - Fishing passes allowed/denied tests.
 - Poké Snack passes allowed/denied tests.
-- Safety tests confirm party/PC/admin/GTS/etc. are not blocked.
+- Safety tests confirm Zian Utilities does not interfere with existing Pokémon, party/PC and admin paths. External Zian GTS transactions are not an M1 acceptance gate.
 - No known duplication or repeated-action issue is observed.
-- NeoForge baseline passes before Youer-specific approval.
+- The intended Youer server passes its deployment cases. Track the NeoForge baseline separately for a broader cross-loader release claim.
