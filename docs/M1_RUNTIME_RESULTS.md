@@ -12,7 +12,7 @@ Runtime evidence has already been collected on the Aventura 2 Youer 1.21.1 test 
 | Group | NeoForge | Youer | Notes |
 |---|---|---|---|
 | Generation state/commands | PARTIAL PASS | PARTIAL PASS | Enable/disable/status/list and hot generation mutation have been exercised. Do not repeat broad exploratory testing; final baseline only needs enough command/state coverage to support the remaining gates. |
-| Persistence | PARTIAL PASS | PARTIAL PASS | PERSIST-02 PASS: state survived a normal restart and remained writable afterward. PERSIST-03 functional recovery was observed after a forced stop, but formal abrupt-stop evidence remains pending. |
+| Persistence | PARTIAL PASS | PARTIAL PASS | PERSIST-02 PASS after normal restart. PERSIST-03 PASS on Youer after direct Kill and Gen7 recovery; the earlier NeoForge forced-close observation remains functional only without archived abrupt-stop proof. |
 | Natural spawning | PASS | PARTIAL PASS | NAT-03 passed on the clean NeoForge baseline: generation disabled after PlayerSpawner activity remained denied for new natural spawns while another enabled generation continued spawning. |
 | Fishing | PASS | PASS | PR #35 focused NeoForge runtime validation passed. Encounter frequency improved without guaranteeing every cast; generation filtering remained correct. |
 | Poké Snack | PASS | PASS | PR #35 focused NeoForge runtime validation passed, including simultaneous Fishing + Poké Snack operation and generation filtering. |
@@ -74,15 +74,24 @@ Result: `PERSIST-02 PASS`.
 
 Functional recovery after a forced process termination has been observed: the subsequent launch recovered the expected Gen2 + Gen7 state. The operator also reports successful normal-restart and forced-close recovery on both server and local client. These additional observations are operator reports, not independent proof of the stop mode. The archived pre-restart `.log.gz` could not be parsed in the available evidence path. The later Youer and NeoForge logs supplied for DIAG-01 both end with normal world saves, so neither can establish the earlier forced termination.
 
-Status: `PERSIST-03 FUNCTIONAL PASS / FORMAL EVIDENCE PENDING`.
+Status before the direct Youer Kill: `PERSIST-03 FUNCTIONAL PASS / FORMAL EVIDENCE PENDING`.
 
-The operator confirmed that the old pre-restart log is unavailable. To close the formal gate, perform one controlled abnormal-stop check in a disposable test copy: record active generations, terminate the process without Minecraft's normal `stop` command, retain the pre-restart log or hosting-panel kill event before the next launch, restart, verify the same state and that it remains writable, then retain the post-restart log. This repetition is only to document the stop mode and recovery; the earlier functional recovery observation remains accepted.
+The operator confirmed that the older pre-restart log is unavailable. A subsequent controlled Youer test now supplies a readable abrupt-stop log paired with the recovered state below. The original NeoForge forced-close observation remains functional evidence, without independent archival proof of its stop mode.
 
 ### PERSIST-03 controlled attempt on Youer
 
 The operator supplied two consecutive Youer `latest.log` files from a Stop-then-Kill panel attempt. The first run (`latest (1).log`, SHA-256 `263B5364E3A551016630444757B87D764211CD7597C5DDFAE6C161A2C084DABB`) records `Stopping the server` / `Stopping server` at 05:01:43 and `Saving worlds` at 05:01:44. The second run (`latest (2).log`, SHA-256 `54522D8E383B45E6B98BBE3883456E97655BB4CFD719858758C7B19A9DEBF6FB`) starts at 05:02:21, runs normally, and itself records `Stopping server` / `Saving worlds` at 05:04:07. Both starts loaded the world and Zian GTS without a Zian persistence error.
 
-Outcome: the panel's initial Stop completed the normal save sequence before Kill could establish an abrupt stop. These logs support normal restart health, but do **not** close PERSIST-03's abnormal-stop proof. Do not repeat the same Stop-then-Kill sequence merely to produce another normal shutdown. Formal closure needs a direct process-termination method on a disposable test copy, plus the pre/post logs.
+Outcome: the panel's initial Stop completed the normal save sequence before Kill could establish an abrupt stop. These logs support normal restart health, but do **not** prove abnormal termination. The direct-Kill test below supplies that missing Youer evidence; do not repeat Stop-then-Kill.
+
+### PERSIST-03 direct Kill and recovery on Youer
+
+The operator confirmed that only Gen7 was active and that the Pterodactyl panel showed this test server offline after an administrator invoked the direct `kill` power action for its verified numeric server ID, without sending Minecraft `stop` first. The action output itself was not archived; the stop mode is supported by the operator report and the paired logs.
+
+- Pre-restart `latest (4).log` (SHA-256 `ECF7C569A2C926D80EE685A8A614B87D81E2652A15FB16F22DB6BAE517B26F17`) starts Youer 1.21.1 / NeoForge 21.1.251, loads Zian GTS, and ends immediately after `Done (35.008s)!` at 05:41:29. It contains no `Stopping server`, `Saving worlds`, or all-dimensions-saved sequence.
+- Post-restart `latest (5).log` (SHA-256 `9ADD2D372930570BFD035EB9791FD8BE896617FC77035961DEC8531CDFC9300C`) starts at 05:45, reaches `Done (34.949s)!` at 05:45:42, and records `Generation Control: 1/9 generaciones activas` at 05:45:45 and `Generaciones activas: gen7` at 05:45:51. The operator supplied a matching console screenshot. This second run shuts down normally at 05:46:16 and saves all dimensions. No Zian state-corruption error appears.
+
+Result: `PERSIST-03 PASS on Youer` for the matrix's forced-abnormal-stop/state-integrity criterion. The restored Gen7 state matches the operator's pre-Kill state. A post-restart write mutation was not performed; the matrix does not require one for this case. The pure-NeoForge baseline remains separately subject to the protocol's NeoForge-first acceptance order.
 
 ## Diagnostic gate audit
 
@@ -143,7 +152,7 @@ This audit separates runtime behavior already observed from the specific proof r
 
 | ID | Evidence already available | Formal gap |
 |---|---|---|
-| PERSIST-03 | Correct Gen2 + Gen7 recovery was previously observed. The new Stop-then-Kill attempt also restarted cleanly. | Both supplied logs show normal saves. Stop-then-Kill did not establish an abnormal termination; direct termination evidence is still missing. |
+| PERSIST-03 | PASS on Youer: operator-reported direct Kill, pre-restart log ending without normal save, and post-restart status/active response restoring Gen7. | The older NeoForge forced-close observation lacks archived stop-mode proof; this Youer result does not alone satisfy the protocol's NeoForge-first release gate. |
 | PERF-01 | PASS on Youer: two players in separate natural-spawn areas for about nine minutes 32 seconds; supplied spark snapshots show 20.0 TPS and no sustained tick degradation. | No Youer rerun required for this matrix case unless the relevant runtime path changes. |
 | PERF-02 | PASS on Youer: three-minute spark allocation profile with only Gen7 active, natural appearances, two players, 20 TPS and 0.01% of sampled allocations directly attributed to Zian Utilities. | No Youer rerun required for this short allocation-sanity case unless the relevant runtime path changes. This is not a long-duration leak test. |
 | YOUER-01 | Enable/disable/active/status/list and live mutation were exercised on Youer; the supplied log also shows a successful Gen2 disable and active-state commands. | Map the accepted command observations and responses to the formal case once the NeoForge baseline is accepted. The supplied server log does not contain chat responses for `active`. |
@@ -160,7 +169,7 @@ This audit separates runtime behavior already observed from the specific proof r
 
 ## Remaining required gates before M1 release-candidate acceptance
 
-1. For `PERSIST-03`, obtain direct abnormal-termination evidence on a disposable test copy. The available panel Stop-then-Kill path produced normal saves; do not repeat that path as proof.
+1. `PERSIST-03` is formally evidenced on Youer by direct Kill and Gen7 recovery. The earlier pure-NeoForge forced-close observation remains functional only; complete or explicitly waive its archival stop-mode proof before claiming the NeoForge-first release gate.
 2. After NeoForge acceptance, map the already observed Youer command, spawn and GTS behavior to `YOUER-01` through `YOUER-03`; rerun only an unproven path. `PERF-01` and `PERF-02` are closed on Youer.
 
 Do not repeat already accepted natural-spawn, Fishing, Poké Snack or PERSIST-02 tests unless a later code change touches their relevant paths.
