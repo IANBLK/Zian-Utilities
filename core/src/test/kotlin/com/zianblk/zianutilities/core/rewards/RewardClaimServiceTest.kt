@@ -123,6 +123,32 @@ class RewardClaimServiceTest {
     }
 
     @Test
+    fun `failed result persistence leaves in-flight state and prevents duplicate credit`() {
+        val failingStore = object : RewardClaimStore {
+            var saves = 0
+            var record: RewardClaimRecord? = null
+
+            override fun <T> withClaimLock(claimId: UUID, action: () -> T): T = action()
+            override fun load(claimId: UUID): RewardClaimRecord? = record
+            override fun save(record: RewardClaimRecord) {
+                saves++
+                if (saves == 3) throw java.io.IOException("disk unavailable after delivery")
+                this.record = record
+            }
+        }
+        val calls = AtomicInteger()
+        val service = RewardClaimService(failingStore) { _, _, _ ->
+            calls.incrementAndGet()
+            RewardDeliveryResult.Applied
+        }
+
+        assertFailsWith<java.io.IOException> { service.claim(claim) }
+        assertEquals(ComponentStatus.IN_FLIGHT, failingStore.record?.components?.get("coins")?.status)
+        assertEquals(ClaimStatus.RECOVERY_REQUIRED, service.claim(claim).status())
+        assertEquals(1, calls.get())
+    }
+
+    @Test
     fun `concurrent duplicate requests through one store deliver each component once`() {
         val store = FileRewardClaimStore(directory)
         val started = CountDownLatch(1)
