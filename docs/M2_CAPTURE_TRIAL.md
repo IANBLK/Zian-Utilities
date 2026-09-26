@@ -78,3 +78,18 @@ This supports no additional trial progress and no wallet credit from the
 second capture on the Youer test server. Disabling the startup flag and
 confirming the trial command is unavailable after restart is the final
 operational cleanup check.
+
+## Trial flag removal — PASS (operator report)
+
+The operator removed `-Dzianutilities.questTrialEnabled=true` and restarted
+the same alpha.5 JAR. The supplied in-game capture showed gen7 still active
+and `avecoins:coppercoin` balance still **1**. The operator reported that only
+the generation and balance commands remained available, consistent with the
+trial command being gated off. No screenshot of an attempted trial command or
+post-restart startup line was supplied; command unavailability is therefore
+recorded as an operator report. The completed trial file was retained.
+
+The controlled Youer test now covers explicit start, one matching capture,
+normal-restart persistence, no extra progress or coin from a second capture,
+and opt-out cleanup. It does not validate abrupt-kill durability or automatic
+production quest/reward behavior.
