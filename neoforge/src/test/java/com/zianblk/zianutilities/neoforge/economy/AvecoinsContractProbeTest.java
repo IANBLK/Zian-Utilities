@@ -20,7 +20,9 @@ class AvecoinsContractProbeTest {
 
     @Test
     void rejectsUnexpectedWalletCapacity() throws Exception {
-        var result = AvecoinsContractProbe.inspectLayout(Crafting.class, Store.class, WrongData.class);
+        var result = AvecoinsContractProbe.inspectLayout(
+            Crafting.class, WrongCapacityStore.class, WrongData.class
+        );
         assertFalse(result.compatible());
         assertEquals("estructura de cartera incompatible", result.detail());
     }
@@ -45,6 +47,11 @@ class AvecoinsContractProbeTest {
     public static final class WrongStore {
         public static Data get() { throw new AssertionError("probe must not read wallet"); }
         public static void save(Data data) { throw new AssertionError("probe must not save wallet"); }
+    }
+
+    public static final class WrongCapacityStore {
+        public static WrongData get() { throw new AssertionError("probe must not read wallet"); }
+        public static boolean save(WrongData data) { throw new AssertionError("probe must not save wallet"); }
     }
 
     public static class Data {
