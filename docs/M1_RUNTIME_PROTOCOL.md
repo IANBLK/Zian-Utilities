@@ -11,12 +11,12 @@ Java: 21
 NeoForge baseline: 21.1.251
 Cobblemon baseline: 1.8.1+1.21.1
 Zian Utilities implementation baseline: 95c64f42f96b0afc2adf7db747344ac90f4c0c72
-Validation tracking baseline: main after PR #36
+Validation tracking baseline: main after PR #38
 ```
 
 The implementation baseline is the PR #35 merge that contains the validated
-Fishing/Poké Snack bucket fix. PR #36 only refreshed validation documentation and
-did not change runtime behavior.
+Fishing/Poké Snack bucket fix. PR #36 refreshed validation documentation;
+PR #38 added accepted NAT-03 runtime evidence without changing runtime behavior.
 
 Deployment target: the operator's Minecraft 1.21.1 Youer server. Prioritize
 observed behavior and acceptance on that environment. Reuse the focused clean
@@ -41,7 +41,10 @@ code change touches their spawn-selection path.
 
 Remove diagnostic flags after acceptance testing. They are intentionally noisy.
 
-## Required order
+## Cross-loader M1 matrix order
+
+This is the broader matrix sequence. For the intended Youer deployment, use the
+accepted Youer results and its remaining focused evidence gaps directly.
 
 1. GEN-01 through GEN-10.
 2. PERSIST-01 and PERSIST-03. PERSIST-02 is also required on the production-like scheduled-restart environment.
