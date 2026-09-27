@@ -180,7 +180,7 @@ public final class GlobalQuestRuntime {
         if (!((objective.equals("capture") && progress.getCaptureComplete())
             || (objective.equals("battle") && progress.getBattleComplete()))) return null;
         if (!AvecoinsContractProbe.inspect().compatible()) {
-            LOGGER.warn("[ZIAN-GLOBAL-QUEST] reward blocked: AVECOINS 2.3 contract unavailable");
+            LOGGER.warn("[ZIAN-GLOBAL-QUEST] reward blocked: AVECOINS contract unavailable");
             return null;
         }
         initialize(activeServer);
@@ -291,3 +291,4 @@ public final class GlobalQuestRuntime {
         }
     }
 }
+
