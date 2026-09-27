@@ -20,3 +20,7 @@ This is a Youer 1.21.1 test of assignment isolation, not an automatic mission ro
 
 Stop and retain the console log if a non-operator can assign a mission, if one player's capture advances the other's mission, if an assignment disappears, if any balance changes, or if the server fails to start. Do not delete an existing assignment file to retry: use another test player or a backed-up test world.
 
+## Partial Youer evidence (2026-09-27)
+
+User-supplied screenshots after installing the corrected build show ZIANBLK consulting its existing completed Yungoos/Gen7 assignment `52d22b97-34cd-44d2-8e15-89a0a65ae094` without the prior unknown-command error. The operator IANBLK used `assign ZIANBLK`; it correctly returned that existing completed assignment rather than creating another. IANBLK's own initial status was `no asignada`, and its subsequent self-assignment returned a separate stable ID at 0/1 twice. This supports command visibility and per-player identity separation. It does not yet prove capture isolation or persistence of IANBLK's new assignment after restart. Both will be checked with the existing completed ZIANBLK assignment intact; do not reset or delete it.
+
