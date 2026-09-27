@@ -12,6 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AvecoinsContractProbeTest {
     @Test
+    void allowsOnlyInspectedAvecoinsVersions() {
+        assertTrue(AvecoinsContractProbe.supportedVersion("2.3"));
+        assertTrue(AvecoinsContractProbe.supportedVersion("2.4"));
+        assertFalse(AvecoinsContractProbe.supportedVersion("2.5"));
+    }
+
+    @Test
     void acceptsInspectedWalletShapeWithoutTouchingBalances() throws Exception {
         var result = AvecoinsContractProbe.inspectLayout(Crafting.class, Store.class, Data.class);
         assertTrue(result.compatible());

@@ -253,7 +253,7 @@ public final class GachaRuntime {
 
     public static synchronized void roll(ServerPlayer player, int poolId) throws IOException {
         if (!Boolean.getBoolean(PAYMENT_FLAG)) throw new IllegalStateException("Los pagos de gacha están desactivados");
-        if (!AvecoinsContractProbe.inspect().compatible()) throw new IllegalStateException("AVECOINS 2.3 no disponible");
+        if (!AvecoinsContractProbe.inspect().compatible()) throw new IllegalStateException("AVECOINS compatible no disponible");
         Pool pool = pools(player).stream().filter(p -> p.id() == poolId && p.enabled()).findFirst()
             .orElseThrow(() -> new IllegalStateException("Gacha no disponible"));
         ListTag ops = operations(player);

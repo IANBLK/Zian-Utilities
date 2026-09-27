@@ -1,8 +1,11 @@
 # AVECOINS integration plan
 
-Current inspected target:
+Tested target:
 
 `AVECOINS 2.3`
+
+AVECOINS 2.4 is allowed by version and must pass the same runtime wallet-layout probe.
+Live debit, credit, and persistence checks with 2.4 are still required before production use.
 
 Historical reference implementation:
 
@@ -148,3 +151,4 @@ If AVECOINS later exposes a stable public API for:
 - transaction lookup
 
 prefer that API over reflection while keeping the Zian Utilities `EconomyPort` stable.
+
