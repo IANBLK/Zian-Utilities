@@ -110,12 +110,15 @@ public final class GlobalQuestRuntime {
         GlobalQuestOffer next = new GlobalQuestOffer(window, target, generations,
             captureCurrency, captureAmount, battleCurrency, battleAmount, rewardsEnabled);
         writeOffer(path, next);
-        LOGGER.info("[ZIAN-GLOBAL-QUEST] window={} generations={} species={} rewards={}",
-            window, generations, target, Boolean.getBoolean(REWARD_FLAG) ? "test-enabled" : "disabled");
+        LOGGER.info("[ZIAN-GLOBAL-QUEST] window={} generations={} species={} candidates={} rewards={}",
+            window, generations, target, pool.size(), Boolean.getBoolean(REWARD_FLAG) ? "test-enabled" : "disabled");
         return next;
     }
 
     private static List<String> eligibleSpecies(Properties config, Set<Generation> enabled) {
+        if (!"configured".equals(config.getProperty("species.mode", "world_spawn_pool"))) {
+            return CobblemonWorldSpawnSpeciesPool.eligible(enabled, RESOLVER);
+        }
         List<String> rawPool = new ArrayList<>();
         for (Generation generation : enabled.stream().sorted(Comparator.comparing(Generation::getId)).toList()) {
             String csv = config.getProperty("species." + generation.getId(), "");
@@ -126,6 +129,11 @@ public final class GlobalQuestRuntime {
         return rawPool.stream().distinct().sorted().toList();
     }
 
+    public static synchronized int eligibleSpeciesCount(MinecraftServer server) throws IOException {
+        initialize(server);
+        return eligibleSpecies(readConfig(), enabled(server)).size();
+    }
+
     /** Rotate the offer inside the current real window for an operator test; no reward can be earned from it. */
     public static synchronized GlobalQuestOffer rotateForTest(MinecraftServer server) throws IOException {
         if (!Boolean.getBoolean(TEST_FLAG)) throw new IllegalStateException("global quest test is disabled");
@@ -133,8 +141,8 @@ public final class GlobalQuestRuntime {
         List<String> pool = eligibleSpecies(readConfig(), enabled(server));
         GlobalQuestOffer rotated = testRotationOffer(current, pool);
         writeOffer(root.resolve("offer.properties"), rotated);
-        LOGGER.info("[ZIAN-AUDIT] action=global_quest_test_rotate window={} from={} to={} rewards=disabled",
-            current.getWindowStartEpochMs(), current.getTargetSpecies(), rotated.getTargetSpecies());
+        LOGGER.info("[ZIAN-AUDIT] action=global_quest_test_rotate window={} from={} to={} candidates={} rewards=disabled",
+            current.getWindowStartEpochMs(), current.getTargetSpecies(), rotated.getTargetSpecies(), pool.size());
         return rotated;
     }
 
@@ -210,11 +218,17 @@ public final class GlobalQuestRuntime {
         Properties p = new Properties();
         if (Files.exists(path)) {
             try (var reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) { p.load(reader); }
+            boolean changed = false;
             if (!"2".equals(p.getProperty("species.poolRevision"))) {
                 upgradeLegacyPools(p);
                 p.setProperty("species.poolRevision", "2");
-                write(path, p);
+                changed = true;
             }
+            if (!p.containsKey("species.mode")) {
+                p.setProperty("species.mode", "world_spawn_pool");
+                changed = true;
+            }
+            if (changed) write(path, p);
             return p;
         }
         p.setProperty("capture.currency", "avecoins:coppercoin");
@@ -222,6 +236,7 @@ public final class GlobalQuestRuntime {
         p.setProperty("battle.currency", "avecoins:coppercoin");
         p.setProperty("battle.amount", "1");
         p.setProperty("species.poolRevision", "2");
+        p.setProperty("species.mode", "world_spawn_pool");
         for (int i = 0; i < DEFAULT_POOLS.length; i++) {
             p.setProperty("species.gen" + (i + 1), DEFAULT_POOLS[i]);
         }

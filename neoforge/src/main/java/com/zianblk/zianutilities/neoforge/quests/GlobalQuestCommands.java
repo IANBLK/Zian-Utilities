@@ -19,7 +19,9 @@ public final class GlobalQuestCommands {
                 .then(Commands.literal("test")
                     .requires(source -> source.hasPermission(2))
                     .then(Commands.literal("rotate")
-                        .executes(context -> rotateForTest(context.getSource()))))
+                        .executes(context -> rotateForTest(context.getSource())))
+                    .then(Commands.literal("pool")
+                        .executes(context -> showPool(context.getSource()))))
                 .executes(context -> {
                     // Other Zian modules register the same parent literal; Brigadier merges its children.
                     if (!Boolean.getBoolean(GlobalQuestRuntime.TEST_FLAG)) {
@@ -57,5 +59,17 @@ public final class GlobalQuestCommands {
             source.sendFailure(Component.literal("No se pudo guardar la rotación; revisa la consola."));
         }
         return 0;
+    }
+
+    private static int showPool(net.minecraft.commands.CommandSourceStack source) {
+        try {
+            int count = GlobalQuestRuntime.eligibleSpeciesCount(source.getServer());
+            source.sendSuccess(() -> Component.literal("Especies elegibles para la misión de captura: "
+                + count + ". El sorteo usa las generaciones activas y apariciones naturales de Cobblemon."), false);
+            return Command.SINGLE_SUCCESS;
+        } catch (IOException error) {
+            source.sendFailure(Component.literal("No se pudo consultar el grupo de especies; revisa la consola."));
+            return 0;
+        }
     }
 }
