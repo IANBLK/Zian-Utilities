@@ -87,14 +87,24 @@ public final class GlobalQuestRuntime {
                 .forEach(rawPool::add);
         }
         List<String> pool = rawPool.stream().distinct().sorted().toList();
-        String target = pool.isEmpty() ? null
-            : pool.get(Math.floorMod((window + generations).hashCode(), pool.size()));
+        String priorTarget = previous != null && previous.getWindowStartEpochMs() != window
+            ? previous.getTargetSpecies() : null;
+        String target = selectTarget(pool, window, generations, priorTarget);
         GlobalQuestOffer next = new GlobalQuestOffer(window, target, generations,
             captureCurrency, captureAmount, battleCurrency, battleAmount, rewardsEnabled);
         writeOffer(path, next);
         LOGGER.info("[ZIAN-GLOBAL-QUEST] window={} generations={} species={} rewards={}",
             window, generations, target, Boolean.getBoolean(REWARD_FLAG) ? "test-enabled" : "disabled");
         return next;
+    }
+
+    static String selectTarget(List<String> pool, long window, String generations, String priorTarget) {
+        if (pool.isEmpty()) return null;
+        int index = Math.floorMod((window + generations).hashCode(), pool.size());
+        if (pool.size() > 1 && pool.get(index).equals(priorTarget)) {
+            index = (index + 1) % pool.size();
+        }
+        return pool.get(index);
     }
 
     public static Set<Generation> enabled(MinecraftServer server) {
@@ -208,4 +218,3 @@ public final class GlobalQuestRuntime {
         }
     }
 }
-
