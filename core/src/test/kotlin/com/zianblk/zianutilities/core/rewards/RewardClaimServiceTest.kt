@@ -11,6 +11,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
+import kotlin.test.assertNotNull
 
 class RewardClaimServiceTest {
     @TempDir lateinit var directory: Path
@@ -22,6 +24,21 @@ class RewardClaimServiceTest {
             RewardComponent("item", Reward.Item("minecraft:diamond", 1)),
         ),
     )
+
+    @Test
+    fun `retention removes only successful claims and keeps uncertain audit records`() {
+        val store = FileRewardClaimStore(directory)
+        val successful = RewardClaimService(store) { _, _, _ -> RewardDeliveryResult.Applied }
+        assertEquals(ClaimStatus.CLAIMED, successful.claim(claim).status())
+        assertEquals(true, store.deleteClaimed(claim.claimId))
+        assertNull(store.load(claim.claimId))
+
+        val uncertainClaim = claim.copy(claimId = UUID.randomUUID())
+        val uncertain = RewardClaimService(store) { _, _, _ -> RewardDeliveryResult.Uncertain("timeout") }
+        assertEquals(ClaimStatus.RECOVERY_REQUIRED, uncertain.claim(uncertainClaim).status())
+        assertEquals(false, store.deleteClaimed(uncertainClaim.claimId))
+        assertNotNull(store.load(uncertainClaim.claimId))
+    }
 
     @Test
     fun `completed claim survives restart and duplicate request delivers nothing`() {
