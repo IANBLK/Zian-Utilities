@@ -43,6 +43,7 @@ public final class RewardCommands {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
             Commands.literal("zian")
+                .requires(source -> true)
                 .then(Commands.literal("reward")
                     .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
                     .then(Commands.literal("status").executes(context -> status(context.getSource())))
