@@ -67,11 +67,19 @@ public final class GachaNetwork {
                     player, action.poolId(), action.kind(), action.index(), action.text());
                 case 9 -> GachaRuntime.roll(player, action.poolId());
                 case 10 -> GachaRuntime.claim(player, UUID.fromString(action.text()));
+                case 11 -> GachaRuntime.delete(player, action.poolId(), action.text());
                 default -> throw new IllegalStateException("Acción inválida");
             }
             send(player, false);
         } catch (Exception error) {
-            LOG.warn("[ZIAN-GACHA] action={} playerUuid={} result=error", action.kind(), player.getUUID(), error);
+            if (error instanceof IllegalStateException
+                && "No tienes tickets suficientes".equals(error.getMessage())) {
+                LOG.info("[ZIAN-GACHA] action={} playerUuid={} result=insufficient_tickets",
+                    action.kind(), player.getUUID());
+            } else {
+                LOG.warn("[ZIAN-GACHA] action={} playerUuid={} result=error",
+                    action.kind(), player.getUUID(), error);
+            }
             player.sendSystemMessage(Component.literal(error instanceof IllegalStateException
                 ? error.getMessage() : "No se pudo guardar la operación de gacha; revisa la consola."));
             send(player, false);
@@ -165,3 +173,4 @@ public final class GachaNetwork {
         PacketDistributor.sendToServer(new Action((byte) kind, poolId, index, text));
     }
 }
+

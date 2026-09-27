@@ -8,6 +8,7 @@ import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -130,14 +131,20 @@ public final class GachaScreen extends Screen {
     }
 
     private void initAdmin(int x, int w, GachaNetwork.PoolView pool) {
-        addRenderableWidget(new StyledButton(x + w - 123, 72, 115, 18,
-            "Crear gacha", () -> GachaNetwork.request(1, 0, 0, "")));
+        addRenderableWidget(new StyledButton(x + w - 174, 40, 130, 19,
+            "Crear gacha nuevo", () -> GachaNetwork.request(1, 0, 0, "")));
         if (pool == null) return;
-        nameBox = new EditBox(font, x + 8, 72, Math.min(160, w - 140), 18, Component.literal("Nombre"));
+        addRenderableWidget(new StyledButton(x + 8, 72, 100, 18,
+            "Eliminar gacha", () -> Minecraft.getInstance().setScreen(new ConfirmScreen(confirmed -> {
+                Minecraft.getInstance().setScreen(this);
+                if (confirmed) GachaNetwork.request(11, pool.id(), 0, pool.name());
+            }, Component.literal("¿Eliminar " + pool.name() + "?"),
+                Component.literal("Se borrará este gacha y sus premios configurados.")))));
+        nameBox = new EditBox(font, x + w / 2 - 85, 72, 170, 18, Component.literal("Nombre"));
         nameBox.setMaxLength(32);
         nameBox.setValue(pool.name());
         addRenderableWidget(nameBox);
-        addRenderableWidget(new StyledButton(x + 8, 94, 76, 18, "Guardar", () ->
+        addRenderableWidget(new StyledButton(x + w - 84, 72, 76, 18, "Guardar", () ->
             GachaNetwork.request(2, pool.id(), 0, nameBox.getValue())));
         addRenderableWidget(new StyledButton(x + 90, 94, 153, 18,
             ticketName(pool.ticket()), () -> GachaNetwork.request(3, pool.id(), 0, "")));

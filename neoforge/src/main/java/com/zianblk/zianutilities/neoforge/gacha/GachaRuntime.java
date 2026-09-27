@@ -179,6 +179,21 @@ public final class GachaRuntime {
         savePools(player, pools);
     }
 
+    public static synchronized void delete(ServerPlayer player, int id, String expectedName)
+        throws IOException {
+        requireAdmin(player);
+        List<Pool> pools = pools(player);
+        Pool selected = pools.stream().filter(pool -> pool.id() == id).findFirst()
+            .orElseThrow(() -> new IllegalStateException("Gacha inexistente"));
+        if (!selected.name().equals(expectedName))
+            throw new IllegalStateException("El gacha cambió; vuelve a abrirlo antes de eliminar");
+        pools.removeIf(pool -> pool.id() == id);
+        savePools(player, pools);
+        // Player prize journals contain the awarded item and remain claimable after pool deletion.
+        LOG.info("[ZIAN-AUDIT] action=gacha_delete admin={} pool={} name={}",
+            player.getUUID(), id, selected.name());
+    }
+
     public static synchronized void edit(ServerPlayer player, int id, byte action, int index, String text)
         throws IOException {
         requireAdmin(player);
@@ -336,3 +351,4 @@ public final class GachaRuntime {
         return false;
     }
 }
+
