@@ -128,29 +128,29 @@ public final class GachaScreen extends Screen {
     }
 
     private void initAdmin(int x, int w, GachaNetwork.PoolView pool) {
-        addRenderableWidget(new StyledButton(x + w - 123, 64, 115, 18,
+        addRenderableWidget(new StyledButton(x + w - 123, 72, 115, 18,
             "Crear gacha", () -> GachaNetwork.request(1, 0, 0, "")));
         if (pool == null) return;
-        nameBox = new EditBox(font, x + 8, 64, Math.min(160, w - 140), 18, Component.literal("Nombre"));
+        nameBox = new EditBox(font, x + 8, 72, Math.min(160, w - 140), 18, Component.literal("Nombre"));
         nameBox.setMaxLength(32);
         nameBox.setValue(pool.name());
         addRenderableWidget(nameBox);
-        addRenderableWidget(new StyledButton(x + 8, 86, 76, 18, "Guardar", () ->
+        addRenderableWidget(new StyledButton(x + 8, 94, 76, 18, "Guardar", () ->
             GachaNetwork.request(2, pool.id(), 0, nameBox.getValue())));
-        addRenderableWidget(new StyledButton(x + 90, 86, 153, 18,
+        addRenderableWidget(new StyledButton(x + 90, 94, 153, 18,
             "Ticket: " + ticketName(pool.ticket()), () -> GachaNetwork.request(3, pool.id(), 0, "")));
-        addRenderableWidget(new StyledButton(x + 249, 86, 26, 18, "-", () ->
+        addRenderableWidget(new StyledButton(x + 249, 94, 26, 18, "-", () ->
             GachaNetwork.request(4, pool.id(), -1, "")));
-        addRenderableWidget(new StyledButton(x + 279, 86, 26, 18, "+", () ->
+        addRenderableWidget(new StyledButton(x + 279, 94, 26, 18, "+", () ->
             GachaNetwork.request(4, pool.id(), 1, "")));
-        addRenderableWidget(new StyledButton(x + 8, 109, 130, 18,
+        addRenderableWidget(new StyledButton(x + 8, 117, 130, 18,
             "Añadir objeto en mano", () -> GachaNetwork.request(5, pool.id(), 0, "")));
-        addRenderableWidget(new StyledButton(x + w - 116, 109, 108, 18,
+        addRenderableWidget(new StyledButton(x + w - 116, 117, 108, 18,
             pool.enabled() ? "Desactivar" : "Publicar", () -> GachaNetwork.request(8, pool.id(), 0, "")));
         for (int row = 0; row < 4; row++) {
             int index = prizePage * 4 + row;
             if (index >= pool.prizes().size()) break;
-            int y = 142 + row * 26;
+            int y = 150 + row * 26;
             addRenderableWidget(new StyledButton(x + w - 106, y, 25, 18, "-", () ->
                 GachaNetwork.request(6, pool.id(), index, "-1")));
             addRenderableWidget(new StyledButton(x + w - 77, y, 25, 18, "+", () ->
@@ -158,10 +158,10 @@ public final class GachaScreen extends Screen {
             addRenderableWidget(new StyledButton(x + w - 48, y, 40, 18, "Quitar", () ->
                 GachaNetwork.request(7, pool.id(), index, "")));
         }
-        addRenderableWidget(new StyledButton(x + 8, 252, 42, 18, "◀", () -> {
+        addRenderableWidget(new StyledButton(x + 8, 260, 42, 18, "◀", () -> {
             prizePage = Math.max(0, prizePage - 1); reopen();
         })).active = prizePage > 0;
-        addRenderableWidget(new StyledButton(x + w - 50, 252, 42, 18, "▶", () -> {
+        addRenderableWidget(new StyledButton(x + w - 50, 260, 42, 18, "▶", () -> {
             prizePage++; reopen();
         })).active = (prizePage + 1) * 4 < pool.prizes().size();
     }
@@ -220,17 +220,17 @@ public final class GachaScreen extends Screen {
 
     private void renderAdmin(GuiGraphics graphics, int x, int w, GachaNetwork.PoolView pool) {
         if (pool == null) return;
-        card(graphics, x, 61, w, 221);
+        card(graphics, x, 61, w, 229);
         graphics.drawString(font, "Costo: " + pool.cost() + " ticket(s)",
-            x + 313, 91, MUTED, false);
+            x + 313, 99, MUTED, false);
         graphics.drawString(font, pool.enabled() ? "Publicado" : "Borrador",
-            x + 145, 113, pool.enabled() ? GREEN : MUTED, false);
+            x + 145, 121, pool.enabled() ? GREEN : MUTED, false);
         long total = pool.prizes().stream().mapToLong(GachaNetwork.PrizeView::weight).sum();
         for (int row = 0; row < 4; row++) {
             int index = prizePage * 4 + row;
             if (index >= pool.prizes().size()) break;
             var prize = pool.prizes().get(index);
-            int y = 142 + row * 26;
+            int y = 150 + row * 26;
             graphics.renderItem(prize.item(), x + 8, y);
             graphics.drawString(font, prize.item().getHoverName().getString(),
                 x + 30, y + 3, WHITE, false);
@@ -239,7 +239,7 @@ public final class GachaScreen extends Screen {
                 x + Math.max(110, w - 193), y + 3, GOLD, false);
         }
         graphics.drawCenteredString(font, Component.literal(
-            "Editar un gacha publicado lo devuelve a borrador"), width / 2, 284, MUTED);
+            "Editar un gacha publicado lo devuelve a borrador"), width / 2, 292, MUTED);
     }
 
     private static String ticketName(String id) {
@@ -275,3 +275,4 @@ public final class GachaScreen extends Screen {
         }
     }
 }
+
