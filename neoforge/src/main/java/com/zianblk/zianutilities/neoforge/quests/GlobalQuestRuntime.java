@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 
 /** Server-owned global definition; reward amounts are frozen when the window begins. */
@@ -44,6 +46,28 @@ public final class GlobalQuestRuntime {
     private static final Logger LOGGER = LoggerFactory.getLogger("ZianUtilities/GlobalQuest");
     static final String TEST_FLAG = "zianutilities.globalQuestTestEnabled";
     static final String REWARD_FLAG = "zianutilities.globalQuestRewardTestEnabled";
+    private static final String[] LEGACY_POOLS = {
+        "cobblemon:caterpie,cobblemon:pidgey",
+        "cobblemon:sentret,cobblemon:hoothoot",
+        "cobblemon:zigzagoon,cobblemon:poochyena",
+        "cobblemon:bidoof,cobblemon:starly",
+        "cobblemon:patrat,cobblemon:lillipup",
+        "cobblemon:bunnelby,cobblemon:fletchling",
+        "cobblemon:yungoos,cobblemon:komala,cobblemon:minior",
+        "cobblemon:rookidee,cobblemon:wooloo",
+        "cobblemon:lechonk,cobblemon:pawmi"
+    };
+    private static final String[] DEFAULT_POOLS = {
+        "cobblemon:caterpie,cobblemon:pidgey,cobblemon:rattata,cobblemon:zubat,cobblemon:oddish,cobblemon:geodude",
+        "cobblemon:sentret,cobblemon:hoothoot,cobblemon:spinarak,cobblemon:wooper,cobblemon:marill,cobblemon:murkrow",
+        "cobblemon:zigzagoon,cobblemon:poochyena,cobblemon:taillow,cobblemon:wingull,cobblemon:lotad,cobblemon:seedot",
+        "cobblemon:bidoof,cobblemon:starly,cobblemon:shinx,cobblemon:buizel,cobblemon:buneary,cobblemon:kricketot",
+        "cobblemon:patrat,cobblemon:lillipup,cobblemon:pidove,cobblemon:roggenrola,cobblemon:venipede,cobblemon:woobat",
+        "cobblemon:bunnelby,cobblemon:fletchling,cobblemon:scatterbug,cobblemon:espurr,cobblemon:pumpkaboo",
+        "cobblemon:yungoos,cobblemon:komala,cobblemon:minior,cobblemon:mudbray,cobblemon:cutiefly,cobblemon:comfey",
+        "cobblemon:rookidee,cobblemon:wooloo,cobblemon:skwovet,cobblemon:chewtle,cobblemon:nickit,cobblemon:yamper",
+        "cobblemon:lechonk,cobblemon:pawmi,cobblemon:nacli,cobblemon:fidough,cobblemon:tandemaus,cobblemon:maschiff"
+    };
     private static final CobblemonGenerationResolver RESOLVER = new CobblemonGenerationResolver(null);
     private static MinecraftServer activeServer;
     private static GlobalQuestService service;
@@ -82,7 +106,7 @@ public final class GlobalQuestRuntime {
         List<String> pool = eligibleSpecies(config, enabled);
         String priorTarget = previous != null && previous.getWindowStartEpochMs() != window
             ? previous.getTargetSpecies() : null;
-        String target = selectTarget(pool, window, generations, priorTarget);
+        String target = selectTarget(pool, priorTarget, ThreadLocalRandom.current());
         GlobalQuestOffer next = new GlobalQuestOffer(window, target, generations,
             captureCurrency, captureAmount, battleCurrency, battleAmount, rewardsEnabled);
         writeOffer(path, next);
@@ -118,19 +142,17 @@ public final class GlobalQuestRuntime {
         if (pool.size() < 2 || current.getTargetSpecies() == null || !pool.contains(current.getTargetSpecies())) {
             throw new IllegalStateException("at least two eligible species including the current target are required");
         }
-        String target = selectTarget(pool, current.getExpiresAtEpochMs(),
-            current.getGenerationIds(), current.getTargetSpecies());
+        String target = selectTarget(pool, current.getTargetSpecies(), ThreadLocalRandom.current());
         return new GlobalQuestOffer(current.getWindowStartEpochMs(), target, current.getGenerationIds(),
             current.getCaptureCurrency(), current.getCaptureAmount(),
             current.getBattleCurrency(), current.getBattleAmount(), false);
     }
 
-    static String selectTarget(List<String> pool, long window, String generations, String priorTarget) {
+    static String selectTarget(List<String> pool, String priorTarget, RandomGenerator random) {
         if (pool.isEmpty()) return null;
-        int index = Math.floorMod((window + generations).hashCode(), pool.size());
-        if (pool.size() > 1 && pool.get(index).equals(priorTarget)) {
-            index = (index + 1) % pool.size();
-        }
+        int priorIndex = pool.size() > 1 ? pool.indexOf(priorTarget) : -1;
+        int index = random.nextInt(pool.size() - (priorIndex >= 0 ? 1 : 0));
+        if (priorIndex >= 0 && index >= priorIndex) index++;
         return pool.get(index);
     }
 
@@ -188,23 +210,32 @@ public final class GlobalQuestRuntime {
         Properties p = new Properties();
         if (Files.exists(path)) {
             try (var reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) { p.load(reader); }
+            if (!"2".equals(p.getProperty("species.poolRevision"))) {
+                upgradeLegacyPools(p);
+                p.setProperty("species.poolRevision", "2");
+                write(path, p);
+            }
             return p;
         }
         p.setProperty("capture.currency", "avecoins:coppercoin");
         p.setProperty("capture.amount", "1");
         p.setProperty("battle.currency", "avecoins:coppercoin");
         p.setProperty("battle.amount", "1");
-        p.setProperty("species.gen1", "cobblemon:caterpie,cobblemon:pidgey");
-        p.setProperty("species.gen2", "cobblemon:sentret,cobblemon:hoothoot");
-        p.setProperty("species.gen3", "cobblemon:zigzagoon,cobblemon:poochyena");
-        p.setProperty("species.gen4", "cobblemon:bidoof,cobblemon:starly");
-        p.setProperty("species.gen5", "cobblemon:patrat,cobblemon:lillipup");
-        p.setProperty("species.gen6", "cobblemon:bunnelby,cobblemon:fletchling");
-        p.setProperty("species.gen7", "cobblemon:yungoos,cobblemon:komala,cobblemon:minior");
-        p.setProperty("species.gen8", "cobblemon:rookidee,cobblemon:wooloo");
-        p.setProperty("species.gen9", "cobblemon:lechonk,cobblemon:pawmi");
+        p.setProperty("species.poolRevision", "2");
+        for (int i = 0; i < DEFAULT_POOLS.length; i++) {
+            p.setProperty("species.gen" + (i + 1), DEFAULT_POOLS[i]);
+        }
         write(path, p);
         return p;
+    }
+
+    static void upgradeLegacyPools(Properties p) {
+        for (int i = 0; i < LEGACY_POOLS.length; i++) {
+            String key = "species.gen" + (i + 1);
+            if (LEGACY_POOLS[i].equals(p.getProperty(key))) {
+                p.setProperty(key, DEFAULT_POOLS[i]);
+            }
+        }
     }
 
     private static GlobalQuestOffer readOffer(Path path) throws IOException {
