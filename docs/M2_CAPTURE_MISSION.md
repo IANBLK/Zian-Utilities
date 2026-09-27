@@ -33,5 +33,5 @@ User-provided Pterodactyl console output and in-game screenshots show alpha.7 st
 - Capturing Yungoos produced one `event=capture ... species=cobblemon:yungoos result=COMPLETED` line. Status showed the same ID at 1/1 with `generation=gen7`; balance remained 1.
 - A normal stop and restart with the same JAR and flag reached `Done`. After reconnecting, status still showed that ID, species, and generation at 1/1; balance was still 1 and Gen7 was still active.
 
-This confirms initial acceptance, live completion, normal-restart persistence, and no reward on that completion. A second post-completion capture and a restart with the flag removed have not yet been observed; keep this PR in draft until those checks are complete.
+Follow-up screenshots supplied by the user close the remaining checks. A second Pokémon was captured after completion; status still showed the same ID and Yungoos/Gen7 at 1/1, and coppercoin balance stayed at 1. After removing the test flag and restarting, command completion no longer offered `quest capture` (only `quest plan`), while `/zian generation active` still reported Gen7 and `/zian reward balance` still reported 1. The full alpha.7 Youer acceptance protocol therefore passed. This evidence does not cover an untested forced-kill scenario or multi-player assignment distribution.
 
