@@ -3,7 +3,8 @@ package com.zianblk.zianutilities.neoforge.hub.client;
 import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.AbstractButton;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -15,7 +16,7 @@ public final class ZianHubScreen extends Screen {
     private static final int WHITE = 0xFFF4F7FA;
     private static final int MUTED = 0xFF9FAAB5;
     private final ZianHubNetwork.State state;
-    private Button questsButton;
+    private StyledButton questsButton;
 
     public ZianHubScreen(ZianHubNetwork.State state) {
         super(Component.literal("Zian Utilities"));
@@ -48,12 +49,13 @@ public final class ZianHubScreen extends Screen {
     @Override
     protected void init() {
         int w = cardWidth();
-        questsButton = addRenderableWidget(Button.builder(Component.literal("Abrir misiones"), button ->
-                ZianHubNetwork.requestQuests())
-            .bounds(firstX() + 10, firstY() + cardHeight() - 29, w - 20, 19).build());
+        questsButton = addRenderableWidget(new StyledButton(firstX() + 10,
+            firstY() + cardHeight() - 29, w - 20, 19,
+            Component.literal("Abrir misiones"), ZianHubNetwork::requestQuests));
         questsButton.active = state.questsEnabled();
-        Button gachas = addRenderableWidget(Button.builder(Component.literal("Próximamente"), button -> {})
-            .bounds(secondX() + 10, secondY() + cardHeight() - 29, w - 20, 19).build());
+        StyledButton gachas = addRenderableWidget(new StyledButton(secondX() + 10,
+            secondY() + cardHeight() - 29, w - 20, 19,
+            Component.literal("Próximamente"), () -> {}));
         gachas.active = false;
     }
 
@@ -104,9 +106,35 @@ public final class ZianHubScreen extends Screen {
 
     private static void drawCard(GuiGraphics graphics, int x, int y, int w, int h, int accent) {
         graphics.fill(x, y, x + w, y + h, 0xFF59616B);
-        graphics.fill(x + 1, y + 1, x + w - 1, y + h - 1, 0xF0181D24);
+        graphics.fill(x + 1, y + 1, x + w - 1, y + h - 1, 0xFF181D24);
         graphics.fill(x + 1, y + 1, x + w - 1, y + 4, accent);
     }
 
     @Override public boolean isPauseScreen() { return false; }
+
+    private static final class StyledButton extends AbstractButton {
+        private final Runnable action;
+
+        private StyledButton(int x, int y, int width, int height, Component message, Runnable action) {
+            super(x, y, width, height, message);
+            this.action = action;
+        }
+
+        @Override public void onPress() { action.run(); }
+
+        @Override protected void updateWidgetNarration(NarrationElementOutput output) {
+            defaultButtonNarrationText(output);
+        }
+
+        @Override protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            boolean hover = isHovered && active;
+            int border = hover ? GOLD : (active ? 0xFF526575 : 0xFF3B4148);
+            int fill = active ? 0xFF20262D : 0xFF161A20;
+            graphics.fill(getX(), getY(), getX() + width, getY() + height, fill);
+            graphics.renderOutline(getX(), getY(), width, height, border);
+            graphics.drawCenteredString(Minecraft.getInstance().font, getMessage(),
+                getX() + width / 2, getY() + (height - 8) / 2,
+                active ? 0xFFE2E8F0 : 0xFF7C838B);
+        }
+    }
 }

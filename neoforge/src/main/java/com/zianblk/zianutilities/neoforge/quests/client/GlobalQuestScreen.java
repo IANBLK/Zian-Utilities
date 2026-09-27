@@ -9,7 +9,8 @@ import com.zianblk.zianutilities.neoforge.quests.GlobalQuestNetwork;
 import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.AbstractButton;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -31,7 +32,7 @@ public final class GlobalQuestScreen extends Screen {
 
     private GlobalQuestNetwork.State state;
     private final FloatingState previewState = new FloatingState();
-    private Button acceptButton;
+    private StyledButton acceptButton;
     private boolean waiting;
 
     public GlobalQuestScreen(GlobalQuestNetwork.State state) {
@@ -56,18 +57,20 @@ public final class GlobalQuestScreen extends Screen {
     protected void init() {
         int x = width / 2;
         int controlsY = controlsY();
-        addRenderableWidget(Button.builder(Component.literal("Inicio"), button ->
-            ZianHubNetwork.requestHub()).bounds(10, 9, 55, 18).build());
-        acceptButton = addRenderableWidget(Button.builder(Component.literal("Aceptar objetivos"), button -> {
+        addRenderableWidget(new StyledButton(10, 9, 55, 18, Component.literal("Inicio"),
+            ZianHubNetwork::requestHub));
+        acceptButton = addRenderableWidget(new StyledButton(x - 111, controlsY, 110, 20,
+            Component.literal("Aceptar objetivos"), () -> {
             waiting = true;
             updateButtons();
             GlobalQuestNetwork.request(true, state.windowStartEpochMs());
-        }).bounds(x - 111, controlsY, 110, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Actualizar"), button -> {
+        }));
+        addRenderableWidget(new StyledButton(x + 1, controlsY, 110, 20,
+            Component.literal("Actualizar"), () -> {
             waiting = true;
             updateButtons();
             GlobalQuestNetwork.request(false, state.windowStartEpochMs());
-        }).bounds(x + 1, controlsY, 110, 20).build());
+        }));
         updateButtons();
     }
 
@@ -102,7 +105,7 @@ public final class GlobalQuestScreen extends Screen {
         long seconds = Math.max(0, (state.expiresAtEpochMs() - System.currentTimeMillis()) / 1000);
         String reset = Instant.ofEpochMilli(state.expiresAtEpochMs()).atZone(ECUADOR).format(TIME);
         graphics.drawCenteredString(font,
-            Component.literal("Misión global  ·  Reinicio " + reset + " Ecuador  ·  "
+            Component.literal("Misión global  ·  Reinicio " + reset + "  ·  "
                 + (seconds / 3600) + "h " + ((seconds % 3600) / 60) + "m"),
             width / 2, 27, MUTED);
 
@@ -145,7 +148,7 @@ public final class GlobalQuestScreen extends Screen {
             int previewH = h > 95 ? 87 : 57;
             int px = x + w - previewW - 8;
             int py = y + 7;
-            graphics.fill(px, py, px + previewW, py + previewH, 0x8010161D);
+            graphics.fill(px, py, px + previewW, py + previewH, 0xFF10161D);
             graphics.renderOutline(px, py, previewW, previewH, 0xFF343D47);
             renderPokemon(graphics, px + previewW / 2, py + previewH / 2 - 14, partialTick,
                 h > 95 ? 23.0f : 16.0f);
@@ -192,7 +195,7 @@ public final class GlobalQuestScreen extends Screen {
 
     private static void card(GuiGraphics graphics, int x, int y, int w, int h, int accent) {
         graphics.fill(x, y, x + w, y + h, 0xFF59616B);
-        graphics.fill(x + 1, y + 1, x + w - 1, y + h - 1, 0xF0181D24);
+        graphics.fill(x + 1, y + 1, x + w - 1, y + h - 1, 0xFF181D24);
         graphics.fill(x + 1, y + 1, x + w - 1, y + 4, accent);
     }
 
@@ -207,4 +210,30 @@ public final class GlobalQuestScreen extends Screen {
     }
 
     @Override public boolean isPauseScreen() { return false; }
+
+    private static final class StyledButton extends AbstractButton {
+        private final Runnable action;
+
+        private StyledButton(int x, int y, int width, int height, Component message, Runnable action) {
+            super(x, y, width, height, message);
+            this.action = action;
+        }
+
+        @Override public void onPress() { action.run(); }
+
+        @Override protected void updateWidgetNarration(NarrationElementOutput output) {
+            defaultButtonNarrationText(output);
+        }
+
+        @Override protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            boolean hover = isHovered && active;
+            int border = hover ? GOLD : (active ? 0xFF526575 : 0xFF3B4148);
+            int fill = active ? 0xFF20262D : 0xFF161A20;
+            graphics.fill(getX(), getY(), getX() + width, getY() + height, fill);
+            graphics.renderOutline(getX(), getY(), width, height, border);
+            graphics.drawCenteredString(Minecraft.getInstance().font, getMessage(),
+                getX() + width / 2, getY() + (height - 8) / 2,
+                active ? 0xFFE2E8F0 : 0xFF7C838B);
+        }
+    }
 }
