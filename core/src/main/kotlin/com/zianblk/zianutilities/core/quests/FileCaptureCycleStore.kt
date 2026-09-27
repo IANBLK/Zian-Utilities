@@ -10,7 +10,7 @@ import java.nio.file.StandardOpenOption
 import java.util.Properties
 import java.util.UUID
 
-/** Separate v1 cycle files leave the original capture mission data untouched. */
+/** At most one current and one previous cycle file per assigned player. */
 class FileCaptureCycleStore(private val directory: Path) : CaptureCycleStore {
     private val locks = Array(256) { Any() }
 
@@ -48,11 +48,10 @@ class FileCaptureCycleStore(private val directory: Path) : CaptureCycleStore {
 
     override fun rotate(previous: CaptureCycle, next: CaptureCycle) {
         require(previous.playerId == next.playerId)
-        val archive = directory.resolve("history")
-            .resolve(previous.playerId.toString()).resolve("${previous.cycleId}.properties")
-        if (!Files.exists(archive)) write(archive, previous)
-        // A crash after archiving but before replacement leaves the old current file.
-        // Retrying is safe because the archive is immutable and written first.
+        val archive = directory.resolve("previous").resolve("${previous.playerId}.properties")
+        write(archive, previous)
+        // A crash after writing the previous cycle but before replacing current
+        // leaves current intact. Retrying the same rotation is safe.
         save(next)
     }
 
