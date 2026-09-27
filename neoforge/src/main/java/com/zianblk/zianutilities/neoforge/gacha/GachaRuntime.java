@@ -2,6 +2,7 @@ package com.zianblk.zianutilities.neoforge.gacha;
 
 import com.zianblk.zianutilities.core.economy.EconomyMutationResult;
 import com.zianblk.zianutilities.core.economy.EconomyOperation;
+import com.zianblk.zianutilities.neoforge.ZianFeatureSettings;
 import com.zianblk.zianutilities.neoforge.economy.AvecoinsContractProbe;
 import com.zianblk.zianutilities.neoforge.economy.AvecoinsEconomyPort;
 import net.minecraft.nbt.CompoundTag;
@@ -29,8 +30,8 @@ import java.util.concurrent.ThreadLocalRandom;
 /** Server-owned, journaled first gacha slice. Files are per world and per player. */
 public final class GachaRuntime {
     private static final Logger LOG = LoggerFactory.getLogger("ZianUtilities/Gacha");
-    public static final String TEST_FLAG = "zianutilities.gachaTestEnabled";
-    public static final String PAYMENT_FLAG = "zianutilities.gachaPaymentTestEnabled";
+    public static boolean enabled() { return ZianFeatureSettings.get().gachas(); }
+    public static boolean paymentsEnabled() { return ZianFeatureSettings.get().gachaPaymentsActive(); }
     public static final List<String> TICKETS = List.of(
         "avecoins:goldticket", "avecoins:diamondticket", "avecoins:netheriteticket");
     private static final int MAX_POOLS = 8;
@@ -167,7 +168,7 @@ public final class GachaRuntime {
                 pending.add(new Pending(op.getUUID("id"), prize, op.getString("pool"), phase));
             }
         }
-        return new View(visible, pending, player.hasPermissions(2), Boolean.getBoolean(PAYMENT_FLAG));
+        return new View(visible, pending, player.hasPermissions(2), paymentsEnabled());
     }
 
     public static synchronized void create(ServerPlayer player) throws IOException {
@@ -252,7 +253,7 @@ public final class GachaRuntime {
     }
 
     public static synchronized void roll(ServerPlayer player, int poolId) throws IOException {
-        if (!Boolean.getBoolean(PAYMENT_FLAG)) throw new IllegalStateException("Los pagos de gacha están desactivados");
+        if (!paymentsEnabled()) throw new IllegalStateException("Los pagos de gacha están desactivados");
         if (!AvecoinsContractProbe.inspect().compatible()) throw new IllegalStateException("AVECOINS compatible no disponible");
         Pool pool = pools(player).stream().filter(p -> p.id() == poolId && p.enabled()).findFirst()
             .orElseThrow(() -> new IllegalStateException("Gacha no disponible"));
@@ -351,4 +352,5 @@ public final class GachaRuntime {
         return false;
     }
 }
+
 

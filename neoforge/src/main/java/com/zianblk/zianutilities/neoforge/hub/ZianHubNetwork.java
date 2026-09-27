@@ -2,6 +2,7 @@ package com.zianblk.zianutilities.neoforge.hub;
 
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 import com.zianblk.zianutilities.neoforge.quests.GlobalQuestNetwork;
+import com.zianblk.zianutilities.neoforge.quests.GlobalQuestRuntime;
 import com.zianblk.zianutilities.neoforge.gacha.GachaNetwork;
 import com.zianblk.zianutilities.neoforge.gacha.GachaRuntime;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -17,8 +18,6 @@ import net.neoforged.neoforge.network.registration.NetworkRegistry;
 
 /** The hub is navigation only; all quest and gacha mutations remain server-owned. */
 public final class ZianHubNetwork {
-    private static final String QUEST_FLAG = "zianutilities.globalQuestTestEnabled";
-
     private ZianHubNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
@@ -38,8 +37,8 @@ public final class ZianHubNetwork {
                 "Instala la misma versión de Zian Utilities en tu cliente."));
             return;
         }
-        PacketDistributor.sendToPlayer(player, new State(Boolean.getBoolean(QUEST_FLAG),
-            Boolean.getBoolean(GachaRuntime.TEST_FLAG)));
+        PacketDistributor.sendToPlayer(player, new State(GlobalQuestRuntime.moduleEnabled(),
+            GachaRuntime.enabled()));
     }
 
     private static void onState(State state, IPayloadContext context) {
@@ -51,14 +50,14 @@ public final class ZianHubNetwork {
         switch (request.destination()) {
             case 0 -> open(player);
             case 1 -> {
-                if (!Boolean.getBoolean(QUEST_FLAG)) {
+                if (!GlobalQuestRuntime.moduleEnabled()) {
                     open(player);
                     return;
                 }
                 GlobalQuestNetwork.send(player, true);
             }
             case 2 -> {
-                if (Boolean.getBoolean(GachaRuntime.TEST_FLAG)) GachaNetwork.send(player, true);
+                if (GachaRuntime.enabled()) GachaNetwork.send(player, true);
             }
             default -> { }
         }
@@ -92,3 +91,4 @@ public final class ZianHubNetwork {
     public static void requestQuests() { PacketDistributor.sendToServer(new Navigate((byte) 1)); }
     public static void requestGachas() { PacketDistributor.sendToServer(new Navigate((byte) 2)); }
 }
+

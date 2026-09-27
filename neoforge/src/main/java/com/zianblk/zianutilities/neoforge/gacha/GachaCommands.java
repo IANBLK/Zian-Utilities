@@ -13,8 +13,8 @@ public final class GachaCommands {
         event.getDispatcher().register(Commands.literal("zian")
             .requires(source -> true)
             .then(Commands.literal("gacha").executes(context -> {
-                if (!Boolean.getBoolean(GachaRuntime.TEST_FLAG)) {
-                    context.getSource().sendFailure(Component.literal("Gachas de prueba desactivados."));
+                if (!GachaRuntime.enabled()) {
+                    context.getSource().sendFailure(Component.literal("Gachas desactivados."));
                     return 0;
                 }
                 if (!(context.getSource().getEntity() instanceof ServerPlayer player)) {
@@ -31,3 +31,4 @@ public final class GachaCommands {
             })));
     }
 }
+

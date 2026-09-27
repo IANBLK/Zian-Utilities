@@ -58,7 +58,7 @@ public final class GachaNetwork {
 
     private static void onAction(Action action, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player)
-            || !Boolean.getBoolean(GachaRuntime.TEST_FLAG)) return;
+            || !GachaRuntime.enabled()) return;
         try {
             switch (action.kind()) {
                 case 0 -> { }
@@ -173,4 +173,5 @@ public final class GachaNetwork {
         PacketDistributor.sendToServer(new Action((byte) kind, poolId, index, text));
     }
 }
+
 

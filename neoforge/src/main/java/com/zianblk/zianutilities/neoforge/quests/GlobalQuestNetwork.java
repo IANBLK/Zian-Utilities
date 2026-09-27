@@ -43,7 +43,7 @@ public final class GlobalQuestNetwork {
                 offer.getExpiresAtEpochMs(), offer.getTargetSpecies() == null ? "" : offer.getTargetSpecies(),
                 offer.getGenerationIds(), progress != null, progress != null && progress.getCaptureComplete(),
                 progress == null ? 0 : progress.getBattleIds().size(),
-                offer.getRewardsEnabled() && Boolean.getBoolean(GlobalQuestRuntime.REWARD_FLAG),
+                offer.getRewardsEnabled() && GlobalQuestRuntime.rewardsEnabled(),
                 offer.getCaptureCurrency(), offer.getCaptureAmount(),
                 offer.getBattleCurrency(), offer.getBattleAmount()));
         } catch (Exception error) {
@@ -59,7 +59,7 @@ public final class GlobalQuestNetwork {
 
     private static void onAction(Action action, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player)
-            || !Boolean.getBoolean(GlobalQuestRuntime.TEST_FLAG)) return;
+            || !GlobalQuestRuntime.moduleEnabled()) return;
         try {
             GlobalQuestOffer offer = GlobalQuestRuntime.offer(player.getServer());
             if (action.accept() && action.windowStartEpochMs() == offer.getWindowStartEpochMs()
@@ -131,3 +131,4 @@ public final class GlobalQuestNetwork {
         PacketDistributor.sendToServer(new Action(accept, windowStartEpochMs, targetSpecies, generationIds));
     }
 }
+
