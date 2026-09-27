@@ -52,7 +52,7 @@ interface CaptureCycleStore {
     fun <T> withPlayerLock(playerId: UUID, action: () -> T): T
     fun load(playerId: UUID): CaptureCycle?
     fun save(cycle: CaptureCycle)
-    /** Must persist the old cycle before replacing the current cycle. */
+    /** Must persist the latest old cycle before replacing the current cycle. */
     fun rotate(previous: CaptureCycle, next: CaptureCycle)
 }
 
