@@ -60,14 +60,14 @@ class CaptureCycleService @JvmOverloads constructor(
 ) {
     fun assign(playerId: UUID, enabled: Set<Generation>): CaptureCycle =
         store.withPlayerLock(playerId) {
-            currentOrRotate(playerId, enabled)?.let { return@withPlayerLock it }
+            currentOrRotate(playerId)?.let { return@withPlayerLock it }
             require(enabled.isNotEmpty()) { "cannot assign a capture cycle without an enabled generation" }
             CaptureCycle(UUID.randomUUID(), playerId, clock.millis()).also(store::save)
         }
 
-    /** Lazy renewal gives the player a full six hours after the next visit or capture. */
+    /** Renewal is lazy, but windows remain anchored to this player's original assignment. */
     fun inspect(playerId: UUID, enabled: Set<Generation>): CaptureCycle? =
-        store.withPlayerLock(playerId) { currentOrRotate(playerId, enabled) }
+        store.withPlayerLock(playerId) { currentOrRotate(playerId) }
 
     fun recordCapture(
         playerId: UUID,
@@ -77,7 +77,7 @@ class CaptureCycleService @JvmOverloads constructor(
         enabled: Set<Generation>,
     ): CaptureCycleResult = store.withPlayerLock(playerId) {
         require(speciesId.isNotBlank())
-        val cycle = currentOrRotate(playerId, enabled)
+        val cycle = currentOrRotate(playerId)
             ?: return@withPlayerLock CaptureCycleResult.NOT_ASSIGNED
         if (cycle.captures.any { it.pokemonId == pokemonId }) return@withPlayerLock CaptureCycleResult.DUPLICATE
         if (cycle.completed) return@withPlayerLock CaptureCycleResult.ALREADY_COMPLETED
@@ -91,11 +91,16 @@ class CaptureCycleService @JvmOverloads constructor(
         if (updated.completed) CaptureCycleResult.COMPLETED else CaptureCycleResult.ADVANCED
     }
 
-    private fun currentOrRotate(playerId: UUID, enabled: Set<Generation>): CaptureCycle? {
+    private fun currentOrRotate(playerId: UUID): CaptureCycle? {
         val current = store.load(playerId) ?: return null
         val now = clock.millis()
-        if (now < current.expiresAtEpochMs || enabled.isEmpty()) return current
-        val next = CaptureCycle(UUID.randomUUID(), playerId, now)
+        if (now < current.expiresAtEpochMs) return current
+        val elapsedWindows = (now - current.assignedAtEpochMs) / CaptureCycle.DURATION_MS
+        val nextStart = Math.addExact(
+            current.assignedAtEpochMs,
+            Math.multiplyExact(elapsedWindows, CaptureCycle.DURATION_MS),
+        )
+        val next = CaptureCycle(UUID.randomUUID(), playerId, nextStart)
         store.rotate(current, next)
         return next
     }
