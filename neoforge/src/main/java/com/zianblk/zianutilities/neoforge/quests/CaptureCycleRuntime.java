@@ -17,7 +17,7 @@ public final class CaptureCycleRuntime {
         if (activeServer != server) {
             Path directory = server.getWorldPath(LevelResource.ROOT)
                 .resolve("data").resolve("zianutilities")
-                .resolve("quest_assignments").resolve("capture_three_active_v1");
+                .resolve("quest_assignments").resolve("capture_three_global_v1");
             activeService = new CaptureCycleService(new FileCaptureCycleStore(directory));
             activeServer = server;
         }
