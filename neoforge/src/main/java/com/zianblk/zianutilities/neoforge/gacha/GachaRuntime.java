@@ -282,6 +282,15 @@ public final class GachaRuntime {
         saveOperations(player, ops);
         LOG.info("[ZIAN-AUDIT] action=gacha_roll playerUuid={} operation={} pool={} ticket={} cost={} result=READY",
             player.getUUID(), id, pool.id(), pool.ticket(), pool.cost());
+        if (fits(player, winner.item())) {
+            claim(player, id);
+            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                "Ganaste " + winner.item().getHoverName().getString() + "."));
+        } else {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                "Ganaste " + winner.item().getHoverName().getString()
+                    + ". Libera espacio y reclámalo en Gachas."));
+        }
     }
 
     public static synchronized void claim(ServerPlayer player, UUID id) throws IOException {
