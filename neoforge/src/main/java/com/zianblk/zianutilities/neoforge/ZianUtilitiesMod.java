@@ -12,6 +12,8 @@ import com.zianblk.zianutilities.neoforge.quests.CaptureTrialCommands;
 import com.zianblk.zianutilities.neoforge.quests.CaptureTrialListener;
 import com.zianblk.zianutilities.neoforge.quests.CaptureMissionCommands;
 import com.zianblk.zianutilities.neoforge.quests.CaptureMissionListener;
+import com.zianblk.zianutilities.neoforge.quests.CaptureCycleCommands;
+import com.zianblk.zianutilities.neoforge.quests.CaptureCycleListener;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 
@@ -24,6 +26,7 @@ public final class ZianUtilitiesMod {
         NeoForge.EVENT_BUS.addListener(RewardCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(CaptureTrialCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(CaptureMissionCommands::onRegisterCommands);
+        NeoForge.EVENT_BUS.addListener(CaptureCycleCommands::onRegisterCommands);
         GenerationPreselectionFilter.install();
         NaturalSpawnGuard.install();
         FishingSpawnGuard.install();
@@ -32,6 +35,7 @@ public final class ZianUtilitiesMod {
         CaptureEventProbe.install();
         CaptureTrialListener.install();
         CaptureMissionListener.install();
+        CaptureCycleListener.install();
     }
 }
 
