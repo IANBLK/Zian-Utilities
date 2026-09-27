@@ -28,6 +28,7 @@ public final class CaptureMissionCommands {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
             Commands.literal("zian")
+                .requires(source -> true)
                 .then(Commands.literal("quest")
                     .then(Commands.literal("capture")
                         .requires(source -> Boolean.getBoolean(TEST_FLAG))
