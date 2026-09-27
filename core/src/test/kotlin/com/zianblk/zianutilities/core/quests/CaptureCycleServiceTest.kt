@@ -73,8 +73,7 @@ class CaptureCycleServiceTest {
         assertNotEquals(first.cycleId, next.cycleId)
         assertEquals(1, next.captures.size)
         assertEquals(clock.millis(), next.assignedAtEpochMs)
-        assertTrue(Files.exists(directory.resolve("history").resolve(player.toString())
-            .resolve("${first.cycleId}.properties")))
+        assertTrue(Files.exists(directory.resolve("previous").resolve("$player.properties")))
     }
 
     @Test
@@ -124,6 +123,29 @@ class CaptureCycleServiceTest {
         val next = assertNotNull(restarted.inspect(player, gen7))
         assertEquals(0, next.captures.size)
         assertEquals(start.plusSeconds(3 * 3600).toEpochMilli(), next.assignedAtEpochMs)
+    }
+
+    @Test
+    fun `storage stays at two files per player across many windows`() {
+        val clock = MutableClock(start)
+        val service = CaptureCycleService(FileCaptureCycleStore(directory), clock)
+        val secondPlayer = UUID.randomUUID()
+        service.assign(player, gen7)
+        service.assign(secondPlayer, gen7)
+        repeat(80) { period ->
+            clock.instant = start.plusSeconds((period + 1L) * 3 * 3600)
+            service.inspect(player, gen7)
+            service.inspect(secondPlayer, gen7)
+        }
+        Files.list(directory).use { entries ->
+            assertEquals(2L, entries.filter { it.fileName.toString().endsWith(".properties") }.count())
+        }
+        Files.list(directory.resolve("previous")).use { entries ->
+            assertEquals(2L, entries.filter { it.fileName.toString().endsWith(".properties") }.count())
+        }
+        val restarted = CaptureCycleService(FileCaptureCycleStore(directory), clock)
+        assertEquals(start.plusSeconds(80L * 3 * 3600).toEpochMilli(),
+            restarted.inspect(player, gen7)?.assignedAtEpochMs)
     }
 
     @Test
