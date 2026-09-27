@@ -94,6 +94,20 @@ class CaptureCycleServiceTest {
     }
 
     @Test
+    fun `offline time never shifts the original six hour schedule`() {
+        val clock = MutableClock(start)
+        val service = CaptureCycleService(FileCaptureCycleStore(directory), clock)
+        service.assign(player, gen7)
+        clock.instant = start.plusSeconds(8 * 3600)
+        val secondWindow = assertNotNull(service.inspect(player, gen7))
+        assertEquals(start.plusSeconds(6 * 3600).toEpochMilli(), secondWindow.assignedAtEpochMs)
+        assertEquals(start.plusSeconds(12 * 3600).toEpochMilli(), secondWindow.expiresAtEpochMs)
+        clock.instant = start.plusSeconds(19 * 3600)
+        val fourthWindow = assertNotNull(service.inspect(player, gen7))
+        assertEquals(start.plusSeconds(18 * 3600).toEpochMilli(), fourthWindow.assignedAtEpochMs)
+    }
+
+    @Test
     fun `corrupt cycle and failed save fail closed`() {
         Files.createDirectories(directory)
         Files.writeString(directory.resolve("$player.properties"), "schemaVersion=99\nplayerId=$player\n")
