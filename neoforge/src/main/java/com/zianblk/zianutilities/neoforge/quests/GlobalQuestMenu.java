@@ -43,9 +43,11 @@ public final class GlobalQuestMenu extends ChestMenu {
                 .inspect(owner.getUUID(), offer);
             String target = offer.getTargetSpecies() == null ? "Pausada: sin especie disponible"
                 : offer.getTargetSpecies();
-            String capture = "Captura " + target + " - " + (progress != null && progress.getCaptureComplete() ? "✓" : "pendiente");
+            String capture = "Captura " + target + " - " + (progress != null && progress.getCaptureComplete() ? "✓" : "pendiente")
+                + rewardText(offer.getCaptureAmount(), offer.getCaptureCurrency(), offer.getRewardsEnabled());
             String battles = "Gana 5 batallas salvajes - " + (progress == null ? 0 : progress.getBattleIds().size()) + "/5"
-                + (progress != null && progress.getBattleComplete() ? " ✓" : "");
+                + (progress != null && progress.getBattleComplete() ? " ✓" : "")
+                + rewardText(offer.getBattleAmount(), offer.getBattleCurrency(), offer.getRewardsEnabled());
             display.setItem(CAPTURE_SLOT, icon(progress != null && progress.getCaptureComplete()
                 ? Items.LIME_DYE : Items.ENDER_PEARL, capture));
             display.setItem(BATTLE_SLOT, icon(progress != null && progress.getBattleComplete()
@@ -62,6 +64,10 @@ public final class GlobalQuestMenu extends ChestMenu {
         ItemStack stack = new ItemStack(item);
         stack.set(DataComponents.CUSTOM_NAME, Component.literal(name));
         return stack;
+    }
+
+    private static String rewardText(long amount, String currency, boolean enabled) {
+        return enabled ? " | premio: " + amount + " " + currency : " | prueba sin pago";
     }
 
     @Override

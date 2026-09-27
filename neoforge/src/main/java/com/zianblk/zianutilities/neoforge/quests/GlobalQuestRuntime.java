@@ -109,10 +109,13 @@ public final class GlobalQuestRuntime {
 
     /** Claim IDs do not include species, so generation changes cannot pay twice in one window. */
     public static synchronized ClaimStatus pay(GlobalQuestProgress progress, String objective) {
-        if (!progress.getOffer().getRewardsEnabled()) return null;
+        if (!Boolean.getBoolean(REWARD_FLAG) || !progress.getOffer().getRewardsEnabled()) return null;
         if (!((objective.equals("capture") && progress.getCaptureComplete())
             || (objective.equals("battle") && progress.getBattleComplete()))) return null;
-        if (!AvecoinsContractProbe.inspect().compatible()) return null;
+        if (!AvecoinsContractProbe.inspect().compatible()) {
+            LOGGER.warn("[ZIAN-GLOBAL-QUEST] reward blocked: AVECOINS 2.3 contract unavailable");
+            return null;
+        }
         initialize(activeServer);
         GlobalQuestOffer offer = progress.getOffer();
         String currency = objective.equals("capture") ? offer.getCaptureCurrency() : offer.getBattleCurrency();
