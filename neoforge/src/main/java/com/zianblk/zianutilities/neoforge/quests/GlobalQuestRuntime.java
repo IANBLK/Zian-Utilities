@@ -79,14 +79,7 @@ public final class GlobalQuestRuntime {
             ? previous.getBattleAmount() : Long.parseLong(config.getProperty("battle.amount").trim());
         boolean rewardsEnabled = previous != null && previous.getWindowStartEpochMs() == window
             ? previous.getRewardsEnabled() : Boolean.getBoolean(REWARD_FLAG);
-        List<String> rawPool = new ArrayList<>();
-        for (Generation generation : enabled.stream().sorted(Comparator.comparing(Generation::getId)).toList()) {
-            String csv = config.getProperty("species." + generation.getId(), "");
-            Arrays.stream(csv.split(",")).map(String::trim).filter(s -> !s.isEmpty())
-                .filter(s -> RESOLVER.resolve(s).contains(generation))
-                .forEach(rawPool::add);
-        }
-        List<String> pool = rawPool.stream().distinct().sorted().toList();
+        List<String> pool = eligibleSpecies(config, enabled);
         String priorTarget = previous != null && previous.getWindowStartEpochMs() != window
             ? previous.getTargetSpecies() : null;
         String target = selectTarget(pool, window, generations, priorTarget);
@@ -96,6 +89,40 @@ public final class GlobalQuestRuntime {
         LOGGER.info("[ZIAN-GLOBAL-QUEST] window={} generations={} species={} rewards={}",
             window, generations, target, Boolean.getBoolean(REWARD_FLAG) ? "test-enabled" : "disabled");
         return next;
+    }
+
+    private static List<String> eligibleSpecies(Properties config, Set<Generation> enabled) {
+        List<String> rawPool = new ArrayList<>();
+        for (Generation generation : enabled.stream().sorted(Comparator.comparing(Generation::getId)).toList()) {
+            String csv = config.getProperty("species." + generation.getId(), "");
+            Arrays.stream(csv.split(",")).map(String::trim).filter(s -> !s.isEmpty())
+                .filter(s -> RESOLVER.resolve(s).contains(generation))
+                .forEach(rawPool::add);
+        }
+        return rawPool.stream().distinct().sorted().toList();
+    }
+
+    /** Rotate the offer inside the current real window for an operator test; no reward can be earned from it. */
+    public static synchronized GlobalQuestOffer rotateForTest(MinecraftServer server) throws IOException {
+        if (!Boolean.getBoolean(TEST_FLAG)) throw new IllegalStateException("global quest test is disabled");
+        GlobalQuestOffer current = offer(server);
+        List<String> pool = eligibleSpecies(readConfig(), enabled(server));
+        GlobalQuestOffer rotated = testRotationOffer(current, pool);
+        writeOffer(root.resolve("offer.properties"), rotated);
+        LOGGER.info("[ZIAN-AUDIT] action=global_quest_test_rotate window={} from={} to={} rewards=disabled",
+            current.getWindowStartEpochMs(), current.getTargetSpecies(), rotated.getTargetSpecies());
+        return rotated;
+    }
+
+    static GlobalQuestOffer testRotationOffer(GlobalQuestOffer current, List<String> pool) {
+        if (pool.size() < 2 || current.getTargetSpecies() == null || !pool.contains(current.getTargetSpecies())) {
+            throw new IllegalStateException("at least two eligible species including the current target are required");
+        }
+        String target = selectTarget(pool, current.getExpiresAtEpochMs(),
+            current.getGenerationIds(), current.getTargetSpecies());
+        return new GlobalQuestOffer(current.getWindowStartEpochMs(), target, current.getGenerationIds(),
+            current.getCaptureCurrency(), current.getCaptureAmount(),
+            current.getBattleCurrency(), current.getBattleAmount(), false);
     }
 
     static String selectTarget(List<String> pool, long window, String generations, String priorTarget) {

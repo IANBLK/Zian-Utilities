@@ -23,7 +23,7 @@ public final class GlobalQuestNetwork {
     private GlobalQuestNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("global-quest-ui-1");
+        var registrar = event.registrar("global-quest-ui-2");
         registrar.playToClient(State.TYPE, State.CODEC, GlobalQuestNetwork::onState);
         registrar.playToServer(Action.TYPE, Action.CODEC, GlobalQuestNetwork::onAction);
     }
@@ -62,7 +62,9 @@ public final class GlobalQuestNetwork {
             || !Boolean.getBoolean(GlobalQuestRuntime.TEST_FLAG)) return;
         try {
             GlobalQuestOffer offer = GlobalQuestRuntime.offer(player.getServer());
-            if (action.accept() && action.windowStartEpochMs() == offer.getWindowStartEpochMs()) {
+            if (action.accept() && action.windowStartEpochMs() == offer.getWindowStartEpochMs()
+                && action.targetSpecies().equals(offer.getTargetSpecies() == null ? "" : offer.getTargetSpecies())
+                && action.generationIds().equals(offer.getGenerationIds())) {
                 var service = GlobalQuestRuntime.service(player.getServer());
                 if (service.inspect(player.getUUID(), offer) == null) {
                     service.accept(player.getUUID(), offer);
@@ -76,12 +78,19 @@ public final class GlobalQuestNetwork {
         }
     }
 
-    public record Action(boolean accept, long windowStartEpochMs) implements CustomPacketPayload {
+    public record Action(boolean accept, long windowStartEpochMs,
+                         String targetSpecies, String generationIds) implements CustomPacketPayload {
         public static final Type<Action> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(
             ZianUtilitiesMod.MOD_ID, "global_quest_action"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Action> CODEC = StreamCodec.of(
-            (buffer, value) -> { buffer.writeBoolean(value.accept); buffer.writeLong(value.windowStartEpochMs); },
-            buffer -> new Action(buffer.readBoolean(), buffer.readLong()));
+            (buffer, value) -> {
+                buffer.writeBoolean(value.accept);
+                buffer.writeLong(value.windowStartEpochMs);
+                buffer.writeUtf(value.targetSpecies, 128);
+                buffer.writeUtf(value.generationIds, 128);
+            },
+            buffer -> new Action(buffer.readBoolean(), buffer.readLong(),
+                buffer.readUtf(128), buffer.readUtf(128)));
 
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
@@ -117,7 +126,8 @@ public final class GlobalQuestNetwork {
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
-    public static void request(boolean accept, long windowStartEpochMs) {
-        PacketDistributor.sendToServer(new Action(accept, windowStartEpochMs));
+    public static void request(boolean accept, long windowStartEpochMs,
+                               String targetSpecies, String generationIds) {
+        PacketDistributor.sendToServer(new Action(accept, windowStartEpochMs, targetSpecies, generationIds));
     }
 }
