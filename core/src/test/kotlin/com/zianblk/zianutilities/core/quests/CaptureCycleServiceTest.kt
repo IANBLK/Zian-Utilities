@@ -21,7 +21,8 @@ class CaptureCycleServiceTest {
     @TempDir lateinit var directory: Path
     private val player = UUID.randomUUID()
     private val gen7 = setOf(Generation.GEN_7)
-    private val start = Instant.parse("2026-09-26T00:00:00Z")
+    // 05:00 UTC is 00:00 in America/Guayaquil.
+    private val start = Instant.parse("2026-09-26T05:00:00Z")
 
     private class MutableClock(var instant: Instant) : Clock() {
         override fun getZone(): ZoneId = ZoneOffset.UTC
@@ -57,15 +58,17 @@ class CaptureCycleServiceTest {
     }
 
     @Test
-    fun `six hour boundary archives prior cycle and first capture advances new one`() {
+    fun `three hour boundary archives incomplete cycle and first capture advances new one`() {
         val clock = MutableClock(start)
         val service = CaptureCycleService(FileCaptureCycleStore(directory), clock)
         val first = service.assign(player, gen7)
-        clock.instant = start.plusSeconds(6 * 3600 - 1)
-        assertEquals(first.cycleId, service.inspect(player, gen7)?.cycleId)
-        clock.instant = start.plusSeconds(6 * 3600)
         assertEquals(CaptureCycleResult.ADVANCED, service.recordCapture(
             player, UUID.randomUUID(), "cobblemon:komala", gen7, gen7))
+        clock.instant = start.plusSeconds(3 * 3600 - 1)
+        assertEquals(first.cycleId, service.inspect(player, gen7)?.cycleId)
+        clock.instant = start.plusSeconds(3 * 3600)
+        assertEquals(CaptureCycleResult.ADVANCED, service.recordCapture(
+            player, UUID.randomUUID(), "cobblemon:yungoos", gen7, gen7))
         val next = assertNotNull(service.inspect(player, gen7))
         assertNotEquals(first.cycleId, next.cycleId)
         assertEquals(1, next.captures.size)
@@ -75,36 +78,52 @@ class CaptureCycleServiceTest {
     }
 
     @Test
-    fun `players have independent clocks and generation changes remain eligible`() {
+    fun `players share boundaries but keep independent progress and generation eligibility`() {
         val clock = MutableClock(start)
         val service = CaptureCycleService(FileCaptureCycleStore(directory), clock)
         val secondPlayer = UUID.randomUUID()
         val first = service.assign(player, gen7)
         clock.instant = start.plusSeconds(3600)
         val second = service.assign(secondPlayer, gen7)
+        assertEquals(first.assignedAtEpochMs, second.assignedAtEpochMs)
         assertEquals(CaptureCycleResult.PAUSED, service.recordCapture(
             secondPlayer, UUID.randomUUID(), "cobblemon:komala", gen7, emptySet()))
         assertEquals(CaptureCycleResult.ADVANCED, service.recordCapture(
             secondPlayer, UUID.randomUUID(), "cobblemon:sentret",
             setOf(Generation.GEN_2), setOf(Generation.GEN_1, Generation.GEN_2)))
-        clock.instant = start.plusSeconds(6 * 3600)
+        clock.instant = start.plusSeconds(3 * 3600)
         assertNotEquals(first.cycleId, service.inspect(player, gen7)?.cycleId)
-        assertEquals(second.cycleId, service.inspect(secondPlayer, gen7)?.cycleId)
-        assertEquals(1, service.inspect(secondPlayer, gen7)?.captures?.size)
+        assertNotEquals(second.cycleId, service.inspect(secondPlayer, gen7)?.cycleId)
+        assertEquals(0, service.inspect(secondPlayer, gen7)?.captures?.size)
     }
 
     @Test
-    fun `offline time never shifts the original six hour schedule`() {
+    fun `offline time never shifts global Ecuador three hour schedule`() {
         val clock = MutableClock(start)
         val service = CaptureCycleService(FileCaptureCycleStore(directory), clock)
         service.assign(player, gen7)
-        clock.instant = start.plusSeconds(8 * 3600)
+        clock.instant = start.plusSeconds(4 * 3600)
         val secondWindow = assertNotNull(service.inspect(player, gen7))
-        assertEquals(start.plusSeconds(6 * 3600).toEpochMilli(), secondWindow.assignedAtEpochMs)
-        assertEquals(start.plusSeconds(12 * 3600).toEpochMilli(), secondWindow.expiresAtEpochMs)
-        clock.instant = start.plusSeconds(19 * 3600)
+        assertEquals(start.plusSeconds(3 * 3600).toEpochMilli(), secondWindow.assignedAtEpochMs)
+        assertEquals(start.plusSeconds(6 * 3600).toEpochMilli(), secondWindow.expiresAtEpochMs)
+        clock.instant = start.plusSeconds(10 * 3600)
         val fourthWindow = assertNotNull(service.inspect(player, gen7))
-        assertEquals(start.plusSeconds(18 * 3600).toEpochMilli(), fourthWindow.assignedAtEpochMs)
+        assertEquals(start.plusSeconds(9 * 3600).toEpochMilli(), fourthWindow.assignedAtEpochMs)
+    }
+
+    @Test
+    fun `late assignment uses shared boundary and restart does not extend it`() {
+        val clock = MutableClock(start.plusSeconds(2 * 3600))
+        val service = CaptureCycleService(FileCaptureCycleStore(directory), clock)
+        val cycle = service.assign(player, gen7)
+        assertEquals(start.toEpochMilli(), cycle.assignedAtEpochMs)
+        assertEquals(start.plusSeconds(3 * 3600).toEpochMilli(), cycle.expiresAtEpochMs)
+        val restarted = CaptureCycleService(FileCaptureCycleStore(directory), clock)
+        assertEquals(cycle, restarted.inspect(player, gen7))
+        clock.instant = start.plusSeconds(3 * 3600)
+        val next = assertNotNull(restarted.inspect(player, gen7))
+        assertEquals(0, next.captures.size)
+        assertEquals(start.plusSeconds(3 * 3600).toEpochMilli(), next.assignedAtEpochMs)
     }
 
     @Test
