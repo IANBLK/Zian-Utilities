@@ -2,6 +2,8 @@ package com.zianblk.zianutilities.neoforge.hub;
 
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 import com.zianblk.zianutilities.neoforge.quests.GlobalQuestNetwork;
+import com.zianblk.zianutilities.neoforge.gacha.GachaNetwork;
+import com.zianblk.zianutilities.neoforge.gacha.GachaRuntime;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
@@ -13,14 +15,14 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.NetworkRegistry;
 
-/** The hub is navigation only. It never changes quest or future gacha data. */
+/** The hub is navigation only; all quest and gacha mutations remain server-owned. */
 public final class ZianHubNetwork {
     private static final String QUEST_FLAG = "zianutilities.globalQuestTestEnabled";
 
     private ZianHubNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("zian-hub-1");
+        var registrar = event.registrar("zian-hub-2");
         registrar.playToClient(State.TYPE, State.CODEC, ZianHubNetwork::onState);
         registrar.playToServer(Navigate.TYPE, Navigate.CODEC, ZianHubNetwork::onNavigate);
     }
@@ -36,7 +38,8 @@ public final class ZianHubNetwork {
                 "Instala la misma versión de Zian Utilities en tu cliente."));
             return;
         }
-        PacketDistributor.sendToPlayer(player, new State(Boolean.getBoolean(QUEST_FLAG)));
+        PacketDistributor.sendToPlayer(player, new State(Boolean.getBoolean(QUEST_FLAG),
+            Boolean.getBoolean(GachaRuntime.TEST_FLAG)));
     }
 
     private static void onState(State state, IPayloadContext context) {
@@ -54,16 +57,22 @@ public final class ZianHubNetwork {
                 }
                 GlobalQuestNetwork.send(player, true);
             }
-            default -> { /* No gacha or other server action exists yet. */ }
+            case 2 -> {
+                if (Boolean.getBoolean(GachaRuntime.TEST_FLAG)) GachaNetwork.send(player, true);
+            }
+            default -> { }
         }
     }
 
-    public record State(boolean questsEnabled) implements CustomPacketPayload {
+    public record State(boolean questsEnabled, boolean gachasEnabled) implements CustomPacketPayload {
         public static final Type<State> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(
             ZianUtilitiesMod.MOD_ID, "hub_state"));
         public static final StreamCodec<RegistryFriendlyByteBuf, State> CODEC = StreamCodec.of(
-            (buffer, value) -> buffer.writeBoolean(value.questsEnabled),
-            buffer -> new State(buffer.readBoolean()));
+            (buffer, value) -> {
+                buffer.writeBoolean(value.questsEnabled);
+                buffer.writeBoolean(value.gachasEnabled);
+            },
+            buffer -> new State(buffer.readBoolean(), buffer.readBoolean()));
 
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
@@ -81,4 +90,5 @@ public final class ZianHubNetwork {
     public static void requestHub() { PacketDistributor.sendToServer(new Navigate((byte) 0)); }
 
     public static void requestQuests() { PacketDistributor.sendToServer(new Navigate((byte) 1)); }
+    public static void requestGachas() { PacketDistributor.sendToServer(new Navigate((byte) 2)); }
 }

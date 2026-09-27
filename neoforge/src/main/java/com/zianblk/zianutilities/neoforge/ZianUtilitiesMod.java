@@ -8,6 +8,8 @@ import com.zianblk.zianutilities.neoforge.generation.NaturalSpawnGuard;
 import com.zianblk.zianutilities.neoforge.generation.PokeSnackSpawnGuard;
 import com.zianblk.zianutilities.neoforge.hub.ZianHubCommands;
 import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
+import com.zianblk.zianutilities.neoforge.gacha.GachaNetwork;
+import com.zianblk.zianutilities.neoforge.gacha.GachaCommands;
 import com.zianblk.zianutilities.neoforge.rewards.RewardCommands;
 import com.zianblk.zianutilities.neoforge.quests.CaptureEventProbe;
 import com.zianblk.zianutilities.neoforge.quests.CaptureTrialCommands;
@@ -32,6 +34,7 @@ public final class ZianUtilitiesMod {
     public ZianUtilitiesMod(IEventBus modBus) {
         modBus.addListener(GlobalQuestNetwork::register);
         modBus.addListener(ZianHubNetwork::register);
+        modBus.addListener(GachaNetwork::register);
         NeoForge.EVENT_BUS.addListener(GenerationCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(RewardCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(CaptureTrialCommands::onRegisterCommands);
@@ -40,6 +43,7 @@ public final class ZianUtilitiesMod {
         NeoForge.EVENT_BUS.addListener(SharedCaptureMissionCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(GlobalQuestCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(ZianHubCommands::onRegisterCommands);
+        NeoForge.EVENT_BUS.addListener(GachaCommands::onRegisterCommands);
         GenerationPreselectionFilter.install();
         NaturalSpawnGuard.install();
         FishingSpawnGuard.install();
