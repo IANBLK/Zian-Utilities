@@ -14,6 +14,11 @@ public final class GlobalQuestCommands {
             .then(Commands.literal("quest")
                 .requires(source -> Boolean.getBoolean(GlobalQuestRuntime.TEST_FLAG))
                 .executes(context -> {
+                    // Other Zian modules register the same parent literal; Brigadier merges its children.
+                    if (!Boolean.getBoolean(GlobalQuestRuntime.TEST_FLAG)) {
+                        context.getSource().sendFailure(Component.literal("La misión global de prueba está desactivada."));
+                        return 0;
+                    }
                     if (!(context.getSource().getEntity() instanceof ServerPlayer player)) {
                         context.getSource().sendFailure(Component.literal("Abre la misión desde el juego."));
                         return 0;

@@ -14,9 +14,12 @@ import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** A vanilla chest menu: no client mod, packet, or custom screen is needed. */
 public final class GlobalQuestMenu extends ChestMenu {
+    private static final Logger LOGGER = LoggerFactory.getLogger("ZianUtilities/GlobalQuest");
     private static final int CAPTURE_SLOT = 11;
     private static final int ACCEPT_SLOT = 13;
     private static final int BATTLE_SLOT = 15;
@@ -56,6 +59,7 @@ public final class GlobalQuestMenu extends ChestMenu {
                 progress == null ? "Clic para aceptar ambos objetivos" : "Mision aceptada; cambia cada 3 horas"));
             broadcastChanges();
         } catch (Exception error) {
+            LOGGER.error("[ZIAN-GLOBAL-QUEST] action=menu_refresh playerUuid={} result=error", owner.getUUID(), error);
             owner.sendSystemMessage(Component.literal("No se pudo leer la misión; revisa la consola."));
         }
     }
@@ -79,6 +83,7 @@ public final class GlobalQuestMenu extends ChestMenu {
                 owner.sendSystemMessage(Component.literal("Aceptaste los dos objetivos de este bloque."));
                 refresh();
             } catch (Exception error) {
+                LOGGER.error("[ZIAN-GLOBAL-QUEST] action=accept playerUuid={} result=error", owner.getUUID(), error);
                 owner.sendSystemMessage(Component.literal("No se pudo guardar la aceptación; revisa la consola."));
             }
         }
