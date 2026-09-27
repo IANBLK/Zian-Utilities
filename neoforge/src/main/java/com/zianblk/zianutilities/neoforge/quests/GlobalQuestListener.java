@@ -29,13 +29,13 @@ public final class GlobalQuestListener {
     private GlobalQuestListener() {}
 
     public static void install() {
-        if (!Boolean.getBoolean(GlobalQuestRuntime.TEST_FLAG) || !INSTALLED.compareAndSet(false, true)) return;
+        if (!GlobalQuestRuntime.moduleEnabled() || !INSTALLED.compareAndSet(false, true)) return;
         CobblemonEvents.POKEMON_CAPTURED.subscribe(
             Priority.NORMAL, (Consumer<PokemonCapturedEvent>) GlobalQuestListener::onCaptured);
         CobblemonEvents.BATTLE_VICTORY.subscribe(
             Priority.NORMAL, (Consumer<BattleVictoryEvent>) GlobalQuestListener::onVictory);
         LOGGER.info("[ZIAN-GLOBAL-QUEST] enabled; battle victories and captures observed; reward flag={}",
-            Boolean.getBoolean(GlobalQuestRuntime.REWARD_FLAG));
+            GlobalQuestRuntime.rewardsEnabled());
     }
 
     private static void onCaptured(PokemonCapturedEvent event) {
@@ -99,3 +99,4 @@ public final class GlobalQuestListener {
         GlobalQuestNetwork.send(player, false);
     }
 }
+

@@ -15,6 +15,7 @@ import com.zianblk.zianutilities.core.rewards.RewardClaimRecord;
 import com.zianblk.zianutilities.core.rewards.RewardClaimService;
 import com.zianblk.zianutilities.core.rewards.RewardComponent;
 import com.zianblk.zianutilities.neoforge.cobblemon.CobblemonGenerationResolver;
+import com.zianblk.zianutilities.neoforge.ZianFeatureSettings;
 import com.zianblk.zianutilities.neoforge.economy.AvecoinsContractProbe;
 import com.zianblk.zianutilities.neoforge.economy.AvecoinsEconomyPort;
 import com.zianblk.zianutilities.neoforge.generation.NeoForgeGenerationStateStore;
@@ -45,7 +46,9 @@ import java.util.stream.Collectors;
 public final class GlobalQuestRuntime {
     private static final Logger LOGGER = LoggerFactory.getLogger("ZianUtilities/GlobalQuest");
     static final String TEST_FLAG = "zianutilities.globalQuestTestEnabled";
-    static final String REWARD_FLAG = "zianutilities.globalQuestRewardTestEnabled";
+
+    public static boolean moduleEnabled() { return ZianFeatureSettings.get().quests(); }
+    public static boolean rewardsEnabled() { return ZianFeatureSettings.get().questRewardsActive(); }
     private static final String[] LEGACY_POOLS = {
         "cobblemon:caterpie,cobblemon:pidgey",
         "cobblemon:sentret,cobblemon:hoothoot",
@@ -102,7 +105,7 @@ public final class GlobalQuestRuntime {
         long battleAmount = previous != null && previous.getWindowStartEpochMs() == window
             ? previous.getBattleAmount() : Long.parseLong(config.getProperty("battle.amount").trim());
         boolean rewardsEnabled = previous != null && previous.getWindowStartEpochMs() == window
-            ? previous.getRewardsEnabled() : Boolean.getBoolean(REWARD_FLAG);
+            ? previous.getRewardsEnabled() : rewardsEnabled();
         List<String> pool = eligibleSpecies(config, enabled);
         String priorTarget = previous != null && previous.getWindowStartEpochMs() != window
             ? previous.getTargetSpecies() : null;
@@ -111,7 +114,7 @@ public final class GlobalQuestRuntime {
             captureCurrency, captureAmount, battleCurrency, battleAmount, rewardsEnabled);
         writeOffer(path, next);
         LOGGER.info("[ZIAN-GLOBAL-QUEST] window={} generations={} species={} candidates={} rewards={}",
-            window, generations, target, pool.size(), Boolean.getBoolean(REWARD_FLAG) ? "test-enabled" : "disabled");
+            window, generations, target, pool.size(), rewardsEnabled() ? "enabled" : "disabled");
         return next;
     }
 
@@ -176,7 +179,7 @@ public final class GlobalQuestRuntime {
 
     /** Claim IDs do not include species, so generation changes cannot pay twice in one window. */
     public static synchronized ClaimStatus pay(GlobalQuestProgress progress, String objective) {
-        if (!Boolean.getBoolean(REWARD_FLAG) || !progress.getOffer().getRewardsEnabled()) return null;
+        if (!rewardsEnabled() || !progress.getOffer().getRewardsEnabled()) return null;
         if (!((objective.equals("capture") && progress.getCaptureComplete())
             || (objective.equals("battle") && progress.getBattleComplete()))) return null;
         if (!AvecoinsContractProbe.inspect().compatible()) {
@@ -291,4 +294,5 @@ public final class GlobalQuestRuntime {
         }
     }
 }
+
 

@@ -15,17 +15,18 @@ public final class GlobalQuestCommands {
         event.getDispatcher().register(Commands.literal("zian")
             .requires(source -> true)
             .then(Commands.literal("quest")
-                .requires(source -> Boolean.getBoolean(GlobalQuestRuntime.TEST_FLAG))
+                .requires(source -> GlobalQuestRuntime.moduleEnabled())
                 .then(Commands.literal("test")
-                    .requires(source -> source.hasPermission(2))
+                    .requires(source -> source.hasPermission(2)
+                        && Boolean.getBoolean(GlobalQuestRuntime.TEST_FLAG))
                     .then(Commands.literal("rotate")
                         .executes(context -> rotateForTest(context.getSource())))
                     .then(Commands.literal("pool")
                         .executes(context -> showPool(context.getSource()))))
                 .executes(context -> {
                     // Other Zian modules register the same parent literal; Brigadier merges its children.
-                    if (!Boolean.getBoolean(GlobalQuestRuntime.TEST_FLAG)) {
-                        context.getSource().sendFailure(Component.literal("La misión global de prueba está desactivada."));
+                    if (!GlobalQuestRuntime.moduleEnabled()) {
+                        context.getSource().sendFailure(Component.literal("La misión global está desactivada."));
                         return 0;
                     }
                     if (!(context.getSource().getEntity() instanceof ServerPlayer player)) {
@@ -73,3 +74,4 @@ public final class GlobalQuestCommands {
         }
     }
 }
+
