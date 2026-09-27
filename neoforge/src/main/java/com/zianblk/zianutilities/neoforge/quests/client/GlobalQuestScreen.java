@@ -6,6 +6,7 @@ import com.cobblemon.mod.common.client.gui.ProfileTransformType;
 import com.cobblemon.mod.common.client.render.models.blockbench.FloatingState;
 import com.cobblemon.mod.common.entity.PoseType;
 import com.zianblk.zianutilities.neoforge.quests.GlobalQuestNetwork;
+import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -55,6 +56,8 @@ public final class GlobalQuestScreen extends Screen {
     protected void init() {
         int x = width / 2;
         int controlsY = controlsY();
+        addRenderableWidget(Button.builder(Component.literal("Inicio"), button ->
+            ZianHubNetwork.requestHub()).bounds(10, 9, 55, 18).build());
         acceptButton = addRenderableWidget(Button.builder(Component.literal("Aceptar objetivos"), button -> {
             waiting = true;
             updateButtons();

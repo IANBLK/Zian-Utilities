@@ -11,6 +11,7 @@ public final class GlobalQuestCommands {
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("zian")
+            .requires(source -> true)
             .then(Commands.literal("quest")
                 .requires(source -> Boolean.getBoolean(GlobalQuestRuntime.TEST_FLAG))
                 .executes(context -> {
@@ -23,11 +24,12 @@ public final class GlobalQuestCommands {
                         context.getSource().sendFailure(Component.literal("Abre la misión desde el juego."));
                         return 0;
                     }
-                    if (GlobalQuestNetwork.hasVisualClient(player)) {
-                        GlobalQuestNetwork.send(player, true);
-                    } else {
-                        GlobalQuestMenu.open(player);
+                    if (!GlobalQuestNetwork.hasVisualClient(player)) {
+                        context.getSource().sendFailure(Component.literal(
+                            "Instala la misma versión de Zian Utilities en tu cliente."));
+                        return 0;
                     }
+                    GlobalQuestNetwork.send(player, true);
                     return Command.SINGLE_SUCCESS;
                 })));
     }
