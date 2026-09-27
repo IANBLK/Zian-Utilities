@@ -22,7 +22,7 @@ public final class ZianHubNetwork {
     private ZianHubNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("zian-hub-1");
+        var registrar = event.registrar("zian-hub-2");
         registrar.playToClient(State.TYPE, State.CODEC, ZianHubNetwork::onState);
         registrar.playToServer(Navigate.TYPE, Navigate.CODEC, ZianHubNetwork::onNavigate);
     }

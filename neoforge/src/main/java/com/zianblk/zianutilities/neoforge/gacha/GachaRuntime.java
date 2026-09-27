@@ -73,7 +73,9 @@ public final class GachaRuntime {
     }
 
     private static CompoundTag stackTag(ServerPlayer player, ItemStack stack) {
-        return stack.save(player.registryAccess());
+        var encoded = stack.save(player.registryAccess());
+        if (encoded instanceof CompoundTag compound) return compound;
+        throw new IllegalArgumentException("Unsupported item stack encoding");
     }
 
     private static ItemStack stack(ServerPlayer player, CompoundTag tag) {
