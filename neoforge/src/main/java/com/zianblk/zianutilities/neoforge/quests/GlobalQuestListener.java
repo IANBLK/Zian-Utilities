@@ -97,6 +97,6 @@ public final class GlobalQuestListener {
 
     private static void refresh(ServerPlayer player) {
         if (player.containerMenu instanceof GlobalQuestMenu menu) menu.refresh();
+        GlobalQuestNetwork.send(player, false);
     }
 }
-

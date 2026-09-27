@@ -23,9 +23,12 @@ public final class GlobalQuestCommands {
                         context.getSource().sendFailure(Component.literal("Abre la misión desde el juego."));
                         return 0;
                     }
-                    GlobalQuestMenu.open(player);
+                    if (GlobalQuestNetwork.hasVisualClient(player)) {
+                        GlobalQuestNetwork.send(player, true);
+                    } else {
+                        GlobalQuestMenu.open(player);
+                    }
                     return Command.SINGLE_SUCCESS;
                 })));
     }
 }
-

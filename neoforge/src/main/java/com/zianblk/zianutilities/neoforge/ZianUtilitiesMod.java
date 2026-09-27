@@ -18,6 +18,8 @@ import com.zianblk.zianutilities.neoforge.quests.SharedCaptureMissionCommands;
 import com.zianblk.zianutilities.neoforge.quests.SharedCaptureMissionListener;
 import com.zianblk.zianutilities.neoforge.quests.GlobalQuestCommands;
 import com.zianblk.zianutilities.neoforge.quests.GlobalQuestListener;
+import com.zianblk.zianutilities.neoforge.quests.GlobalQuestNetwork;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 
@@ -25,7 +27,8 @@ import net.neoforged.neoforge.common.NeoForge;
 public final class ZianUtilitiesMod {
     public static final String MOD_ID = "zianutilities";
 
-    public ZianUtilitiesMod() {
+    public ZianUtilitiesMod(IEventBus modBus) {
+        modBus.addListener(GlobalQuestNetwork::register);
         NeoForge.EVENT_BUS.addListener(GenerationCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(RewardCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(CaptureTrialCommands::onRegisterCommands);
@@ -46,4 +49,3 @@ public final class ZianUtilitiesMod {
         GlobalQuestListener.install();
     }
 }
-
