@@ -16,14 +16,14 @@ import net.neoforged.neoforge.network.registration.NetworkRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Optional client display. The server remains the only source of quest and reward state. */
+/** Required client display. The server remains the only source of quest and reward state. */
 public final class GlobalQuestNetwork {
     private static final Logger LOGGER = LoggerFactory.getLogger("ZianUtilities/GlobalQuest");
 
     private GlobalQuestNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("global-quest-ui-1").optional();
+        var registrar = event.registrar("global-quest-ui-1");
         registrar.playToClient(State.TYPE, State.CODEC, GlobalQuestNetwork::onState);
         registrar.playToServer(Action.TYPE, Action.CODEC, GlobalQuestNetwork::onAction);
     }

@@ -6,6 +6,8 @@ import com.zianblk.zianutilities.neoforge.generation.GenerationCommands;
 import com.zianblk.zianutilities.neoforge.generation.GenerationPreselectionFilter;
 import com.zianblk.zianutilities.neoforge.generation.NaturalSpawnGuard;
 import com.zianblk.zianutilities.neoforge.generation.PokeSnackSpawnGuard;
+import com.zianblk.zianutilities.neoforge.hub.ZianHubCommands;
+import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
 import com.zianblk.zianutilities.neoforge.rewards.RewardCommands;
 import com.zianblk.zianutilities.neoforge.quests.CaptureEventProbe;
 import com.zianblk.zianutilities.neoforge.quests.CaptureTrialCommands;
@@ -29,6 +31,7 @@ public final class ZianUtilitiesMod {
 
     public ZianUtilitiesMod(IEventBus modBus) {
         modBus.addListener(GlobalQuestNetwork::register);
+        modBus.addListener(ZianHubNetwork::register);
         NeoForge.EVENT_BUS.addListener(GenerationCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(RewardCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(CaptureTrialCommands::onRegisterCommands);
@@ -36,6 +39,7 @@ public final class ZianUtilitiesMod {
         NeoForge.EVENT_BUS.addListener(CaptureCycleCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(SharedCaptureMissionCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(GlobalQuestCommands::onRegisterCommands);
+        NeoForge.EVENT_BUS.addListener(ZianHubCommands::onRegisterCommands);
         GenerationPreselectionFilter.install();
         NaturalSpawnGuard.install();
         FishingSpawnGuard.install();
