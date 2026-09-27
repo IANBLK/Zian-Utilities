@@ -55,8 +55,8 @@ public final class ZianHubScreen extends Screen {
         questsButton.active = state.questsEnabled();
         StyledButton gachas = addRenderableWidget(new StyledButton(secondX() + 10,
             secondY() + cardHeight() - 29, w - 20, 19,
-            Component.literal("Próximamente"), () -> {}));
-        gachas.active = false;
+            Component.literal("Abrir gachas"), ZianHubNetwork::requestGachas));
+        gachas.active = state.gachasEnabled();
     }
 
     @Override
@@ -96,10 +96,12 @@ public final class ZianHubScreen extends Screen {
         int y = secondY();
         graphics.renderItem(new ItemStack(Items.AMETHYST_SHARD), x + 11, y + 11);
         graphics.drawString(font, Component.literal("Gachas"), x + 35, y + 13, WHITE, false);
-        graphics.drawString(font, Component.literal("Se añadirá más adelante"),
+        graphics.drawString(font, Component.literal(state.gachasEnabled()
+            ? "Premios personalizados con tickets" : "Próximamente"),
             x + 11, y + 35, MUTED, false);
         if (!compact()) {
-            graphics.drawString(font, Component.literal("Sin compras ni recompensas aún"),
+            graphics.drawString(font, Component.literal(state.gachasEnabled()
+                ? "Probabilidades visibles antes de girar" : "Sin compras ni recompensas aún"),
                 x + 11, y + 52, MUTED, false);
         }
     }
