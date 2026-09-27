@@ -8,7 +8,9 @@ import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.Locale;
@@ -138,7 +140,7 @@ public final class GachaScreen extends Screen {
         addRenderableWidget(new StyledButton(x + 8, 94, 76, 18, "Guardar", () ->
             GachaNetwork.request(2, pool.id(), 0, nameBox.getValue())));
         addRenderableWidget(new StyledButton(x + 90, 94, 153, 18,
-            "Ticket: " + ticketName(pool.ticket()), () -> GachaNetwork.request(3, pool.id(), 0, "")));
+            ticketName(pool.ticket()), () -> GachaNetwork.request(3, pool.id(), 0, "")));
         addRenderableWidget(new StyledButton(x + 249, 94, 26, 18, "-", () ->
             GachaNetwork.request(4, pool.id(), -1, "")));
         addRenderableWidget(new StyledButton(x + 279, 94, 26, 18, "+", () ->
@@ -188,8 +190,11 @@ public final class GachaScreen extends Screen {
     private void renderPlayer(GuiGraphics graphics, int x, int w, GachaNetwork.PoolView pool) {
         if (pool != null) {
             card(graphics, x, 65, w, 158);
-            graphics.drawString(font, "Costo: " + pool.cost() + " " + ticketName(pool.ticket()),
-                x + 8, 75, GOLD, false);
+            String costLabel = "Costo: " + pool.cost() + " " + ticketName(pool.ticket());
+            graphics.drawString(font, costLabel, x + 8, 75, GOLD, false);
+            ItemStack ticketIcon = BuiltInRegistries.ITEM.getOptional(ResourceLocation.parse(pool.ticket()))
+                .map(ItemStack::new).orElse(ItemStack.EMPTY);
+            if (!ticketIcon.isEmpty()) graphics.renderItem(ticketIcon, x + 14 + font.width(costLabel), 71);
             long total = pool.prizes().stream().mapToLong(GachaNetwork.PrizeView::weight).sum();
             for (int row = 0; row < 4; row++) {
                 int index = prizePage * 4 + row;
@@ -243,7 +248,12 @@ public final class GachaScreen extends Screen {
     }
 
     private static String ticketName(String id) {
-        return id.substring(id.indexOf(':') + 1).replace("ticket", "").toUpperCase(Locale.ROOT);
+        return switch (id) {
+            case "avecoins:goldticket" -> "Ticket de Oro";
+            case "avecoins:diamondticket" -> "Ticket de Diamante";
+            case "avecoins:netheriteticket" -> "Ticket de Netherita";
+            default -> id;
+        };
     }
 
     private static void card(GuiGraphics graphics, int x, int y, int w, int h) {
