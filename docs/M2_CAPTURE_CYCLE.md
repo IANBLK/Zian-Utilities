@@ -1,0 +1,10 @@
+# M2: three-capture, six-hour cycle (alpha.9)
+
+This is a separate opt-in Youer 1.21.1 trial. It does not change the earlier one-capture assignment, generation control, or AVECOINS balances. The three objectives are three distinct Pokémon captures from whichever generations are active **when captured**. There are no species or type requirements, and completing a cycle grants no rewards.
+
+Start Java with `-Dzianutilities.captureCycleTestEnabled=true` before `-jar`. Leave the older `captureMissionTestEnabled`, `captureTrialTestEnabled`, and `captureProbeEnabled` flags unset. The new commands are `/zian quest cycle start` (operator, self), `/zian quest cycle assign <online player>` (operator), and `/zian quest cycle status` (each player can inspect their own cycle). Assignment is explicit. Repeating assignment during the current six-hour window does not reset progress or the timer.
+
+Each player's six-hour window starts at assignment. At expiry, the next status query, assignment, or capture archives the old cycle and starts a new full six-hour window. If all generations are disabled, progress pauses and renewal waits until one is enabled. Completed cycles remain complete until expiry. Restarting Youer keeps the current cycle and its start time; the clock does not restart. Archived cycles are kept under `world/data/zianutilities/quest_assignments/capture_three_active_v1/history/`. The old `capture_any_active_v1` files are untouched.
+
+For a short acceptance run, assign one operator and one non-operator, capture three separate Pokémon from active generations on one account, and check `status` after every capture: 0/3, 1/3, 2/3, 3/3. A fourth capture must leave 3/3. The second account's progress must remain independent. Restart with the same JAR and flag and verify progress, cycle ID, and balance persist. Then remove only the new flag, restart, and verify the cycle command disappears while `/zian generation active` still works for both players. The six-hour rollover is covered by a clock-controlled core test; a natural server rollover can be checked later without altering the system clock.
+
