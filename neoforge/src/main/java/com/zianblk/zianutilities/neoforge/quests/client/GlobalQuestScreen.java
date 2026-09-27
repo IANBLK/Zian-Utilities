@@ -63,13 +63,15 @@ public final class GlobalQuestScreen extends Screen {
             Component.literal("Aceptar objetivos"), () -> {
             waiting = true;
             updateButtons();
-            GlobalQuestNetwork.request(true, state.windowStartEpochMs());
+            GlobalQuestNetwork.request(true, state.windowStartEpochMs(),
+                state.targetSpecies(), state.generationIds());
         }));
         addRenderableWidget(new StyledButton(x + 1, controlsY, 110, 20,
             Component.literal("Actualizar"), () -> {
             waiting = true;
             updateButtons();
-            GlobalQuestNetwork.request(false, state.windowStartEpochMs());
+            GlobalQuestNetwork.request(false, state.windowStartEpochMs(),
+                state.targetSpecies(), state.generationIds());
         }));
         updateButtons();
     }

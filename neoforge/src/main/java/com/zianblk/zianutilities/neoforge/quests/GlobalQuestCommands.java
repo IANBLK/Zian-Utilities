@@ -6,6 +6,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
+import java.io.IOException;
+
 public final class GlobalQuestCommands {
     private GlobalQuestCommands() {}
 
@@ -14,6 +16,10 @@ public final class GlobalQuestCommands {
             .requires(source -> true)
             .then(Commands.literal("quest")
                 .requires(source -> Boolean.getBoolean(GlobalQuestRuntime.TEST_FLAG))
+                .then(Commands.literal("test")
+                    .requires(source -> source.hasPermission(2))
+                    .then(Commands.literal("rotate")
+                        .executes(context -> rotateForTest(context.getSource()))))
                 .executes(context -> {
                     // Other Zian modules register the same parent literal; Brigadier merges its children.
                     if (!Boolean.getBoolean(GlobalQuestRuntime.TEST_FLAG)) {
@@ -32,5 +38,24 @@ public final class GlobalQuestCommands {
                     GlobalQuestNetwork.send(player, true);
                     return Command.SINGLE_SUCCESS;
                 })));
+    }
+
+    private static int rotateForTest(net.minecraft.commands.CommandSourceStack source) {
+        try {
+            var offer = GlobalQuestRuntime.rotateForTest(source.getServer());
+            for (ServerPlayer player : source.getServer().getPlayerList().getPlayers()) {
+                GlobalQuestNetwork.send(player, false);
+            }
+            source.sendSuccess(() -> Component.literal("Objetivo cambiado a " + offer.getTargetSpecies()
+                + ". Acepta de nuevo. Esta rotación de prueba no paga recompensas; "
+                + "el horario real de reinicio no cambió."), false);
+            return Command.SINGLE_SUCCESS;
+        } catch (IllegalStateException error) {
+            source.sendFailure(Component.literal("No se puede rotar: se necesitan dos especies válidas "
+                + "para las generaciones activas."));
+        } catch (IOException error) {
+            source.sendFailure(Component.literal("No se pudo guardar la rotación; revisa la consola."));
+        }
+        return 0;
     }
 }
