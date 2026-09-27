@@ -14,12 +14,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
-/** Operator assignment and player self-status for the opt-in six-hour trial. */
+/** Operator assignment and player self-status for the opt-in global three-hour trial. */
 public final class CaptureCycleCommands {
     private static final Logger LOGGER = LoggerFactory.getLogger("ZianUtilities/CaptureCycle");
     static final String TEST_FLAG = "zianutilities.captureCycleTestEnabled";
+    private static final ZoneId SCHEDULE_ZONE = ZoneId.of("America/Guayaquil");
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     private CaptureCycleCommands() {}
 
@@ -103,11 +108,14 @@ public final class CaptureCycleCommands {
     private static void show(CommandSourceStack source, CaptureCycle cycle, Set<Generation> enabled) {
         long remainingMs = Math.max(0, cycle.getExpiresAtEpochMs() - System.currentTimeMillis());
         long minutes = Duration.ofMillis(remainingMs).toMinutes();
+        String resetTime = Instant.ofEpochMilli(cycle.getExpiresAtEpochMs())
+            .atZone(SCHEDULE_ZONE).format(TIME_FORMAT);
         String state = enabled.isEmpty() ? "PAUSADO (sin generaciones activas)"
             : cycle.getCompleted() ? "COMPLETADO" : "ACTIVO";
         source.sendSuccess(() -> Component.literal("Ciclo captura " + cycle.getCycleId() + ": "
             + cycle.getCaptures().size() + "/" + CaptureCycle.GOAL + " " + state
-            + "; quedan " + minutes + " min; sin recompensa."), false);
+            + "; reinicia a las " + resetTime + " (Ecuador), quedan " + minutes
+            + " min; sin recompensa."), false);
     }
 }
 
