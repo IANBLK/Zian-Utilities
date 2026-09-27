@@ -3,6 +3,8 @@ package com.zianblk.zianutilities.core.quests
 import com.zianblk.zianutilities.core.generation.Generation
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
+import java.time.ZoneId
 import java.util.UUID
 
 data class CycleCapture(
@@ -17,7 +19,7 @@ data class CycleCapture(
     }
 }
 
-/** Three distinct captured Pokemon within a six-hour, per-player window. No rewards. */
+/** Three distinct captured Pokemon within a shared three-hour server window. No rewards. */
 data class CaptureCycle(
     val cycleId: UUID,
     val playerId: UUID,
@@ -36,8 +38,8 @@ data class CaptureCycle(
 
     companion object {
         const val GOAL = 3
-        val DURATION_MS: Long = Duration.ofHours(6).toMillis()
-        const val DEFINITION_ID = "capture_three_active"
+        val DURATION_MS: Long = Duration.ofHours(3).toMillis()
+        const val DEFINITION_ID = "capture_three_global"
         const val DEFINITION_VERSION = 1
     }
 }
@@ -58,14 +60,16 @@ class CaptureCycleService @JvmOverloads constructor(
     private val store: CaptureCycleStore,
     private val clock: Clock = Clock.systemUTC(),
 ) {
+    private val scheduleZone = ZoneId.of("America/Guayaquil")
+
     fun assign(playerId: UUID, enabled: Set<Generation>): CaptureCycle =
         store.withPlayerLock(playerId) {
             currentOrRotate(playerId)?.let { return@withPlayerLock it }
             require(enabled.isNotEmpty()) { "cannot assign a capture cycle without an enabled generation" }
-            CaptureCycle(UUID.randomUUID(), playerId, clock.millis()).also(store::save)
+            CaptureCycle(UUID.randomUUID(), playerId, windowStart(clock.millis())).also(store::save)
         }
 
-    /** Renewal is lazy, but windows remain anchored to this player's original assignment. */
+    /** Renewal is lazy, but all players share the same Ecuador-time boundaries. */
     fun inspect(playerId: UUID, enabled: Set<Generation>): CaptureCycle? =
         store.withPlayerLock(playerId) { currentOrRotate(playerId) }
 
@@ -95,14 +99,17 @@ class CaptureCycleService @JvmOverloads constructor(
         val current = store.load(playerId) ?: return null
         val now = clock.millis()
         if (now < current.expiresAtEpochMs) return current
-        val elapsedWindows = (now - current.assignedAtEpochMs) / CaptureCycle.DURATION_MS
-        val nextStart = Math.addExact(
-            current.assignedAtEpochMs,
-            Math.multiplyExact(elapsedWindows, CaptureCycle.DURATION_MS),
-        )
+        val nextStart = windowStart(now)
         val next = CaptureCycle(UUID.randomUUID(), playerId, nextStart)
         store.rotate(current, next)
         return next
+    }
+
+    private fun windowStart(epochMs: Long): Long {
+        val local = Instant.ofEpochMilli(epochMs).atZone(scheduleZone)
+        return local.withHour(local.hour / 3 * 3)
+            .withMinute(0).withSecond(0).withNano(0)
+            .toInstant().toEpochMilli()
     }
 }
 
