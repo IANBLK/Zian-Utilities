@@ -11,6 +11,7 @@ import java.util.UUID;
 
 /** Read-only compatibility check; it never reads or changes a player wallet. */
 public final class AvecoinsContractProbe {
+    private static final Set<String> SUPPORTED_VERSIONS = Set.of("2.3", "2.4");
     private AvecoinsContractProbe() {
     }
 
@@ -21,14 +22,17 @@ public final class AvecoinsContractProbe {
                 return new ProbeResult(false, "AVECOINS no está instalado", List.of());
             }
             String version = mod.get().getModInfo().getVersion().toString();
-            if (!"2.3".equals(version)) {
-                return new ProbeResult(false, "AVECOINS " + version + "; se requiere 2.3", List.of());
+            if (!supportedVersion(version)) {
+                return new ProbeResult(false, "AVECOINS " + version + "; se requiere 2.3 o 2.4", List.of());
             }
 
             Class<?> crafting = Class.forName("net.sundggs.avecoins.config.CraftingConfig");
             Class<?> store = Class.forName("net.sundggs.avecoins.shop.WalletStore");
             Class<?> data = Class.forName("net.sundggs.avecoins.shop.WalletData");
-            return inspectLayout(crafting, store, data);
+            ProbeResult layout = inspectLayout(crafting, store, data);
+            return layout.compatible()
+                ? new ProbeResult(true, "AVECOINS " + version + " compatible", layout.currencies())
+                : layout;
         } catch (ReflectiveOperationException | LinkageError | RuntimeException error) {
             return new ProbeResult(
                 false,
@@ -36,6 +40,10 @@ public final class AvecoinsContractProbe {
                 List.of()
             );
         }
+    }
+
+    static boolean supportedVersion(String version) {
+        return SUPPORTED_VERSIONS.contains(version);
     }
 
     static ProbeResult inspectLayout(Class<?> crafting, Class<?> store, Class<?> data)
@@ -80,7 +88,7 @@ public final class AvecoinsContractProbe {
             if (slots != 27 || stackSize != 64) {
                 return incompatible("estructura de cartera incompatible");
             }
-            return new ProbeResult(true, "AVECOINS 2.3 compatible", currencies);
+            return new ProbeResult(true, "Contrato AVECOINS compatible", currencies);
     }
 
     private static boolean booleanType(Class<?> type) {
