@@ -169,5 +169,66 @@ class CaptureMissionServiceTest {
             pool.shutdownNow()
         }
     }
+
+    @Test
+    fun `two players keep independent assignments and progress across restart`() {
+        val secondPlayer = UUID.randomUUID()
+        val service = CaptureMissionService(FileCaptureMissionStore(directory), clock)
+        val firstAssignment = service.accept(player, setOf(Generation.GEN_7))
+        val secondAssignment = service.accept(secondPlayer, setOf(Generation.GEN_7))
+        assertTrue(firstAssignment.assignmentId != secondAssignment.assignmentId)
+        assertEquals(CaptureMissionResult.NOT_ASSIGNED, service.recordCapture(
+            UUID.randomUUID(), "cobblemon:yungoos", setOf(Generation.GEN_7), setOf(Generation.GEN_7),
+        ))
+
+        assertEquals(CaptureMissionResult.COMPLETED, service.recordCapture(
+            player, "cobblemon:yungoos", setOf(Generation.GEN_7), setOf(Generation.GEN_7),
+        ))
+        assertFalse(assertNotNull(service.inspect(secondPlayer)).completed)
+        assertEquals(CaptureMissionResult.COMPLETED, service.recordCapture(
+            secondPlayer, "cobblemon:komala", setOf(Generation.GEN_7), setOf(Generation.GEN_7),
+        ))
+
+        val restarted = CaptureMissionService(FileCaptureMissionStore(directory), clock)
+        val firstSaved = assertNotNull(restarted.inspect(player))
+        val secondSaved = assertNotNull(restarted.inspect(secondPlayer))
+        assertEquals(firstAssignment.assignmentId, firstSaved.assignmentId)
+        assertEquals(secondAssignment.assignmentId, secondSaved.assignmentId)
+        assertEquals("cobblemon:yungoos", firstSaved.capturedSpeciesId)
+        assertEquals("cobblemon:komala", secondSaved.capturedSpeciesId)
+        assertEquals(CaptureMissionResult.ALREADY_COMPLETED, restarted.recordCapture(
+            player, "cobblemon:komala", setOf(Generation.GEN_7), setOf(Generation.GEN_7),
+        ))
+        assertEquals(firstSaved, restarted.inspect(player))
+        assertEquals(secondSaved, restarted.inspect(secondPlayer))
+    }
+
+    @Test
+    fun `parallel captures for different players cannot overwrite each other`() {
+        val secondPlayer = UUID.randomUUID()
+        val service = CaptureMissionService(FileCaptureMissionStore(directory), clock)
+        service.accept(player, setOf(Generation.GEN_7))
+        service.accept(secondPlayer, setOf(Generation.GEN_7))
+        val start = CountDownLatch(1)
+        val pool = Executors.newFixedThreadPool(2)
+        try {
+            val futures = listOf(player, secondPlayer).map { playerId ->
+                pool.submit<CaptureMissionResult> {
+                    start.await()
+                    service.recordCapture(
+                        playerId, "cobblemon:yungoos",
+                        setOf(Generation.GEN_7), setOf(Generation.GEN_7),
+                    )
+                }
+            }
+            start.countDown()
+            assertEquals(listOf(CaptureMissionResult.COMPLETED, CaptureMissionResult.COMPLETED),
+                futures.map { it.get(10, TimeUnit.SECONDS) })
+            assertTrue(assertNotNull(service.inspect(player)).completed)
+            assertTrue(assertNotNull(service.inspect(secondPlayer)).completed)
+        } finally {
+            pool.shutdownNow()
+        }
+    }
 }
 

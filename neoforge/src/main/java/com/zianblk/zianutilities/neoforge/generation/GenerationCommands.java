@@ -31,6 +31,9 @@ public final class GenerationCommands {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
             Commands.literal("zian")
+                // Youer rewrites Brigadier's default root requirement to a Bukkit
+                // permission. Keep the shared root public; children enforce access.
+                .requires(source -> true)
                 .then(
                     Commands.literal("generation")
                         .then(
@@ -234,3 +237,4 @@ public final class GenerationCommands {
         );
     }
 }
+

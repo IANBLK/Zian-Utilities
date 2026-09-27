@@ -28,6 +28,7 @@ public final class CaptureTrialCommands {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
             Commands.literal("zian")
+                .requires(source -> true)
                 .then(Commands.literal("quest")
                     .then(Commands.literal("plan")
                         .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))

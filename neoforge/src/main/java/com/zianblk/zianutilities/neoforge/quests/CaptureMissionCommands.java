@@ -7,6 +7,7 @@ import com.zianblk.zianutilities.core.quests.CaptureMission;
 import com.zianblk.zianutilities.neoforge.generation.NeoForgeGenerationStateStore;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -16,7 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Operator-only first mission; explicit acceptance and no reward delivery. */
+/** Gated first mission: operator assignment, self status, and no reward delivery. */
 public final class CaptureMissionCommands {
     private static final Logger LOGGER = LoggerFactory.getLogger("ZianUtilities/CaptureMission");
     static final String TEST_FLAG = "zianutilities.captureMissionTestEnabled";
@@ -27,11 +28,20 @@ public final class CaptureMissionCommands {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
             Commands.literal("zian")
+                .requires(source -> true)
                 .then(Commands.literal("quest")
                     .then(Commands.literal("capture")
-                        .requires(source -> source.hasPermission(3) && Boolean.getBoolean(TEST_FLAG))
+                        .requires(source -> Boolean.getBoolean(TEST_FLAG))
                         .then(Commands.literal("accept")
+                            .requires(source -> source.hasPermission(3))
                             .executes(context -> accept(context.getSource())))
+                        .then(Commands.literal("assign")
+                            .requires(source -> source.hasPermission(3))
+                            .then(Commands.argument("player", EntityArgument.player())
+                                .executes(context -> assign(
+                                    context.getSource(),
+                                    EntityArgument.getPlayer(context, "player")
+                                ))))
                         .then(Commands.literal("status")
                             .executes(context -> status(context.getSource())))
                     )
@@ -44,6 +54,10 @@ public final class CaptureMissionCommands {
             source.sendFailure(Component.literal("La misión debe aceptarla un jugador operador."));
             return 0;
         }
+        return assign(source, player);
+    }
+
+    private static int assign(CommandSourceStack source, ServerPlayer player) {
         try {
             Set<Generation> enabled = activeGenerations(source);
             var service = CaptureMissionRuntime.service(source.getServer());
@@ -56,13 +70,18 @@ public final class CaptureMissionCommands {
             }
             CaptureMission mission = service.accept(player.getUUID(), enabled);
             LOGGER.info(
-                "[ZIAN-QUEST] action=capture_accept playerUuid={} assignmentId={} completed={}",
-                player.getUUID(), mission.getAssignmentId(), mission.getCompleted()
+                "[ZIAN-QUEST] action=capture_assign actor={} playerUuid={} assignmentId={} completed={}",
+                source.getTextName(), player.getUUID(), mission.getAssignmentId(), mission.getCompleted()
             );
+            if (source.getEntity() != player) {
+                source.sendSuccess(() -> Component.literal(
+                    "Asignación de captura para " + player.getGameProfile().getName() + ":"
+                ), false);
+            }
             show(source, mission, enabled);
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
-            LOGGER.error("[ZIAN-QUEST] action=capture_accept result=error", error);
+            LOGGER.error("[ZIAN-QUEST] action=capture_assign result=error", error);
             source.sendFailure(Component.literal("No se pudo guardar la misión; no captures para probarla."));
             return 0;
         }
@@ -70,7 +89,7 @@ public final class CaptureMissionCommands {
 
     private static int status(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("Consulta la misión como jugador operador."));
+            source.sendFailure(Component.literal("Consulta tu misión desde el juego."));
             return 0;
         }
         try {
