@@ -134,7 +134,8 @@ public final class GlobalQuestRuntime {
         activeServer = server;
         root = server.getWorldPath(LevelResource.ROOT).resolve("data").resolve("zianutilities")
             .resolve("global_quest_v1");
-        rewardStore = new FileRewardClaimStore(root.resolve("reward_claims"));
+        // Share the existing journal location so /zian reward inspect can diagnose uncertain claims.
+        rewardStore = new FileRewardClaimStore(root.getParent().resolve("reward_claims"));
         rewardService = new RewardClaimService(rewardStore, new EconomyRewardDelivery(new AvecoinsEconomyPort()));
         service = new GlobalQuestService(new FileGlobalQuestProgressStore(root.resolve("players"), (old, current) -> {
             if (old.getOffer().getWindowStartEpochMs() < current.getOffer().getWindowStartEpochMs()) {
