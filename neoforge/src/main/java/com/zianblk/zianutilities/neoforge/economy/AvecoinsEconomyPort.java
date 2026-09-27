@@ -8,7 +8,7 @@ import com.zianblk.zianutilities.core.economy.EconomyPort;
 import java.util.Set;
 import java.util.UUID;
 
-/** AVECOINS 2.3 boundary. The provider does not honor operation IDs; the claim journal does. */
+/** AVECOINS wallet boundary. The provider does not honor operation IDs; the claim journal does. */
 public final class AvecoinsEconomyPort implements EconomyPort {
     private final WalletAccess wallet;
 
