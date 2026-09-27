@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/** Narrow reflection boundary for the inspected AVECOINS 2.3 wallet contract. */
+/** Narrow reflection boundary for the inspected AVECOINS wallet contract. */
 final class ReflectiveAvecoinsWallet implements AvecoinsEconomyPort.WalletAccess {
     private static final long SLOT_COUNT = 27;
     private static final long STACK_SIZE = 64;
