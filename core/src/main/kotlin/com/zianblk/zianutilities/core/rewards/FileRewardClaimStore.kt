@@ -102,6 +102,13 @@ class FileRewardClaimStore(private val directory: Path) : RewardClaimStore {
         }
     }
 
+    /** Safe bounded-retention hook: only terminal successful claims may be removed. */
+    fun deleteClaimed(claimId: UUID): Boolean = withClaimLock(claimId) {
+        val record = load(claimId) ?: return@withClaimLock false
+        if (record.status() != ClaimStatus.CLAIMED) return@withClaimLock false
+        Files.deleteIfExists(pathFor(claimId))
+    }
+
     private fun pathFor(claimId: UUID): Path = directory.resolve("$claimId.properties")
 
     private fun Properties.required(key: String): String =

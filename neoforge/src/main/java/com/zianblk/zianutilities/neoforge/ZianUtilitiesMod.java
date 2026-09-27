@@ -16,6 +16,8 @@ import com.zianblk.zianutilities.neoforge.quests.CaptureCycleCommands;
 import com.zianblk.zianutilities.neoforge.quests.CaptureCycleListener;
 import com.zianblk.zianutilities.neoforge.quests.SharedCaptureMissionCommands;
 import com.zianblk.zianutilities.neoforge.quests.SharedCaptureMissionListener;
+import com.zianblk.zianutilities.neoforge.quests.GlobalQuestCommands;
+import com.zianblk.zianutilities.neoforge.quests.GlobalQuestListener;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 
@@ -30,6 +32,7 @@ public final class ZianUtilitiesMod {
         NeoForge.EVENT_BUS.addListener(CaptureMissionCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(CaptureCycleCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(SharedCaptureMissionCommands::onRegisterCommands);
+        NeoForge.EVENT_BUS.addListener(GlobalQuestCommands::onRegisterCommands);
         GenerationPreselectionFilter.install();
         NaturalSpawnGuard.install();
         FishingSpawnGuard.install();
@@ -40,6 +43,7 @@ public final class ZianUtilitiesMod {
         CaptureMissionListener.install();
         CaptureCycleListener.install();
         SharedCaptureMissionListener.install();
+        GlobalQuestListener.install();
     }
 }
 
