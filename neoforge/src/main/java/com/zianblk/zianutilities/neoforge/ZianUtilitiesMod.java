@@ -10,6 +10,8 @@ import com.zianblk.zianutilities.neoforge.hub.ZianHubCommands;
 import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
 import com.zianblk.zianutilities.neoforge.gacha.GachaNetwork;
 import com.zianblk.zianutilities.neoforge.gacha.GachaCommands;
+import com.zianblk.zianutilities.neoforge.equipment.ZianArmor;
+import com.zianblk.zianutilities.neoforge.equipment.PlaneMining;
 import com.zianblk.zianutilities.neoforge.rewards.RewardCommands;
 import com.zianblk.zianutilities.neoforge.quests.CaptureEventProbe;
 import com.zianblk.zianutilities.neoforge.quests.CaptureTrialCommands;
@@ -33,6 +35,8 @@ public final class ZianUtilitiesMod {
     public static final String MOD_ID = "zianutilities";
 
     public ZianUtilitiesMod(IEventBus modBus) {
+        ZianArmor.register(modBus);
+        PlaneMining.install();
         modBus.addListener(GlobalQuestNetwork::register);
         modBus.addListener(ProgressionQuestNetwork::register);
         modBus.addListener(ZianHubNetwork::register);

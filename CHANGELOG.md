@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-alpha.28
+
+- Añade tres sets de armadura de cuatro piezas (Captura, Explorador y Campeón), con estadísticas y durabilidad de netherita, texturas integradas y sin recetas.
+- Añade el encantamiento `mineria_3x3` para picos. Rompe hasta ocho bloques adicionales en el plano golpeado, usando la rotura normal del jugador para aplicar protecciones, botín y desgaste.
+- Evita la minería de área cuando la rotura inicial se cancela, en creativo/espectador, sobre bloques con entidad o de mayor dureza.
+
 ## 0.1.0-alpha.27
 
 - Las campañas ahora piden capturar la mitad de las especies de aparición natural de cada generación. La meta se fija al aceptar y las tres etapas comparten un registro acumulado de especies distintas.

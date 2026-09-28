@@ -1,0 +1,15 @@
+{
+  "enchantment.zianutilities.mineria_3x3": "Minería 3×3",
+  "item.zianutilities.captura_helmet": "Casco de Captura",
+  "item.zianutilities.captura_chestplate": "Pechera de Captura",
+  "item.zianutilities.captura_leggings": "Grebas de Captura",
+  "item.zianutilities.captura_boots": "Botas de Captura",
+  "item.zianutilities.explorador_helmet": "Casco de Explorador",
+  "item.zianutilities.explorador_chestplate": "Pechera de Explorador",
+  "item.zianutilities.explorador_leggings": "Grebas de Explorador",
+  "item.zianutilities.explorador_boots": "Botas de Explorador",
+  "item.zianutilities.campeon_helmet": "Casco de Campeón",
+  "item.zianutilities.campeon_chestplate": "Pechera de Campeón",
+  "item.zianutilities.campeon_leggings": "Grebas de Campeón",
+  "item.zianutilities.campeon_boots": "Botas de Campeón"
+}
