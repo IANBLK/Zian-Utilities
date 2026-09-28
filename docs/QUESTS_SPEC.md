@@ -1,6 +1,6 @@
 # Zian Utilities Quests - functional specification
 
-Status: three-hour global quests implemented; first weekly and campaign version implemented in alpha.26.
+Status: three-hour global quests and weekly quests implemented; generation collection campaigns expanded in alpha.27.
 
 This document defines product behavior, not the final implementation architecture.
 
@@ -99,12 +99,18 @@ Campaigns are permanent per player and per generation. The Gen 1 campaign is
 available as soon as Gen 1 is enabled. Each later generation campaign unlocks
 when that generation becomes active. Campaign capture objectives draw only
 from naturally spawning Pokemon in their own generation. No campaign progress
-resets when a weekly or three-hour period ends. The first campaign design has
-three sequential chapters per generation: capture 3, then 8, then 15 distinct
-species of that generation. A species counts once within its chapter. Captures
-before accepting the campaign or before a chapter unlocks do not count. Each chapter
-has its own durable, one-time reward claim. The next chapter opens automatically
-after the previous chapter's reward is resolved.
+resets when a weekly or three-hour period ends. Since alpha.27, each generation's
+final target is half (rounded up) of the species in its natural world-spawn pool
+at the time the player accepts that campaign. Three cumulative stages award at
+3 species, 8 species, and the frozen half-generation target. A species counts
+once across the entire campaign; the captured-species album is visible in the UI.
+Captures before accepting the campaign do not count. Each stage has its own
+durable, one-time reward claim. The next stage opens automatically after the
+previous stage's reward is resolved. Alpha.26 campaigns migrate without losing
+earned progress: completed old stages contribute numeric legacy credit, while
+the exact species from closed stages cannot be recovered because alpha.26
+removed their names when opening the next stage. The album labels that credit
+separately. A previously paid final stage never pays a second time.
 
 In alpha.26, the server creates
 `world/data/zianutilities/progression_quests_v1/config.properties` with separate

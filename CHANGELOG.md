@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-alpha.27
+
+- Las campañas ahora piden capturar la mitad de las especies de aparición natural de cada generación. La meta se fija al aceptar y las tres etapas comparten un registro acumulado de especies distintas.
+- Añade una vista paginada de especies capturadas por generación. El progreso anterior de alpha.26 se conserva como crédito; las especies de etapas ya cerradas no pueden reconstruirse y aparecen como capturas previas sin nombre.
+- Mantiene los pagos únicos de cada etapa y evita repetir el premio final al migrar una campaña ya completada.
+
 ## 0.1.0-alpha.26
 
 - Añade misiones semanales de 25 capturas elegibles y 50 victorias contra Pokémon salvajes, con progreso individual, aceptación, reinicio semanal y pago único por objetivo.

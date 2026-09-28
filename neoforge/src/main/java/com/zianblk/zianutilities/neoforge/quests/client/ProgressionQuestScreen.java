@@ -13,6 +13,7 @@ import net.minecraft.network.chat.Component;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 
 /** Read-only presentation of server-owned weekly and campaign state. */
@@ -25,6 +26,8 @@ public final class ProgressionQuestScreen extends Screen {
         .withZone(ZoneId.of("America/Guayaquil"));
     private ProgressionQuestNetwork.State state;
     private int selectedGeneration;
+    private int albumPage;
+    private boolean showAlbum;
     private StyledButton accept;
 
     public ProgressionQuestScreen(ProgressionQuestNetwork.State state) {
@@ -59,18 +62,47 @@ public final class ProgressionQuestScreen extends Screen {
         } else {
             addRenderableWidget(new StyledButton(x - 145, 69, 48, 20, "<", () -> {
                 selectedGeneration = (selectedGeneration + 8) % 9;
+                albumPage = 0;
+                showAlbum = false;
                 rebuildWidgets();
             }));
             addRenderableWidget(new StyledButton(x + 97, 69, 48, 20, ">", () -> {
                 selectedGeneration = (selectedGeneration + 1) % 9;
+                albumPage = 0;
+                showAlbum = false;
                 rebuildWidgets();
             }));
             if (selectedGeneration < state.campaigns().size()) {
                 ProgressionQuestRuntime.Campaign campaign = state.campaigns().get(selectedGeneration);
-                accept = addRenderableWidget(new StyledButton(x - 80, Math.min(height - 35, 211), 160, 20,
-                    campaign.accepted() ? "Campaña aceptada" : "Aceptar campaña",
-                    () -> ProgressionQuestNetwork.request((byte) 3, selectedGeneration)));
-                accept.active = campaign.available() && !campaign.accepted();
+                if (campaign.accepted()) {
+                    addRenderableWidget(new StyledButton(x + 150, 69, 90, 20,
+                        showAlbum ? "Resumen" : "Capturados", () -> {
+                            showAlbum = !showAlbum;
+                            rebuildWidgets();
+                        }));
+                }
+                if (showAlbum && campaign.accepted()) {
+                    int pageSize = albumPageSize();
+                    int pages = Math.max(1, (campaign.species().size() + pageSize - 1) / pageSize);
+                    albumPage = Math.min(albumPage, pages - 1);
+                    StyledButton previous = addRenderableWidget(new StyledButton(x - 100,
+                        Math.min(height - 35, 211), 50, 20, "<", () -> {
+                            albumPage--;
+                            rebuildWidgets();
+                        }));
+                    previous.active = albumPage > 0;
+                    StyledButton next = addRenderableWidget(new StyledButton(x + 50,
+                        Math.min(height - 35, 211), 50, 20, ">", () -> {
+                            albumPage++;
+                            rebuildWidgets();
+                        }));
+                    next.active = albumPage + 1 < pages;
+                } else {
+                    accept = addRenderableWidget(new StyledButton(x - 80, Math.min(height - 35, 211), 160, 20,
+                        campaign.accepted() ? "Campaña aceptada" : "Aceptar campaña",
+                        () -> ProgressionQuestNetwork.request((byte) 3, selectedGeneration)));
+                    accept.active = campaign.available() && campaign.finalGoal() > 0 && !campaign.accepted();
+                }
             }
         }
     }
@@ -129,27 +161,72 @@ public final class ProgressionQuestScreen extends Screen {
         graphics.drawCenteredString(font, "Generación " + (selectedGeneration + 1), width / 2, 75, GOLD);
         int w = Math.min(470, width - 30);
         int x = (width - w) / 2;
+        if (showAlbum && c.accepted()) {
+            drawAlbum(graphics, c, x, w);
+            return;
+        }
         card(graphics, x, 100, w, 95, c.chapter() == 3 ? GREEN : GOLD);
         if (!c.available()) {
             graphics.drawCenteredString(font, "Se desbloquea al activar esta generación", width / 2, 137, MUTED);
             return;
         }
         if (!c.accepted()) {
-            graphics.drawCenteredString(font, "Captura especies de esta generación para completar 3 etapas", width / 2, 137, WHITE);
+            graphics.drawCenteredString(font, "Captura la mitad de las especies elegibles en 3 etapas", width / 2, 127, WHITE);
+            graphics.drawCenteredString(font, "Meta final: " + c.finalGoal() + " de " + c.eligibleSpecies(),
+                width / 2, 151, MUTED);
             return;
         }
         if (c.chapter() >= 3) {
-            graphics.drawCenteredString(font, "✓ Campaña completada", width / 2, 137, GREEN);
+            graphics.drawCenteredString(font, "✓ Campaña completada", width / 2, 124, GREEN);
+            graphics.drawCenteredString(font, c.capturedSpecies() + " / " + c.finalGoal()
+                + " especies registradas", width / 2, 151, WHITE);
             return;
         }
         graphics.drawCenteredString(font, "Etapa " + (c.chapter() + 1) + " de 3", width / 2, 112, GOLD);
         graphics.drawCenteredString(font, "Especies distintas capturadas: " + c.capturedSpecies()
-            + " / " + c.goal(), width / 2, 137, WHITE);
+            + " / " + c.goal(), width / 2, 132, WHITE);
+        graphics.drawCenteredString(font, "Meta final: " + c.finalGoal() + " de " + c.eligibleSpecies()
+            + " especies elegibles", width / 2, 151, MUTED);
         graphics.drawCenteredString(font, !state.rewardsEnabled() ? "Pago desactivado" :
             c.rewardPending() ? "Premio pendiente de recuperación"
-            : "Premio de etapa: " + c.amount() + " " + friendly(c.currency()), width / 2, 162, MUTED);
-        graphics.drawCenteredString(font, "Las etapas no se reinician; solo cuentan especies de aparición natural",
+            : "Premio de etapa: " + c.amount() + " " + friendly(c.currency()), width / 2, 173, MUTED);
+        graphics.drawCenteredString(font, "Pulsa Capturados para ver tu registro personal",
             width / 2, Math.min(height - 11, 240), MUTED);
+    }
+
+    private int albumPageSize() {
+        return Math.max(4, Math.min(14, ((Math.min(height - 48, 210) - 122) / 12) * 2));
+    }
+
+    private void drawAlbum(GuiGraphics graphics, ProgressionQuestRuntime.Campaign campaign, int x, int w) {
+        card(graphics, x, 100, w, Math.max(95, Math.min(height - 148, 110)), GOLD);
+        graphics.drawCenteredString(font, "Especies capturadas: " + campaign.species().size()
+            + " · Avance total: " + campaign.capturedSpecies() + " / " + campaign.finalGoal(),
+            width / 2, 108, WHITE);
+        List<String> captured = campaign.species();
+        int pageSize = albumPageSize();
+        int from = albumPage * pageSize;
+        int until = Math.min(captured.size(), from + pageSize);
+        if (captured.isEmpty()) {
+            graphics.drawCenteredString(font, "Todavía no hay especies registradas", width / 2, 145, MUTED);
+        } else {
+            for (int i = from; i < until; i++) {
+                int local = i - from;
+                int column = local % 2;
+                int row = local / 2;
+                graphics.drawString(font, "✓ " + friendly(captured.get(i)),
+                    x + 12 + column * (w / 2), 123 + row * 12, GREEN, false);
+            }
+        }
+        if (campaign.legacyCount() > 0) {
+            graphics.drawCenteredString(font, campaign.legacyCount()
+                + " capturas previas acreditadas sin nombres guardados", width / 2,
+                Math.min(height - 11, 240), MUTED);
+        } else {
+            int pages = Math.max(1, (captured.size() + pageSize - 1) / pageSize);
+            graphics.drawCenteredString(font, "Página " + (albumPage + 1) + " / " + pages,
+                width / 2, Math.min(height - 11, 240), MUTED);
+        }
     }
 
     private static void card(GuiGraphics graphics, int x, int y, int w, int h, int accent) {

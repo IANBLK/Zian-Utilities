@@ -25,7 +25,7 @@ public final class ProgressionQuestNetwork {
     private ProgressionQuestNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("progression-quest-ui-1");
+        var registrar = event.registrar("progression-quest-ui-2");
         registrar.playToClient(State.TYPE, State.CODEC, ProgressionQuestNetwork::onState);
         registrar.playToServer(Action.TYPE, Action.CODEC, ProgressionQuestNetwork::onAction);
     }
@@ -124,9 +124,14 @@ public final class ProgressionQuestNetwork {
                     buffer.writeVarInt(campaign.chapter());
                     buffer.writeVarInt(campaign.capturedSpecies());
                     buffer.writeVarInt(campaign.goal());
+                    buffer.writeVarInt(campaign.finalGoal());
+                    buffer.writeVarInt(campaign.eligibleSpecies());
+                    buffer.writeVarInt(campaign.legacyCount());
                     buffer.writeBoolean(campaign.rewardPending());
                     buffer.writeUtf(campaign.currency(), 128);
                     buffer.writeLong(campaign.amount());
+                    buffer.writeVarInt(campaign.species().size());
+                    for (String species : campaign.species()) buffer.writeUtf(species, 128);
                 }
             }, buffer -> {
                 boolean open = buffer.readBoolean();
@@ -147,10 +152,27 @@ public final class ProgressionQuestNetwork {
                 if (count < 0 || count > 9) throw new IllegalArgumentException("invalid campaign count");
                 List<ProgressionQuestRuntime.Campaign> campaigns = new ArrayList<>(count);
                 for (int i = 0; i < count; i++) {
-                    campaigns.add(new ProgressionQuestRuntime.Campaign(buffer.readUtf(16),
-                        buffer.readBoolean(), buffer.readBoolean(), buffer.readVarInt(),
-                        buffer.readVarInt(), buffer.readVarInt(), buffer.readBoolean(),
-                        buffer.readUtf(128), buffer.readLong()));
+                    String generation = buffer.readUtf(16);
+                    boolean available = buffer.readBoolean();
+                    boolean campaignAccepted = buffer.readBoolean();
+                    int chapter = buffer.readVarInt();
+                    int capturedSpecies = buffer.readVarInt();
+                    int goal = buffer.readVarInt();
+                    int finalGoal = buffer.readVarInt();
+                    int eligibleSpecies = buffer.readVarInt();
+                    int legacyCount = buffer.readVarInt();
+                    boolean rewardPending = buffer.readBoolean();
+                    String currency = buffer.readUtf(128);
+                    long amount = buffer.readLong();
+                    int speciesCount = buffer.readVarInt();
+                    if (speciesCount < 0 || speciesCount > 1024)
+                        throw new IllegalArgumentException("invalid captured species count");
+                    List<String> species = new ArrayList<>(speciesCount);
+                    for (int j = 0; j < speciesCount; j++) species.add(buffer.readUtf(128));
+                    campaigns.add(new ProgressionQuestRuntime.Campaign(generation, available,
+                        campaignAccepted, chapter, capturedSpecies, goal, finalGoal,
+                        eligibleSpecies, legacyCount, rewardPending, currency, amount,
+                        List.copyOf(species)));
                 }
                 return new State(open, tab, rewardsEnabled, ends, weeklyTest, accepted, captures, battles,
                     capturePaid, battlePaid, captureCurrency, captureAmount,

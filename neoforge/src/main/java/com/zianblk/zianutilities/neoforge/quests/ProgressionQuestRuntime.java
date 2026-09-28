@@ -42,7 +42,7 @@ public final class ProgressionQuestRuntime {
     private static final Logger LOGGER = LoggerFactory.getLogger("ZianUtilities/ProgressionQuests");
     private static final ZoneId ZONE = ZoneId.of("America/Guayaquil");
     private static final String COIN = "avecoins:coppercoin";
-    private static final int[] CHAPTER_GOALS = {3, 8, 15};
+    private static final int[] LEGACY_COMPLETED_COUNTS = {0, 3, 11, 26};
     private static final CobblemonGenerationResolver RESOLVER = new CobblemonGenerationResolver(null);
     private static MinecraftServer activeServer;
     private static Path root;
@@ -58,7 +58,26 @@ public final class ProgressionQuestRuntime {
 
     public record Campaign(String generation, boolean available, boolean accepted,
                            int chapter, int capturedSpecies, int goal,
-                           boolean rewardPending, String currency, long amount) {}
+                           int finalGoal, int eligibleSpecies, int legacyCount,
+                           boolean rewardPending, String currency, long amount,
+                           List<String> species) {}
+
+    static int halfGoal(int eligibleSpecies) {
+        return eligibleSpecies <= 0 ? 0 : (eligibleSpecies + 1) / 2;
+    }
+
+    static int chapterGoal(int chapter, int finalGoal) {
+        return switch (chapter) {
+            case 0 -> Math.min(3, finalGoal);
+            case 1 -> Math.min(8, finalGoal);
+            case 2 -> finalGoal;
+            default -> 0;
+        };
+    }
+
+    static int legacyCompletedCount(int chapter) {
+        return LEGACY_COMPLETED_COUNTS[Math.max(0, Math.min(3, chapter))];
+    }
 
     public static long weekStart(long now) {
         return Instant.ofEpochMilli(now).atZone(ZONE).toLocalDate()
@@ -89,13 +108,24 @@ public final class ProgressionQuestRuntime {
         Set<Generation> enabled = GlobalQuestRuntime.enabled(player.getServer());
         List<Campaign> result = new ArrayList<>();
         for (Generation generation : Generation.values()) {
-            Properties p = read(campaignPath(player.getUUID(), generation));
+            Path path = campaignPath(player.getUUID(), generation);
+            Properties p = read(path);
+            boolean available = enabled.contains(generation);
+            int candidates = available || accepted(p)
+                ? CobblemonWorldSpawnSpeciesPool.eligible(Set.of(generation), RESOLVER).size() : 0;
+            migrateCampaign(path, p, candidates);
             settleCampaign(player.getUUID(), generation, p);
             int chapter = Integer.parseInt(p.getProperty("chapter", "0"));
-            result.add(new Campaign(generation.getId(), enabled.contains(generation), accepted(p),
-                chapter, species(p).size(), chapter < 3 ? CHAPTER_GOALS[chapter] : 0,
-                chapter < 3 && species(p).size() >= CHAPTER_GOALS[chapter],
-                p.getProperty("reward.currency", COIN), amount(p, "reward.amount", 0)));
+            int finalGoal = (int) amount(p, "goal.total", halfGoal(candidates));
+            int legacy = (int) amount(p, "legacy.count", 0);
+            List<String> captured = species(p).stream().sorted().toList();
+            int total = legacy + captured.size();
+            int goal = chapterGoal(chapter, finalGoal);
+            result.add(new Campaign(generation.getId(), available, accepted(p),
+                chapter, total, goal, finalGoal,
+                (int) amount(p, "eligible.count", candidates), legacy,
+                chapter < 3 && total >= goal,
+                p.getProperty("reward.currency", COIN), amount(p, "reward.amount", 0), captured));
         }
         return result;
     }
@@ -118,12 +148,17 @@ public final class ProgressionQuestRuntime {
     public static synchronized void acceptCampaign(ServerPlayer player, Generation generation) throws IOException {
         initialize(player.getServer());
         if (!GlobalQuestRuntime.enabled(player.getServer()).contains(generation)) return;
+        int candidates = CobblemonWorldSpawnSpeciesPool.eligible(Set.of(generation), RESOLVER).size();
+        if (candidates == 0) return;
         Path path = campaignPath(player.getUUID(), generation);
         Properties p = read(path);
         if (accepted(p)) return;
         Properties config = config();
         p.setProperty("acceptedAt", Long.toString(System.currentTimeMillis()));
         p.setProperty("chapter", "0");
+        p.setProperty("schema", "2");
+        p.setProperty("goal.total", Integer.toString(halfGoal(candidates)));
+        p.setProperty("eligible.count", Integer.toString(candidates));
         freezeChapterReward(p, config, 0);
         write(path, p);
     }
@@ -153,10 +188,14 @@ public final class ProgressionQuestRuntime {
                 || !CobblemonWorldSpawnSpeciesPool.eligible(Set.of(generation), RESOLVER).contains(speciesId)) continue;
             Path path = campaignPath(player.getUUID(), generation);
             Properties p = read(path);
+            migrateCampaign(path, p,
+                CobblemonWorldSpawnSpeciesPool.eligible(Set.of(generation), RESOLVER).size());
             int chapter = Integer.parseInt(p.getProperty("chapter", "0"));
             if (!accepted(p) || chapter >= 3) continue;
             Set<String> captured = species(p);
-            if (captured.size() < CHAPTER_GOALS[chapter] && captured.add(speciesId)) {
+            int finalGoal = (int) amount(p, "goal.total", 0);
+            int legacy = (int) amount(p, "legacy.count", 0);
+            if (legacy + captured.size() < finalGoal && captured.add(speciesId)) {
                 p.setProperty("species", String.join(",", captured));
                 write(path, p);
                 settleCampaign(player.getUUID(), generation, p);
@@ -221,13 +260,33 @@ public final class ProgressionQuestRuntime {
         if (!accepted(p)) return;
         Path path = campaignPath(player, generation);
         int chapter = Integer.parseInt(p.getProperty("chapter", "0"));
-        if (chapter >= 3 || species(p).size() < CHAPTER_GOALS[chapter]) return;
-        ClaimStatus status = pay(player, "campaign:" + generation.getId() + ":" + chapter,
-            p.getProperty("reward.currency", COIN), amount(p, "reward.amount", 0));
-        if (status != ClaimStatus.CLAIMED && status != null) return;
-        p.setProperty("chapter", Integer.toString(chapter + 1));
-        p.remove("species");
-        if (chapter + 1 < 3) freezeChapterReward(p, config(), chapter + 1);
+        int total = (int) amount(p, "legacy.count", 0) + species(p).size();
+        int finalGoal = (int) amount(p, "goal.total", 0);
+        while (chapter < 3 && finalGoal > 0 && total >= chapterGoal(chapter, finalGoal)) {
+            ClaimStatus status = chapter == 2 && Boolean.parseBoolean(p.getProperty("legacy.finalPaid"))
+                ? ClaimStatus.CLAIMED
+                : pay(player, "campaign:" + generation.getId() + ":" + chapter,
+                    p.getProperty("reward.currency", COIN), amount(p, "reward.amount", 0));
+            if (status != ClaimStatus.CLAIMED && status != null) return;
+            chapter++;
+            p.setProperty("chapter", Integer.toString(chapter));
+            if (chapter < 3) freezeChapterReward(p, config(), chapter);
+            write(path, p);
+        }
+    }
+
+    static void migrateCampaign(Path path, Properties p, int candidates) throws IOException {
+        if (!accepted(p) || candidates <= 0 || "2".equals(p.getProperty("schema"))) return;
+        int oldChapter = Math.max(0, Math.min(3, Integer.parseInt(p.getProperty("chapter", "0"))));
+        p.setProperty("schema", "2");
+        p.setProperty("legacy.count", Integer.toString(legacyCompletedCount(oldChapter)));
+        p.setProperty("eligible.count", Integer.toString(candidates));
+        p.setProperty("goal.total", Integer.toString(halfGoal(candidates)));
+        if (oldChapter == 3) {
+            // Alpha.26 already paid chapter 3. Reopen only its collection target.
+            p.setProperty("chapter", "2");
+            p.setProperty("legacy.finalPaid", "true");
+        }
         write(path, p);
     }
 
