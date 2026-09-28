@@ -1,11 +1,13 @@
 # AVECOINS integration plan
 
-Tested target:
+Supported and operator-tested targets:
 
-`AVECOINS 2.3`
+`AVECOINS 2.3` and `AVECOINS 2.4`
 
-AVECOINS 2.4 is allowed by version and must pass the same runtime wallet-layout probe.
-Live debit, credit, and persistence checks with 2.4 are still required before production use.
+AVECOINS 2.4 passes the runtime wallet-layout probe. On the Youer test server,
+the operator confirmed mission credits, gacha ticket debits, prize delivery,
+and persistent progress across restart. A future AVECOINS version is rejected
+until its contract and economic operations are deliberately verified.
 
 Historical reference implementation:
 

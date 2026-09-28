@@ -16,7 +16,16 @@ Planned areas:
 8. Equipment
 9. Enchantments
 
-## Current milestone
+## Current status (0.1.0-beta.1)
+
+The original milestone plan below is historical. The current build contains
+generation control, three-hour global quests, weekly quests, persistent
+generation campaigns, AVECOINS-backed rewards and gachas, and themed equipment
+with a command-only mining enchantment. The operator has tested these features
+on Youer 1.21.1; see `BETA1_VALIDATION.md` for the available evidence and its
+limits. New generations are enabled cumulatively.
+
+## Original milestone plan
 
 ### Milestone 1: Core + Generation Control
 
@@ -57,7 +66,7 @@ without removing earlier ones.
 - recoverable transaction state
 - AVECOINS and/or ticket payments
 
-### Later
+### Later (implemented in beta.1)
 - weapons
 - armor
 - tools

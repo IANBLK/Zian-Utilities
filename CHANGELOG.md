@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-beta.1
+
+- Primera candidata beta. Reúne control de generaciones, misiones globales de tres horas, semanales y campañas, gachas y equipamiento temático.
+- Verificado por el operador en Youer 1.21.1: el progreso persiste al reiniciar; se pagan misiones globales y una etapa de campaña en dos cuentas; una tirada descuenta un ticket y entrega un premio; sin tickets la tirada se rechaza.
+- El reinicio semanal del lunes presenta objetivos nuevos con progreso 0/25 y 0/50; el operador confirmó por separado los encantamientos y el equipamiento.
+- No cambia la lógica de juego de alpha.29. Se actualizan la versión y la documentación para la prueba final de publicación.
+
 ## 0.1.0-alpha.29
 
 - Corrige los encantamientos de los sets de armadura añadiendo las etiquetas de equipo de Minecraft 1.21.1.

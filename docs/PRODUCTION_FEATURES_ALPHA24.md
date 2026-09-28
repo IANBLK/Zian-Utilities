@@ -1,6 +1,6 @@
-# Funciones normales sin parámetros de prueba (alpha.24)
+# Funciones normales sin parámetros de prueba (beta.1)
 
-Instala el mismo JAR alpha.24 en el servidor y en todos los clientes. Retira los JARs antiguos de Zian Utilities y conserva una copia de seguridad del mundo antes de actualizar. AVECOINS 2.3 o 2.4 debe estar disponible para los pagos.
+Instala el mismo JAR beta.1 en el servidor y en todos los clientes. Retira los JARs antiguos de Zian Utilities y conserva una copia de seguridad del mundo antes de actualizar. AVECOINS 2.3 o 2.4 debe estar disponible para los pagos.
 
 Al primer arranque, el mod crea `config/zianutilities-features.properties` con:
 
