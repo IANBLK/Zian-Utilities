@@ -352,5 +352,3 @@ public final class GachaRuntime {
         return false;
     }
 }
-
-

@@ -131,4 +131,3 @@ public final class GlobalQuestNetwork {
         PacketDistributor.sendToServer(new Action(accept, windowStartEpochMs, targetSpecies, generationIds));
     }
 }
-

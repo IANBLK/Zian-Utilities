@@ -23,6 +23,7 @@ import com.zianblk.zianutilities.neoforge.quests.SharedCaptureMissionListener;
 import com.zianblk.zianutilities.neoforge.quests.GlobalQuestCommands;
 import com.zianblk.zianutilities.neoforge.quests.GlobalQuestListener;
 import com.zianblk.zianutilities.neoforge.quests.GlobalQuestNetwork;
+import com.zianblk.zianutilities.neoforge.quests.ProgressionQuestNetwork;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
@@ -33,6 +34,7 @@ public final class ZianUtilitiesMod {
 
     public ZianUtilitiesMod(IEventBus modBus) {
         modBus.addListener(GlobalQuestNetwork::register);
+        modBus.addListener(ProgressionQuestNetwork::register);
         modBus.addListener(ZianHubNetwork::register);
         modBus.addListener(GachaNetwork::register);
         NeoForge.EVENT_BUS.addListener(GenerationCommands::onRegisterCommands);

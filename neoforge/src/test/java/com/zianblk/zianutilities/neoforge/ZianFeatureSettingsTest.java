@@ -45,4 +45,3 @@ class ZianFeatureSettingsTest {
         assertThrows(IllegalArgumentException.class, () -> ZianFeatureSettings.load(path));
     }
 }
-

@@ -16,4 +16,3 @@ Estas opciones se leen al arrancar. Edita el archivo con el servidor detenido y 
 Los antiguos parámetros `globalQuestRewardTestEnabled`, `gachaTestEnabled` y `gachaPaymentTestEnabled` ya no controlan las funciones normales. `globalQuestTestEnabled` solo conserva el comando administrativo `/zian quest test rotate`, que no paga recompensas. No incluyas este parámetro en un servidor normal.
 
 AVECOINS se comprueba en cada operación económica; una versión o contrato incompatible no autoriza créditos ni descuentos. Los premios de gacha pendientes y el progreso de misiones siguen en sus archivos de mundo existentes.
-

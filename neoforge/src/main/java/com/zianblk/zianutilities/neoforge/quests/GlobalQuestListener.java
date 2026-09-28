@@ -60,6 +60,11 @@ public final class GlobalQuestListener {
             } catch (Exception error) {
                 LOGGER.error("[ZIAN-GLOBAL-QUEST] event=capture playerUuid={} result=error", player.getUUID(), error);
             }
+            try {
+                ProgressionQuestRuntime.capture(player, pokemonId, species, generations);
+            } catch (Exception error) {
+                LOGGER.error("[ZIAN-PROGRESSION-QUEST] event=capture playerUuid={} result=error", player.getUUID(), error);
+            }
         });
     }
 
@@ -91,6 +96,12 @@ public final class GlobalQuestListener {
                     LOGGER.error("[ZIAN-GLOBAL-QUEST] event=battle playerUuid={} battleId={} result=error",
                         player.getUUID(), battleId, error);
                 }
+                try {
+                    ProgressionQuestRuntime.wildVictory(player, battleId);
+                } catch (Exception error) {
+                    LOGGER.error("[ZIAN-PROGRESSION-QUEST] event=battle playerUuid={} battleId={} result=error",
+                        player.getUUID(), battleId, error);
+                }
             });
         }
     }
@@ -99,4 +110,3 @@ public final class GlobalQuestListener {
         GlobalQuestNetwork.send(player, false);
     }
 }
-

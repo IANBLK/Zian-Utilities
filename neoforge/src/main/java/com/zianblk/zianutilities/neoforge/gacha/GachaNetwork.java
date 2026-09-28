@@ -173,5 +173,3 @@ public final class GachaNetwork {
         PacketDistributor.sendToServer(new Action((byte) kind, poolId, index, text));
     }
 }
-
-

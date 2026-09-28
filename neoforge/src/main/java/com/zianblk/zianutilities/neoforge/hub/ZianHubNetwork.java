@@ -91,4 +91,3 @@ public final class ZianHubNetwork {
     public static void requestQuests() { PacketDistributor.sendToServer(new Navigate((byte) 1)); }
     public static void requestGachas() { PacketDistributor.sendToServer(new Navigate((byte) 2)); }
 }
-

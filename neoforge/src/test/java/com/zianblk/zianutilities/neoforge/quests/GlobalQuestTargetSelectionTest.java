@@ -39,6 +39,13 @@ class GlobalQuestTargetSelectionTest {
     }
 
     @Test
+    void firstOfferCanSelectFromAnImmutablePoolWithoutPreviousTarget() {
+        String selected = GlobalQuestRuntime.selectTarget(List.of(
+            "cobblemon:bulbasaur", "cobblemon:charmander"), null, new Random(1));
+        assertTrue(List.of("cobblemon:bulbasaur", "cobblemon:charmander").contains(selected));
+    }
+
+    @Test
     void testRotationChangesTargetWithoutMovingRealWindowOrAllowingPayment() {
         GlobalQuestOffer current = new GlobalQuestOffer(1790485200000L,
             "cobblemon:patrat", "gen5", "avecoins:coppercoin", 1,

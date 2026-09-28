@@ -1,6 +1,6 @@
 # Zian Utilities Quests - functional specification
 
-Status: future module specification.
+Status: three-hour global quests implemented; first weekly and campaign version implemented in alpha.26.
 
 This document defines product behavior, not the final implementation architecture.
 
@@ -12,9 +12,15 @@ Quest families:
 
 ```text
 Campaign
-Daily
 Weekly
+Global three-hour rotation (already implemented)
 ```
+
+There is no separate daily quest family: the three-hour global rotation already
+fills that role. Generation availability grows cumulatively. During the first
+15 days only Gen 1 is expected to be active; later generations are added, not
+substituted. A campaign becomes available when its generation is enabled and
+remains available as more generations unlock.
 
 ## Shared rules
 
@@ -50,30 +56,33 @@ Quests answers:
 
 `Is Campaign X unlocked/available for this player?`
 
-## Daily quests
-
-Daily quests are generated or selected from configured pools.
-
-Configurable behavior should eventually support:
-
-```text
-rotation = GLOBAL | PERSONAL
-quest count
-daily reset time
-timezone
-completion bonus
-reroll policy
-```
-
-A daily period should use an explicit period key, not player-login + 24 hours.
-
-Example:
-
-`2026-09-24`
-
 ## Weekly quests
 
-Weekly quests use the same engine with a weekly period key.
+Weekly quests use a weekly period key, a server-wide definition, and separate
+acceptance, progress and claims for each player. The initial objectives are:
+
+```text
+Capture 25 Pokemon eligible under the currently active generations.
+Win 50 battles against wild Pokemon (PvP never counts).
+```
+
+Only captures after acceptance count. A captured Pokemon UUID and battle UUID
+may count once per objective. Capture species must belong to an enabled
+generation and be present in Cobblemon's natural world-spawn pool. Progress
+survives restarts, resets at the weekly boundary, and pays each objective at
+most once per week. The existing three-hour quest can progress from the same
+gameplay event; its claim remains independent.
+
+Reward currency and amount must be editable in a server config file for each
+weekly objective and campaign chapter, without changing JVM startup arguments
+or rebuilding the mod. The three-hour mission already exposes
+`capture.currency`, `capture.amount`, `battle.currency`, and `battle.amount` in
+the world's `data/zianutilities/global_quest_v1/config.properties`. Weekly
+rewards are frozen on the first request of a weekly period; campaign chapter rewards
+are frozen when that chapter opens for the player. Editing config never changes
+a previously completed or pending claim. Operators can disable quest payments
+globally with `quests.rewards.enabled=false` in
+`config/zianutilities-features.properties` followed by a server restart.
 
 Example:
 
@@ -82,12 +91,35 @@ Example:
 Configurable behavior should eventually support:
 
 ```text
-weekly reset day
-weekly reset time
-timezone
-quest count
-completion bonus
+weekly reset day and time (alpha.26 uses Monday 00:00 America/Guayaquil)
+reward amount for each objective
 ```
+
+Campaigns are permanent per player and per generation. The Gen 1 campaign is
+available as soon as Gen 1 is enabled. Each later generation campaign unlocks
+when that generation becomes active. Campaign capture objectives draw only
+from naturally spawning Pokemon in their own generation. No campaign progress
+resets when a weekly or three-hour period ends. The first campaign design has
+three sequential chapters per generation: capture 3, then 8, then 15 distinct
+species of that generation. A species counts once within its chapter. Captures
+before accepting the campaign or before a chapter unlocks do not count. Each chapter
+has its own durable, one-time reward claim. The next chapter opens automatically
+after the previous chapter's reward is resolved.
+
+In alpha.26, the server creates
+`world/data/zianutilities/progression_quests_v1/config.properties` with separate
+currency and amount keys for both weekly objectives and all three campaign
+chapters. Default rewards are 5/10 copper coins weekly and 5/10/15 copper coins
+for campaign chapters. Weekly values are frozen in that week's `offer.properties`
+on first access. A campaign freezes each chapter's values when that chapter
+opens. Edit the config between periods/chapters; restarting the server is not
+required for the next new period/chapter to see the saved file.
+
+On a test server started with `-Dzianutilities.globalQuestTestEnabled=true`,
+`/zian quest test weekly rotate` starts a new no-payment weekly rehearsal without
+moving the real Monday reset. It clears the visible weekly progress for all
+players by changing the test period key; prior reward claims are untouched.
+The next real week ignores the test key and pays according to its normal rules.
 
 ## Objective model
 
@@ -263,11 +295,11 @@ data loading
 player progress persistence
 capture objective
 evolution objective
-daily period
+three-hour global period
 item reward
 currency reward through EconomyPort
 manual admin inspection
 tests
 ```
 
-Weekly and advanced battle objectives can follow once the base is proven.
+Weekly and campaign objectives can follow once the base is proven.

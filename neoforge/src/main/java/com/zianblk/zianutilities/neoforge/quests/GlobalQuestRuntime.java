@@ -161,7 +161,9 @@ public final class GlobalQuestRuntime {
 
     static String selectTarget(List<String> pool, String priorTarget, RandomGenerator random) {
         if (pool.isEmpty()) return null;
-        int priorIndex = pool.size() > 1 ? pool.indexOf(priorTarget) : -1;
+        // List.copyOf() rejects null in indexOf(); there is no prior target on
+        // the first offer (or after a previously empty generation pool).
+        int priorIndex = pool.size() > 1 && priorTarget != null ? pool.indexOf(priorTarget) : -1;
         int index = random.nextInt(pool.size() - (priorIndex >= 0 ? 1 : 0));
         if (priorIndex >= 0 && index >= priorIndex) index++;
         return pool.get(index);
@@ -294,5 +296,3 @@ public final class GlobalQuestRuntime {
         }
     }
 }
-
-

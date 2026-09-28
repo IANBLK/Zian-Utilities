@@ -22,7 +22,10 @@ public final class GlobalQuestCommands {
                     .then(Commands.literal("rotate")
                         .executes(context -> rotateForTest(context.getSource())))
                     .then(Commands.literal("pool")
-                        .executes(context -> showPool(context.getSource()))))
+                        .executes(context -> showPool(context.getSource())))
+                    .then(Commands.literal("weekly")
+                        .then(Commands.literal("rotate")
+                            .executes(context -> rotateWeeklyForTest(context.getSource())))))
                 .executes(context -> {
                     // Other Zian modules register the same parent literal; Brigadier merges its children.
                     if (!GlobalQuestRuntime.moduleEnabled()) {
@@ -73,5 +76,19 @@ public final class GlobalQuestCommands {
             return 0;
         }
     }
-}
 
+    private static int rotateWeeklyForTest(net.minecraft.commands.CommandSourceStack source) {
+        try {
+            ProgressionQuestRuntime.rotateWeekForTest(source.getServer());
+            for (ServerPlayer player : source.getServer().getPlayerList().getPlayers()) {
+                ProgressionQuestNetwork.send(player, false);
+            }
+            source.sendSuccess(() -> Component.literal("Semana de prueba iniciada. El progreso semanal vuelve a cero; "
+                + "esta rotación no paga recompensas y el horario real no cambia."), false);
+            return Command.SINGLE_SUCCESS;
+        } catch (Exception error) {
+            source.sendFailure(Component.literal("No se pudo iniciar la semana de prueba; revisa la consola."));
+            return 0;
+        }
+    }
+}

@@ -43,9 +43,13 @@ Habitat-related spawning remains subject to explicit runtime verification before
 - quest foundation
 
 ### Milestone 3
-- Campaign Quests
-- Daily Quests
-- Weekly Quests
+- Weekly Quests (25 eligible captures and 50 wild victories)
+- Generation Campaigns (persistent, unlocked as generations are enabled)
+
+The existing three-hour global quests fill the repeatable daily-play role. No
+separate daily quest family is planned. Generation availability is cumulative:
+the first 15 days can run with only Gen 1, then later generations are added
+without removing earlier ones.
 
 ### Milestone 4
 - Gacha
