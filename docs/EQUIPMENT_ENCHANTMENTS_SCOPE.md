@@ -1,18 +1,11 @@
-# Equipo y encantamiento de minería (alpha.28)
+# Equipo y encantamiento de minería (alpha.29)
 
-La primera entrega reúne tres sets completos: Captura, Explorador y Campeón. Cada uno tiene casco, pechera, grebas y botas. Los doce objetos usan la defensa, dureza, resistencia al retroceso, encantabilidad y durabilidad de la netherita; son resistentes al fuego y se reparan con lingotes de netherita. Sus texturas se incluyen en el JAR, sin paquete de recursos adicional.
+Hay tres familias de equipo: Pikachu (`captura`), Dragonite (`explorador`) y Lucario (`campeon`). Los identificadores de las cuatro armaduras introducidas en alpha.28 se conservan para que los objetos ya entregados sigan existiendo. Cada familia contiene casco, pechera, grebas, botas, espada, hacha, pico, pala, azada, arco y escudo. Las texturas de inventario y las capas de armadura van dentro del JAR. No se añaden recetas de fabricación.
 
-No hay recetas de fabricación. Un administrador puede entregarlos con `/give <jugador> zianutilities:captura_helmet 1` (sustituir `captura` por `explorador` o `campeon`, y `helmet` por `chestplate`, `leggings` o `boots`). También aparecen en la pestaña de combate del inventario creativo. La interfaz de gachas existente puede aceptar estos objetos desde la mano del administrador.
+Cada pieza de armadura tiene 1 punto de defensa más que la pieza de netherita correspondiente. La dureza es 4 (netherita: 3) y la resistencia al retroceso por pieza es 0,15 (netherita: 0,10). La durabilidad, encantabilidad, resistencia al fuego y reparación con lingote de netherita siguen la base de netherita. Los objetos se añaden a las etiquetas de armadura de Minecraft para permitir Protección, Irrompibilidad y otros encantamientos apropiados.
 
-`zianutilities:mineria_3x3` es un encantamiento de nivel único para picos. Puede salir en mesa de encantamientos y aplicarse mediante yunque. Después de romper un bloque, intenta romper los ocho vecinos del plano perpendicular a la cara golpeada. La rotura inicial debe haberse completado; por ello, un evento cancelado por un sistema de protección no inicia la rotura de área. Cada bloque adicional pasa por la ruta normal de rotura del jugador, que permite a las protecciones cancelar individualmente y aplica desgaste, botín y encantamientos del pico.
+La espada y las herramientas usan la categoría de minería de netherita, 2032 usos, velocidad de minería 10, bono de daño del material 5 y encantabilidad 16. La base de netherita es 2031 usos, velocidad 9, bono 4 y encantabilidad 15. Cada herramienta se incorpora a su etiqueta vanilla, lo que también habilita sus encantamientos normales. El arco tiene 2032 usos y añade 1 punto al daño base de cada flecha; el escudo tiene 2032 usos y al sostenerlo en la mano secundaria aporta +1 defensa, +1 dureza y +0,1 resistencia al retroceso. Arco y escudo se reparan con lingote de netherita.
 
-Para limitar sorpresas, el efecto no se activa en creativo ni espectador, no carga chunks, no rompe contenedores ni otros bloques con entidad, exige un pico adecuado y omite bloques más duros que el original. Si el jugador cambia el pico antes de procesar los vecinos, no se ejecuta. No hay recursión: una rotura adicional no inicia otro 3×3.
+El encantamiento `zianutilities:mineria_3x3` se aplica **solo por comando** a un pico: `/enchant <jugador> zianutilities:mineria_3x3 1`. No está en las etiquetas de mesa de encantamientos, botín ni comercio de aldeanos. Rompe hasta ocho bloques vecinos del plano perpendicular a la cara golpeada, usando la ruta normal de rotura para aplicar protecciones, botín y desgaste. No actúa si la rotura inicial se cancela, no carga chunks, omite contenedores y bloques más duros, y no se activa recursivamente.
 
-## Prueba recomendada en Youer
-
-1. Instalar el mismo JAR alpha.28 en servidor y cliente; retirar la alpha anterior.
-2. Verificar los tres sets en creativo o con `/give` y comprobar estadísticas y texturas al equiparlos.
-3. Encantar un pico con `/enchant <jugador> zianutilities:mineria_3x3 1`. En supervivencia, romper piedra de frente, desde arriba y desde un lado; confirmar un solo plano de hasta nueve bloques y el desgaste del pico.
-4. Repetir dentro de un claim/protección y con un cofre junto al área. El bloque protegido y el cofre deben permanecer.
-
-La prueba local automatizada comprueba la geometría de las seis caras y el empaquetado. La comprobación funcional con Youer y plugins de protección requiere el servidor de prueba.
+Para probar una pieza: `/give <jugador> zianutilities:captura_helmet 1`. Se pueden sustituir `captura` por `explorador` o `campeon`, y `helmet` por `chestplate`, `leggings`, `boots`, `sword`, `axe`, `pickaxe`, `shovel`, `hoe`, `bow` o `shield`. Las armaduras, espada, arco y escudo aparecen en Combate; las herramientas, en Herramientas y utilidades. Instalar el mismo JAR en cliente y servidor; no hacen falta parámetros de startup.

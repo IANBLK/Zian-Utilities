@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "zianutilities:captura_helmet",
+    "zianutilities:explorador_helmet",
+    "zianutilities:campeon_helmet"
+  ]
+}

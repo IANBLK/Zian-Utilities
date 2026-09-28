@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "zianutilities:captura_sword",
+    "zianutilities:explorador_sword",
+    "zianutilities:campeon_sword"
+  ]
+}

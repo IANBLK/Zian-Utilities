@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "zianutilities:captura_bow",
+    "zianutilities:captura_shield",
+    "zianutilities:explorador_bow",
+    "zianutilities:explorador_shield",
+    "zianutilities:campeon_bow",
+    "zianutilities:campeon_shield"
+  ]
+}

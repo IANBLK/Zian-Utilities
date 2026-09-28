@@ -17,18 +17,48 @@ function Read-Png([string]$name) {
         $loaded = [System.Drawing.Bitmap]::new($memory)
         try { return [System.Drawing.Bitmap]::new($loaded) }
         finally { $loaded.Dispose() }
-    } finally {
-        $stream.Dispose()
-        $memory.Dispose()
+    } finally { $stream.Dispose(); $memory.Dispose() }
+}
+
+function Color-At([int[]]$rgb, [int]$alpha = 255) {
+    return [System.Drawing.Color]::FromArgb($alpha, $rgb[0], $rgb[1], $rgb[2])
+}
+
+function Pixel([System.Drawing.Bitmap]$bitmap, [int]$x, [int]$y, [int[]]$rgb, [bool]$onlyExisting = $true) {
+    if ($x -lt 0 -or $y -lt 0 -or $x -ge $bitmap.Width -or $y -ge $bitmap.Height) { return }
+    if ($onlyExisting -and $bitmap.GetPixel($x, $y).A -eq 0) { return }
+    $bitmap.SetPixel($x, $y, (Color-At $rgb))
+}
+
+function Mark([System.Drawing.Bitmap]$bitmap, [string]$theme, [int]$cx, [int]$cy, [bool]$onlyExisting = $true) {
+    $pattern = switch ($theme) {
+        'captura' { @('..Y..', '.YY..', '.RRR.', '..Y..', '.Y...') } # lightning and cheeks
+        'explorador' { @('T...T', '.T.T.', '..C..', '.CCC.', '..C..') } # wings and belly
+        'campeon' { @('B...B', '.B.B.', '..W..', '.WWW.', '..W..') } # ears and chest spike
+    }
+    $colors = switch ($theme) {
+        'captura' { @{ Y = @(255, 245, 131); R = @(232, 64, 73) } }
+        'explorador' { @{ T = @(77, 205, 188); C = @(255, 239, 185) } }
+        'campeon' { @{ B = @(18, 37, 78); W = @(244, 237, 219) } }
+    }
+    for ($y = 0; $y -lt 5; $y++) {
+        for ($x = 0; $x -lt 5; $x++) {
+            $symbol = [string]$pattern[$y][$x]
+            if ($symbol -ne '.') { Pixel $bitmap ($cx + $x - 2) ($cy + $y - 2) $colors[$symbol] $onlyExisting }
+        }
     }
 }
 
-function Recolor([System.Drawing.Bitmap]$source, [string]$theme, [bool]$itemIcon) {
-    $palette = switch ($theme) {
-        'captura' { @(@(24, 31, 43), @(78, 89, 105), @(219, 229, 225), @(213, 59, 72), @(255, 196, 87)) }
-        'explorador' { @(@(22, 42, 48), @(42, 109, 123), @(155, 223, 224), @(43, 192, 205), @(244, 183, 91)) }
-        'campeon' { @(@(35, 27, 58), @(91, 64, 134), @(178, 153, 228), @(231, 181, 66), @(255, 232, 137)) }
+function Palette([string]$theme) {
+    switch ($theme) {
+        'captura' { return ,@(@(135, 102, 29), @(236, 192, 53), @(255, 234, 127), @(59, 47, 37), @(226, 64, 73)) }
+        'explorador' { return ,@(@(141, 72, 38), @(230, 141, 65), @(255, 207, 122), @(65, 169, 159), @(255, 237, 180)) }
+        'campeon' { return ,@(@(27, 58, 116), @(57, 120, 194), @(135, 198, 232), @(20, 34, 65), @(239, 230, 210)) }
     }
+}
+
+function Recolor([System.Drawing.Bitmap]$source, [string]$theme, [string]$piece, [bool]$itemIcon) {
+    $palette = Palette $theme
     $result = [System.Drawing.Bitmap]::new($source.Width, $source.Height, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
     for ($y = 0; $y -lt $source.Height; $y++) {
         for ($x = 0; $x -lt $source.Width; $x++) {
@@ -36,28 +66,58 @@ function Recolor([System.Drawing.Bitmap]$source, [string]$theme, [bool]$itemIcon
             if ($old.A -eq 0) { continue }
             $lum = ($old.R + $old.G + $old.B) / 3
             $band = if ($lum -lt 65) { 0 } elseif ($lum -lt 115) { 1 } else { 2 }
-            if ($theme -eq 'captura' -and $y -eq [int]($source.Height / 2) -and $x % 3 -ne 0) { $band = 3 }
-            if ($theme -eq 'explorador' -and (($x + $y) % 11 -eq 0)) { $band = 3 }
-            if ($theme -eq 'campeon' -and (($x - $y + 99) % 9 -eq 0)) { $band = 3 }
-            $c = $palette[$band]
-            $result.SetPixel($x, $y, [System.Drawing.Color]::FromArgb($old.A, $c[0], $c[1], $c[2]))
+            if ($theme -eq 'captura' -and (($x + 2 * $y) % 13 -eq 0)) { $band = 3 }
+            if ($theme -eq 'explorador' -and (($x - $y + 99) % 13 -eq 0)) { $band = 3 }
+            if ($theme -eq 'campeon' -and (($x + $y) % 11 -eq 0)) { $band = 3 }
+            $result.SetPixel($x, $y, (Color-At $palette[$band] $old.A))
         }
     }
     if ($itemIcon) {
-        $cx = 8; $cy = 9
-        for ($dy = -2; $dy -le 2; $dy++) {
-            for ($dx = -2; $dx -le 2; $dx++) {
-                $x = $cx + $dx; $y = $cy + $dy
-                if ($x -ge $result.Width -or $y -ge $result.Height -or $result.GetPixel($x, $y).A -eq 0) { continue }
-                $draw = $false
-                if ($theme -eq 'captura') { $draw = ([Math]::Abs($dx) + [Math]::Abs($dy) -eq 2 -or ($dx -eq 0 -and $dy -eq 0)) }
-                if ($theme -eq 'explorador') { $draw = ($dx -eq 0 -or $dy -eq 0) }
-                if ($theme -eq 'campeon') { $draw = ($dy -eq -1 -and [Math]::Abs($dx) -eq 2) -or ($dy -eq 0 -and [Math]::Abs($dx) -le 1) -or ($dy -eq 1 -and [Math]::Abs($dx) -le 2) }
-                if ($draw) { $c = $palette[4]; $result.SetPixel($x, $y, [System.Drawing.Color]::FromArgb(255, $c[0], $c[1], $c[2])) }
+        if ($piece -in @('helmet', 'chestplate', 'leggings', 'boots', 'shield')) {
+            $cy = if ($piece -eq 'helmet') { 7 } elseif ($piece -eq 'boots') { 9 } else { 8 }
+            Mark $result $theme 8 $cy $true
+            if ($piece -eq 'helmet' -and $theme -eq 'captura') {
+                Pixel $result 4 1 @(59, 47, 37) $false; Pixel $result 11 1 @(59, 47, 37) $false
+                Pixel $result 4 2 @(236, 192, 53) $false; Pixel $result 11 2 @(236, 192, 53) $false
             }
+            if ($piece -eq 'helmet' -and $theme -eq 'campeon') {
+                Pixel $result 4 1 @(20, 34, 65) $false; Pixel $result 11 1 @(20, 34, 65) $false
+                Pixel $result 5 6 @(207, 60, 67) $true; Pixel $result 10 6 @(207, 60, 67) $true
+            }
+        } else {
+            # The shape of each tool stays readable; a colored grip identifies its family.
+            Pixel $result 4 12 $palette[4] $true
+            Pixel $result 5 11 $palette[4] $true
         }
+    } elseif ($piece -eq 'layer_1') {
+        Mark $result $theme 24 24 $true # torso front
+        Mark $result $theme 12 12 $true # helmet front
+    } else {
+        Mark $result $theme 8 24 $true # leggings front
     }
     return $result
+}
+
+function Make-Shield([string]$theme) {
+    $palette = Palette $theme
+    $result = [System.Drawing.Bitmap]::new(16, 16, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    for ($y = 1; $y -le 14; $y++) {
+        $inset = if ($y -lt 9) { 2 } elseif ($y -lt 12) { 3 } elseif ($y -lt 14) { 4 } else { 6 }
+        for ($x = $inset; $x -le (15 - $inset); $x++) {
+            $border = ($x -eq $inset -or $x -eq (15 - $inset) -or $y -eq 1 -or $y -eq 14)
+            $stripe = (($x + $y) % 6 -eq 0)
+            $band = if ($border) { 3 } elseif ($stripe) { 2 } else { 1 }
+            Pixel $result $x $y $palette[$band] $false
+        }
+    }
+    Mark $result $theme 8 8 $true
+    return $result
+}
+
+function Save-Png([System.Drawing.Bitmap]$bitmap, [string]$part, [string]$name) {
+    $dir = Join-Path $root $part
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    $bitmap.Save((Join-Path $dir "$name.png"), [System.Drawing.Imaging.ImageFormat]::Png)
 }
 
 try {
@@ -65,24 +125,22 @@ try {
         foreach ($layer in @(1, 2)) {
             $original = Read-Png "models/armor/netherite_layer_$layer.png"
             try {
-                $result = Recolor $original $theme $false
-                try {
-                    $dir = Join-Path $root 'models/armor'
-                    New-Item -ItemType Directory -Force -Path $dir | Out-Null
-                    $result.Save((Join-Path $dir "${theme}_layer_$layer.png"), [System.Drawing.Imaging.ImageFormat]::Png)
-                } finally { $result.Dispose() }
+                $result = Recolor $original $theme "layer_$layer" $false
+                try { Save-Png $result 'models/armor' "${theme}_layer_$layer" }
+                finally { $result.Dispose() }
             } finally { $original.Dispose() }
         }
-        foreach ($piece in @('helmet', 'chestplate', 'leggings', 'boots')) {
-            $original = Read-Png "item/netherite_$piece.png"
+        foreach ($piece in @('helmet', 'chestplate', 'leggings', 'boots', 'sword', 'axe', 'pickaxe', 'shovel', 'hoe', 'bow', 'bow_pulling_0', 'bow_pulling_1', 'bow_pulling_2')) {
+            $sourceName = if ($piece -in @('helmet', 'chestplate', 'leggings', 'boots', 'sword', 'axe', 'pickaxe', 'shovel', 'hoe')) { "netherite_$piece" } else { $piece }
+            $original = Read-Png "item/$sourceName.png"
             try {
-                $result = Recolor $original $theme $true
-                try {
-                    $dir = Join-Path $root 'item'
-                    New-Item -ItemType Directory -Force -Path $dir | Out-Null
-                    $result.Save((Join-Path $dir "${theme}_$piece.png"), [System.Drawing.Imaging.ImageFormat]::Png)
-                } finally { $result.Dispose() }
+                $result = Recolor $original $theme $piece $true
+                try { Save-Png $result 'item' "${theme}_$piece" }
+                finally { $result.Dispose() }
             } finally { $original.Dispose() }
         }
+        $shield = Make-Shield $theme
+        try { Save-Png $shield 'item' "${theme}_shield" }
+        finally { $shield.Dispose() }
     }
 } finally { $archive.Dispose() }

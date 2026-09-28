@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-alpha.29
+
+- Corrige los encantamientos de los sets de armadura añadiendo las etiquetas de equipo de Minecraft 1.21.1.
+- Rediseña los sets existentes con paletas y motivos de Pikachu, Dragonite y Lucario; conserva sus identificadores para no perder piezas guardadas.
+- Mejora cada armadura con +1 defensa por pieza, +1 dureza y +0,05 resistencia al retroceso por pieza.
+- Añade a cada familia espada, hacha, pico, pala, azada, arco y escudo sin recetas; los picos y demás herramientas tienen estadísticas de netherita mejoradas.
+- El arco suma 1 punto de daño base a cada flecha y el escudo aporta defensa, dureza y resistencia al retroceso en la mano secundaria.
+- Minería 3×3 queda exclusiva del comando `/enchant`; no aparece en mesa, aldeanos ni botín.
+
 ## 0.1.0-alpha.28
 
 - Añade tres sets de armadura de cuatro piezas (Captura, Explorador y Campeón), con estadísticas y durabilidad de netherita, texturas integradas y sin recetas.
