@@ -65,8 +65,9 @@ If you find a bug, include your Minecraft, NeoForge, Cobblemon, AVECOINS, and Zi
 
 ## Beta 5 changelog
 
-- Fixed gacha roulette text overlapping the animation at GUI scale ×2 by displaying the spin in its own modal view.
-- Removed all five elemental swords and their assets; only the Prismatic equipment set remains in the creative tab.
+- Replaced the earlier Captura, Explorador, and Campeón equipment families with one Prismatic armor and tool set in a dedicated creative tab.
+- Added a gacha roulette animation and fixed background text overlapping it at GUI scale ×2.
+- Removed all five elemental swords from the earlier test build; only Prismatic equipment remains.
 - Added `/zian gacha review <player>` to inspect unresolved rolls.
 - Added `/zian gacha confirm-delivered <player> <operationId>` for operator-confirmed recovery of an interrupted prize delivery.
 - Safely retires rolls interrupted before any ticket debit and reduces noisy stack traces for expected review states.
