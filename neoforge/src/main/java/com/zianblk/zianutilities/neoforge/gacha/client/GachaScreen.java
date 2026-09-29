@@ -15,6 +15,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.Locale;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Client preview and admin editor. All mutation and random selection happens on the server. */
 public final class GachaScreen extends Screen {
@@ -29,6 +31,10 @@ public final class GachaScreen extends Screen {
     private boolean editing;
     private boolean confirming;
     private EditBox nameBox;
+    private boolean awaitingRoll;
+    private Reel reel;
+
+    private record Reel(long started, List<ItemStack> items) {}
 
     private GachaScreen(GachaNetwork.State state, int poolId, int prizePage, int pendingPage,
                         boolean editing, boolean confirming) {
@@ -47,9 +53,31 @@ public final class GachaScreen extends Screen {
             if (state.open() || !(minecraft.screen instanceof GachaScreen old)) {
                 minecraft.setScreen(new GachaScreen(state, firstId(state), 0, 0, false, false));
             } else {
-                minecraft.setScreen(new GachaScreen(state, old.poolId, old.prizePage,
-                    old.pendingPage, old.editing, false));
+                GachaScreen next = new GachaScreen(state, old.poolId, old.prizePage,
+                    old.pendingPage, old.editing, false);
+                next.awaitingRoll = old.awaitingRoll;
+                next.reel = old.reel;
+                minecraft.setScreen(next);
             }
+        });
+    }
+
+    public static void receiveRollResult(GachaNetwork.RollResult result) {
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.execute(() -> {
+            if (!(minecraft.screen instanceof GachaScreen screen) || !screen.awaitingRoll) return;
+            screen.awaitingRoll = false;
+            if (!result.prize().isEmpty()) {
+                List<ItemStack> items = new ArrayList<>();
+                GachaNetwork.PoolView pool = screen.pool();
+                if (pool != null && pool.id() == result.poolId() && !pool.prizes().isEmpty()) {
+                    for (int i = 0; i < 23; i++)
+                        items.add(pool.prizes().get(i % pool.prizes().size()).item().copy());
+                }
+                items.add(result.prize().copy());
+                screen.reel = new Reel(System.currentTimeMillis(), items);
+            }
+            screen.reopen();
         });
     }
 
@@ -69,8 +97,10 @@ public final class GachaScreen extends Screen {
     }
 
     private void reopen() {
-        Minecraft.getInstance().setScreen(new GachaScreen(state, poolId,
-            prizePage, pendingPage, editing, confirming));
+        GachaScreen next = new GachaScreen(state, poolId, prizePage, pendingPage, editing, confirming);
+        next.awaitingRoll = awaitingRoll;
+        next.reel = reel;
+        Minecraft.getInstance().setScreen(next);
     }
 
     private int left() { return Math.max(10, (width - Math.min(width - 20, 470)) / 2); }
@@ -110,9 +140,15 @@ public final class GachaScreen extends Screen {
             StyledButton roll = addRenderableWidget(new StyledButton(x + w / 2 - 77, 228, 154, 21,
                 confirming ? "Confirmar tirada" : "Girar una vez", () -> {
                     if (!confirming) { confirming = true; reopen(); }
-                    else { confirming = false; GachaNetwork.request(9, pool.id(), 0, ""); }
+                    else {
+                        confirming = false;
+                        awaitingRoll = true;
+                        GachaNetwork.request(9, pool.id(), 0, "");
+                        reopen();
+                    }
                 }));
-            roll.active = pool.enabled() && state.paymentEnabled() && !pool.prizes().isEmpty();
+            roll.active = pool.enabled() && state.paymentEnabled() && !pool.prizes().isEmpty()
+                && !awaitingRoll && reel == null;
         }
         if (!state.pending().isEmpty()) {
             pendingPage = Math.min(pendingPage, state.pending().size() - 1);
@@ -182,6 +218,12 @@ public final class GachaScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // The reel is a modal view. Drawing the normal screen first lets its widgets
+        // bleed through the card at smaller GUI scales because item rendering changes depth.
+        if (awaitingRoll || reel != null) {
+            renderReel(graphics);
+            return;
+        }
         graphics.fill(0, 0, width, height, 0xE00D1117);
         graphics.fill(0, 0, width, 4, GOLD);
         graphics.drawCenteredString(font, title, width / 2, 12, GOLD);
@@ -192,6 +234,47 @@ public final class GachaScreen extends Screen {
         if (editing) renderAdmin(graphics, x, w, pool);
         else renderPlayer(graphics, x, w, pool);
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void renderReel(GuiGraphics graphics) {
+        int x = width / 2 - 146, y = height / 2 - 67;
+        graphics.fill(0, 0, width, height, 0xB8000000);
+        card(graphics, x, y, 292, 134);
+        graphics.drawCenteredString(font, awaitingRoll ? "Procesando tirada..." : "Gacha", width / 2, y + 13, GOLD);
+        if (reel == null) return;
+        long elapsed = Math.max(0, System.currentTimeMillis() - reel.started());
+        double progress = Math.min(1.0, elapsed / 3400.0);
+        int last = reel.items().size() - 1;
+        int position = Math.min(last, (int) Math.floor(last * (1 - Math.pow(1 - progress, 3))));
+        for (int offset = -1; offset <= 1; offset++) {
+            int index = Math.max(0, Math.min(last, position + offset));
+            int slotX = width / 2 + offset * 67 - 23;
+            graphics.fill(slotX, y + 35, slotX + 46, y + 81,
+                offset == 0 ? 0xFF323B45 : 0xFF232A32);
+            graphics.renderOutline(slotX, y + 35, 46, 46,
+                offset == 0 ? GOLD : 0xFF526575);
+            graphics.renderItem(reel.items().get(index), slotX + 15, y + 50);
+        }
+        ItemStack shown = reel.items().get(position);
+        graphics.drawCenteredString(font, shown.getHoverName(), width / 2, y + 92, WHITE);
+        graphics.drawCenteredString(font,
+            progress < 1 ? "Girando..." : "¡Premio obtenido!",
+            width / 2, y + 113, progress < 1 ? MUTED : GREEN);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (reel != null && System.currentTimeMillis() - reel.started() >= 5300) {
+            reel = null;
+            reopen();
+        }
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (awaitingRoll || reel != null) return true;
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     private void renderPlayer(GuiGraphics graphics, int x, int w, GachaNetwork.PoolView pool) {

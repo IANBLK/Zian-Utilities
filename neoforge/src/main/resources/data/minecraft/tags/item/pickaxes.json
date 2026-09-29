@@ -1,8 +1,6 @@
 {
   "replace": false,
   "values": [
-    "zianutilities:captura_pickaxe",
-    "zianutilities:explorador_pickaxe",
-    "zianutilities:campeon_pickaxe"
+    "zianutilities:prismatic_pickaxe"
   ]
 }

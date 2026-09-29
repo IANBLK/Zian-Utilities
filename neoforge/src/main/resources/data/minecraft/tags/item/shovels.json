@@ -1,8 +1,6 @@
 {
   "replace": false,
   "values": [
-    "zianutilities:captura_shovel",
-    "zianutilities:explorador_shovel",
-    "zianutilities:campeon_shovel"
+    "zianutilities:prismatic_shovel"
   ]
 }

@@ -1,8 +1,6 @@
 {
   "replace": false,
   "values": [
-    "zianutilities:captura_chestplate",
-    "zianutilities:explorador_chestplate",
-    "zianutilities:campeon_chestplate"
+    "zianutilities:prismatic_chestplate"
   ]
 }

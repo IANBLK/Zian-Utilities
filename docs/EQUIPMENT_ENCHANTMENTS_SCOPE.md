@@ -1,11 +1,13 @@
-# Equipo y encantamiento de minería (alpha.29)
+# Equipo y encantamiento de minería (beta.5)
 
-Hay tres familias de equipo: Pikachu (`captura`), Dragonite (`explorador`) y Lucario (`campeon`). Los identificadores de las cuatro armaduras introducidas en alpha.28 se conservan para que los objetos ya entregados sigan existiendo. Cada familia contiene casco, pechera, grebas, botas, espada, hacha, pico, pala, azada, arco y escudo. Las texturas de inventario y las capas de armadura van dentro del JAR. No se añaden recetas de fabricación.
+El equipo actual consiste en un solo set Prismático: casco, pechera, grebas, botas, espada, hacha, pico, pala y azada. Todas las piezas están en la pestaña creativa **Zian Utilities | Equipamiento** y no tienen recetas.
 
-Cada pieza de armadura tiene 1 punto de defensa más que la pieza de netherita correspondiente. La dureza es 4 (netherita: 3) y la resistencia al retroceso por pieza es 0,15 (netherita: 0,10). La durabilidad, encantabilidad, resistencia al fuego y reparación con lingote de netherita siguen la base de netherita. Los objetos se añaden a las etiquetas de armadura de Minecraft para permitir Protección, Irrompibilidad y otros encantamientos apropiados.
+Cada pieza de armadura prismática tiene 1 punto de defensa más que la pieza de netherita correspondiente. La dureza es 4 (netherita: 3) y la resistencia al retroceso por pieza es 0,15 (netherita: 0,10). Durabilidad, encantabilidad, resistencia al fuego y reparación siguen la base de netherita.
 
-La espada y las herramientas usan la categoría de minería de netherita, 2032 usos, velocidad de minería 10, bono de daño del material 5 y encantabilidad 16. La base de netherita es 2031 usos, velocidad 9, bono 4 y encantabilidad 15. Cada herramienta se incorpora a su etiqueta vanilla, lo que también habilita sus encantamientos normales. El arco tiene 2032 usos y añade 1 punto al daño base de cada flecha; el escudo tiene 2032 usos y al sostenerlo en la mano secundaria aporta +1 defensa, +1 dureza y +0,1 resistencia al retroceso. Arco y escudo se reparan con lingote de netherita.
+La espada y las herramientas usan la categoría de minería de netherita, 2032 usos, velocidad de minería 10, bono de daño del material 5 y encantabilidad 16. Las etiquetas vanilla correspondientes permiten sus encantamientos normales.
 
 El encantamiento `zianutilities:mineria_3x3` se aplica **solo por comando** a un pico: `/enchant <jugador> zianutilities:mineria_3x3 1`. No está en las etiquetas de mesa de encantamientos, botín ni comercio de aldeanos. Rompe hasta ocho bloques vecinos del plano perpendicular a la cara golpeada, usando la ruta normal de rotura para aplicar protecciones, botín y desgaste. No actúa si la rotura inicial se cancela, no carga chunks, omite contenedores y bloques más duros, y no se activa recursivamente.
 
-Para probar una pieza: `/give <jugador> zianutilities:captura_helmet 1`. Se pueden sustituir `captura` por `explorador` o `campeon`, y `helmet` por `chestplate`, `leggings`, `boots`, `sword`, `axe`, `pickaxe`, `shovel`, `hoe`, `bow` o `shield`. Las armaduras, espada, arco y escudo aparecen en Combate; las herramientas, en Herramientas y utilidades. Instalar el mismo JAR en cliente y servidor; no hacen falta parámetros de startup.
+Para probar una pieza: `/give <jugador> zianutilities:prismatic_helmet 1` o `/give <jugador> zianutilities:prismatic_sword 1`. Instala el mismo JAR en cliente y servidor; no hacen falta parámetros de startup.
+
+Los objetos antiguos `captura_*`, `explorador_*` y `campeon_*` se retiraron por petición del propietario. Antes de actualizar un mundo donde existan esos objetos, haz una copia de seguridad y decide cómo sustituirlos.

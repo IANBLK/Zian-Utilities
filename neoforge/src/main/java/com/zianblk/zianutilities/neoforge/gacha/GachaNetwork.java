@@ -24,14 +24,16 @@ public final class GachaNetwork {
     private GachaNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("gacha-ui-1");
+        var registrar = event.registrar("gacha-ui-2");
         registrar.playToClient(State.TYPE, State.CODEC, GachaNetwork::onState);
+        registrar.playToClient(RollResult.TYPE, RollResult.CODEC, GachaNetwork::onRollResult);
         registrar.playToServer(Action.TYPE, Action.CODEC, GachaNetwork::onAction);
     }
 
     public static boolean hasClient(ServerPlayer player) {
         return NetworkRegistry.hasChannel(player.connection, State.TYPE.id())
-            && NetworkRegistry.hasChannel(player.connection, Action.TYPE.id());
+            && NetworkRegistry.hasChannel(player.connection, Action.TYPE.id())
+            && NetworkRegistry.hasChannel(player.connection, RollResult.TYPE.id());
     }
 
     public static void send(ServerPlayer player, boolean open) {
@@ -56,6 +58,10 @@ public final class GachaNetwork {
         com.zianblk.zianutilities.neoforge.gacha.client.GachaScreen.receive(state);
     }
 
+    private static void onRollResult(RollResult result, IPayloadContext context) {
+        com.zianblk.zianutilities.neoforge.gacha.client.GachaScreen.receiveRollResult(result);
+    }
+
     private static void onAction(Action action, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player)
             || !GachaRuntime.enabled()) return;
@@ -65,7 +71,12 @@ public final class GachaNetwork {
                 case 1 -> GachaRuntime.create(player);
                 case 2, 3, 4, 5, 6, 7, 8 -> GachaRuntime.edit(
                     player, action.poolId(), action.kind(), action.index(), action.text());
-                case 9 -> GachaRuntime.roll(player, action.poolId());
+                case 9 -> {
+                    ItemStack prize = GachaRuntime.roll(player, action.poolId());
+                    send(player, false);
+                    PacketDistributor.sendToPlayer(player, new RollResult(action.poolId(), prize));
+                    return;
+                }
                 case 10 -> GachaRuntime.claim(player, UUID.fromString(action.text()));
                 case 11 -> GachaRuntime.delete(player, action.poolId(), action.text());
                 default -> throw new IllegalStateException("Acción inválida");
@@ -76,6 +87,10 @@ public final class GachaNetwork {
                 && "No tienes tickets suficientes".equals(error.getMessage())) {
                 LOG.info("[ZIAN-GACHA] action={} playerUuid={} result=insufficient_tickets",
                     action.kind(), player.getUUID());
+            } else if (error instanceof IllegalStateException
+                && error.getMessage() != null && error.getMessage().contains("pendiente de revisión")) {
+                LOG.info("[ZIAN-GACHA] action={} playerUuid={} result=pending_review detail={}",
+                    action.kind(), player.getUUID(), error.getMessage());
             } else {
                 LOG.warn("[ZIAN-GACHA] action={} playerUuid={} result=error",
                     action.kind(), player.getUUID(), error);
@@ -83,6 +98,8 @@ public final class GachaNetwork {
             player.sendSystemMessage(Component.literal(error instanceof IllegalStateException
                 ? error.getMessage() : "No se pudo guardar la operación de gacha; revisa la consola."));
             send(player, false);
+            if (action.kind() == 9 && hasClient(player))
+                PacketDistributor.sendToPlayer(player, new RollResult(action.poolId(), ItemStack.EMPTY));
         }
     }
 
@@ -90,6 +107,19 @@ public final class GachaNetwork {
     public record PoolView(int id, String name, String ticket, int cost, boolean enabled,
                            List<PrizeView> prizes) {}
     public record PendingView(String id, String pool, ItemStack item) {}
+
+    /** A visual receipt only. The server has already charged and persisted the chosen prize. */
+    public record RollResult(int poolId, ItemStack prize) implements CustomPacketPayload {
+        public static final Type<RollResult> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(
+            ZianUtilitiesMod.MOD_ID, "gacha_roll_result"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, RollResult> CODEC = StreamCodec.of(
+            (buffer, value) -> {
+                buffer.writeVarInt(value.poolId);
+                ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, value.prize);
+            },
+            buffer -> new RollResult(buffer.readVarInt(), ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer)));
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
 
     public record State(boolean open, boolean admin, boolean paymentEnabled,
                         List<PoolView> pools, List<PendingView> pending) implements CustomPacketPayload {

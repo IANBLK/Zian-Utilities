@@ -49,6 +49,10 @@ public final class GachaRuntime {
     public record Pending(UUID id, ItemStack item, String poolName, String phase) {
         public Pending { item = item.copy(); }
     }
+    public record Review(UUID id, String phase, String poolName, String ticket, int cost,
+                         ItemStack prize) {
+        public Review { prize = prize.copy(); }
+    }
     public record View(List<Pool> pools, List<Pending> pending, boolean admin, boolean paymentEnabled) {}
 
     private static Path root(MinecraftServer server) {
@@ -252,20 +256,66 @@ public final class GachaRuntime {
         if (!player.hasPermissions(2)) throw new IllegalStateException("Se requiere permiso de administrador");
     }
 
-    public static synchronized void roll(ServerPlayer player, int poolId) throws IOException {
+    /** Read-only details for an operator to reconcile a stalled roll with the player's inventory. */
+    public static synchronized List<Review> review(ServerPlayer player) throws IOException {
+        List<Review> result = new ArrayList<>();
+        ListTag ops = operations(player);
+        for (int i = ops.size() - 1; i >= 0; i--) {
+            CompoundTag op = ops.getCompound(i);
+            String phase = op.getString("phase");
+            if (phase.equals("DELIVERED") || phase.equals("REJECTED")) continue;
+            result.add(new Review(op.getUUID("id"), phase, op.getString("pool"),
+                op.getString("ticket"), op.getInt("cost"),
+                stack(player, op.getCompound("prize"))));
+        }
+        return result;
+    }
+
+    /** Acknowledges delivery only after an operator has verified the prize was received. */
+    public static synchronized void confirmDelivered(ServerPlayer player, UUID id, UUID admin)
+        throws IOException {
+        ListTag ops = operations(player);
+        for (int i = 0; i < ops.size(); i++) {
+            CompoundTag op = ops.getCompound(i);
+            if (!op.getUUID("id").equals(id)) continue;
+            if (!op.getString("phase").equals("DELIVERING"))
+                throw new IllegalStateException("Solo se puede confirmar una entrega interrumpida");
+            op.putString("phase", "DELIVERED");
+            op.putString("resolution", "operator_confirmed_delivery");
+            saveOperations(player, ops);
+            LOG.info("[ZIAN-AUDIT] action=gacha_reconcile admin={} playerUuid={} operation={} result=CONFIRMED_DELIVERED",
+                admin, player.getUUID(), id);
+            return;
+        }
+        throw new IllegalStateException("Tirada inexistente");
+    }
+
+    public static synchronized ItemStack roll(ServerPlayer player, int poolId) throws IOException {
         if (!paymentsEnabled()) throw new IllegalStateException("Los pagos de gacha están desactivados");
         if (!AvecoinsContractProbe.inspect().compatible()) throw new IllegalStateException("AVECOINS compatible no disponible");
         Pool pool = pools(player).stream().filter(p -> p.id() == poolId && p.enabled()).findFirst()
             .orElseThrow(() -> new IllegalStateException("Gacha no disponible"));
         ListTag ops = operations(player);
         int waiting = 0;
+        boolean rejectedPrepared = false;
         for (int i = 0; i < ops.size(); i++) {
-            String phase = ops.getCompound(i).getString("phase");
-            if (phase.equals("PREPARED") || phase.equals("DEBIT_PENDING")
-                || phase.equals("DELIVERING") || phase.equals("RECOVERY_REQUIRED"))
-                throw new IllegalStateException("Tienes una tirada pendiente de revisión");
+            CompoundTag previous = ops.getCompound(i);
+            String phase = previous.getString("phase");
+            // PREPARED is persisted before DEBIT_PENDING and before the economy call.
+            // It therefore cannot have charged a ticket and may safely be retired.
+            if (phase.equals("PREPARED")) {
+                previous.putString("phase", "REJECTED");
+                previous.putString("reason", "interrupted_before_debit");
+                rejectedPrepared = true;
+                continue;
+            }
+            if (phase.equals("DEBIT_PENDING") || phase.equals("DELIVERING")
+                || phase.equals("RECOVERY_REQUIRED"))
+                throw new IllegalStateException("Tirada " + previous.getUUID("id")
+                    + " pendiente de revisión (" + phase + ")");
             if (phase.equals("READY")) waiting++;
         }
+        if (rejectedPrepared) saveOperations(player, ops);
         if (waiting >= MAX_PENDING) throw new IllegalStateException("Reclama tus premios pendientes");
         if (pool.prizes().isEmpty()) throw new IllegalStateException("Gacha sin premios");
         Prize winner = pool.prizes().get(GachaDraw.choose(
@@ -312,6 +362,7 @@ public final class GachaRuntime {
                 "Ganaste " + winner.item().getHoverName().getString()
                     + ". Libera espacio y reclámalo en Gachas."));
         }
+        return winner.item().copy();
     }
 
     public static synchronized void claim(ServerPlayer player, UUID id) throws IOException {

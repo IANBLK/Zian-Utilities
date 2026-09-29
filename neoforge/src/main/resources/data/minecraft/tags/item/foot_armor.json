@@ -1,8 +1,6 @@
 {
   "replace": false,
   "values": [
-    "zianutilities:captura_boots",
-    "zianutilities:explorador_boots",
-    "zianutilities:campeon_boots"
+    "zianutilities:prismatic_boots"
   ]
 }

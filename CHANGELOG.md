@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.0-beta.5
+
+- La animación del gacha ocupa una vista modal para evitar que los textos del panel se superpongan en escalado de interfaz ×2.
+- Retira las cinco espadas elementales y sus recursos; el equipo creativo queda reducido al set Prismático.
+- Añade `/zian gacha review <jugador>` para inspeccionar tiradas bloqueadas y `/zian gacha confirm-delivered <jugador> <operationId>` para cerrar una entrega interrumpida solo tras verificar el premio.
+- Las tiradas interrumpidas antes del cobro se descartan de forma segura y los bloqueos de revisión se informan sin una traza de error extensa.
+
+## 0.1.0-beta.4
+
+- Sustituye las tres familias de equipo anteriores por un solo set Prismático de armadura, espada y herramientas, con las estadísticas de netherita mejoradas y sin recetas.
+- Añade cinco espadas funcionales con texturas animadas: agua, fuego, espacio, viento y tierra. Las piezas aparecen en una pestaña creativa propia.
+- Retira los identificadores, modelos y texturas del equipo anterior. Los objetos antiguos guardados requieren atención antes de actualizar un mundo existente.
+- La animación de gacha muestra «Girando...» durante la tirada y deja de revelar cómo se decide el premio.
+- Compilación y pruebas automatizadas completadas; apariencia y uso en Youer pendientes de prueba del operador.
+
 ## 0.1.0-beta.1
 
 - Primera candidata beta. Reúne control de generaciones, misiones globales de tres horas, semanales y campañas, gachas y equipamiento temático.

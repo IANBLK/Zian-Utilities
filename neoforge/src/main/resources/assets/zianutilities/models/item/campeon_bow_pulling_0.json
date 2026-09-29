@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:item/bow",
-  "textures": {
-    "layer0": "zianutilities:item/campeon_bow_pulling_0"
-  }
-}
