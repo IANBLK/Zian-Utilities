@@ -10,6 +10,7 @@ import com.zianblk.zianutilities.neoforge.hub.ZianHubCommands;
 import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
 import com.zianblk.zianutilities.neoforge.gacha.GachaNetwork;
 import com.zianblk.zianutilities.neoforge.gacha.GachaCommands;
+import com.zianblk.zianutilities.neoforge.gacha.GachaRuntime;
 import com.zianblk.zianutilities.neoforge.equipment.ZianArmor;
 import com.zianblk.zianutilities.neoforge.equipment.PlaneMining;
 import com.zianblk.zianutilities.neoforge.rewards.RewardCommands;
@@ -50,6 +51,7 @@ public final class ZianUtilitiesMod {
         NeoForge.EVENT_BUS.addListener(GlobalQuestCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(ZianHubCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(GachaCommands::onRegisterCommands);
+        GachaRuntime.installDeliveryScheduler();
         GenerationPreselectionFilter.install();
         NaturalSpawnGuard.install();
         FishingSpawnGuard.install();

@@ -6,6 +6,10 @@ This candidate continues beta.5. Generation control, equipment, the mining encha
 
 ## Gacha recovery
 
+The reel lasts 5.3 seconds (3.4 seconds of spinning followed by the reveal). Automatic delivery waits 6.3 seconds on the server, including one additional second. Timing is server-owned, so network latency can slightly shift the visual interval.
+
+The original chosen prize is persisted as READY immediately after a confirmed charge, together with its earliest claim time. Manual claims and additional rolls are blocked during this interval. No second ticket is charged for delivery. Logout or restart discards the volatile timer while retaining the journaled prize for later manual claim. A full inventory also leaves the prize READY. Closing the GUI does not reopen it when the timer finishes.
+
 Use operator permission level 2 or the server console. The player must be online.
 
 1. Inspect: `/zian gacha review <player>`.

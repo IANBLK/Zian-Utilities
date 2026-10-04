@@ -1,6 +1,7 @@
 # Gradle
 .gradle/
 .build-temp/
+.kotlin/
 build/
 **/build/
 !gradle/wrapper/gradle-wrapper.jar

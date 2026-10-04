@@ -41,6 +41,8 @@ public final class GachaRuntime {
 
     private GachaRuntime() {}
 
+    public static void installDeliveryScheduler() { GachaDeliveryScheduler.install(); }
+
     public record Prize(ItemStack item, int weight) {
         public Prize { item = item.copy(); }
     }
@@ -167,6 +169,7 @@ public final class GachaRuntime {
         for (int i = ops.size() - 1; i >= 0; i--) {
             CompoundTag op = ops.getCompound(i);
             String phase = op.getString("phase");
+            if (phase.equals("READY") && System.currentTimeMillis() < op.getLong("claimAfter")) continue;
             if (!phase.equals("READY") && !GachaRecovery.isBlocking(phase)) continue;
             ItemStack prize = stack(player, op.getCompound("prize"));
             if (!prize.isEmpty()) {
@@ -362,7 +365,11 @@ public final class GachaRuntime {
             if (GachaRecovery.isBlocking(phase))
                 throw new IllegalStateException("Tirada " + previous.getUUID("id")
                     + " pendiente de revisión (" + phase + ")");
-            if (phase.equals("READY")) waiting++;
+            if (phase.equals("READY")) {
+                if (System.currentTimeMillis() < previous.getLong("claimAfter"))
+                    throw new IllegalStateException("Espera a que termine la tirada anterior");
+                waiting++;
+            }
         }
         if (rejectedPrepared) saveOperations(player, ops);
         if (waiting >= MAX_PENDING) throw new IllegalStateException("Reclama tus premios pendientes");
@@ -399,19 +406,30 @@ public final class GachaRuntime {
             throw new IllegalStateException("Cobro incierto; un admin debe revisar la tirada " + id);
         }
         op.putString("phase", "READY");
+        op.putLong("claimAfter", System.currentTimeMillis() + GachaTiming.DELIVERY_MILLIS);
         saveOperations(player, ops);
         LOG.info("[ZIAN-AUDIT] action=gacha_roll playerUuid={} operation={} pool={} ticket={} cost={} result=READY",
             player.getUUID(), id, pool.id(), pool.ticket(), pool.cost());
-        if (fits(player, winner.item())) {
+        GachaDeliveryScheduler.schedule(player, id);
+        return winner.item().copy();
+    }
+
+    static synchronized void deliverScheduled(ServerPlayer player, UUID id) throws IOException {
+        ListTag ops = operations(player);
+        for (int i = 0; i < ops.size(); i++) {
+            CompoundTag op = ops.getCompound(i);
+            if (!op.getUUID("id").equals(id) || !op.getString("phase").equals("READY")) continue;
+            ItemStack prize = stack(player, op.getCompound("prize"));
+            if (!fits(player, prize)) {
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                    "Ganaste " + prize.getHoverName().getString() + ". Libera espacio y reclámalo en Gachas."));
+                return;
+            }
             claim(player, id);
             player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                "Ganaste " + winner.item().getHoverName().getString() + "."));
-        } else {
-            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                "Ganaste " + winner.item().getHoverName().getString()
-                    + ". Libera espacio y reclámalo en Gachas."));
+                "Ganaste " + prize.getHoverName().getString() + "."));
+            return;
         }
-        return winner.item().copy();
     }
 
     public static synchronized void claim(ServerPlayer player, UUID id) throws IOException {
@@ -422,6 +440,8 @@ public final class GachaRuntime {
         }
         if (op == null || !op.getString("phase").equals("READY"))
             throw new IllegalStateException("Premio no disponible");
+        if (System.currentTimeMillis() < op.getLong("claimAfter"))
+            throw new IllegalStateException("Espera a que termine la tirada");
         ItemStack prize = stack(player, op.getCompound("prize"));
         if (prize.isEmpty()) throw new IllegalStateException("Premio inválido");
         if (!fits(player, prize)) throw new IllegalStateException("Libera espacio en tu inventario");
