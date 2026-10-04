@@ -34,6 +34,7 @@ public final class GachaScreen extends Screen {
     private EditBox nameBox;
     private boolean awaitingRoll;
     private Reel reel;
+    private ItemStack hoveredItem = ItemStack.EMPTY;
 
     private record Reel(long started, List<ItemStack> items) {}
 
@@ -220,6 +221,7 @@ public final class GachaScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        hoveredItem = ItemStack.EMPTY;
         // The reel is a modal view. Drawing the normal screen first lets its widgets
         // bleed through the card at smaller GUI scales because item rendering changes depth.
         if (awaitingRoll || reel != null) {
@@ -233,9 +235,12 @@ public final class GachaScreen extends Screen {
         GachaNetwork.PoolView pool = pool();
         graphics.drawCenteredString(font, Component.literal(pool == null ? "No hay gachas disponibles"
             : pool.name() + (state.admin() && !pool.enabled() ? " (sin publicar)" : "")), width / 2, 45, WHITE);
-        if (editing) renderAdmin(graphics, x, w, pool);
-        else renderPlayer(graphics, x, w, pool);
+        if (editing) renderAdmin(graphics, x, w, pool, mouseX, mouseY);
+        else renderPlayer(graphics, x, w, pool, mouseX, mouseY);
         super.render(graphics, mouseX, mouseY, partialTick);
+        // Use the complete synchronized stack and Minecraft's standard tooltip pipeline.
+        // Render last so widgets and item depth changes cannot cover the tooltip.
+        if (!hoveredItem.isEmpty()) graphics.renderTooltip(font, hoveredItem, mouseX, mouseY);
     }
 
     private void renderReel(GuiGraphics graphics) {
@@ -279,14 +284,19 @@ public final class GachaScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    private void renderPlayer(GuiGraphics graphics, int x, int w, GachaNetwork.PoolView pool) {
+    private void renderPlayer(GuiGraphics graphics, int x, int w, GachaNetwork.PoolView pool,
+                              int mouseX, int mouseY) {
         if (pool != null) {
             card(graphics, x, 65, w, 158);
             String costLabel = "Costo: " + pool.cost() + " " + ticketName(pool.ticket());
             graphics.drawString(font, costLabel, x + 8, 75, GOLD, false);
             ItemStack ticketIcon = BuiltInRegistries.ITEM.getOptional(ResourceLocation.parse(pool.ticket()))
                 .map(ItemStack::new).orElse(ItemStack.EMPTY);
-            if (!ticketIcon.isEmpty()) graphics.renderItem(ticketIcon, x + 14 + font.width(costLabel), 71);
+            if (!ticketIcon.isEmpty()) {
+                int ticketX = x + 14 + font.width(costLabel);
+                graphics.renderItem(ticketIcon, ticketX, 71);
+                itemHover(ticketIcon, ticketX, 71, 16, 16, mouseX, mouseY);
+            }
             long total = pool.prizes().stream().mapToLong(GachaNetwork.PrizeView::weight).sum();
             for (int row = 0; row < 4; row++) {
                 int index = prizePage * 4 + row;
@@ -296,6 +306,7 @@ public final class GachaScreen extends Screen {
                 graphics.renderItem(prize.item(), x + 8, y);
                 graphics.drawString(font, prize.item().getHoverName().getString(),
                     x + 30, y + 2, WHITE, false);
+                prizeHover(prize.item(), x, y, x + w - 60, mouseX, mouseY);
                 String odds = total <= 0 ? "0%" : String.format(Locale.ROOT, "%.2f%%",
                     prize.weight() * 100.0 / total);
                 graphics.drawString(font, odds, x + w - 53, y + 2, GOLD, false);
@@ -312,10 +323,14 @@ public final class GachaScreen extends Screen {
             graphics.renderItem(pending.item(), x + 48, 285);
             graphics.drawCenteredString(font, pending.item().getHoverName(),
                 width / 2, 289, WHITE);
+            itemHover(pending.item(), x + 48, 285, 16, 16, mouseX, mouseY);
+            int nameWidth = font.width(pending.item().getHoverName());
+            itemHover(pending.item(), width / 2 - nameWidth / 2, 289, nameWidth, 9, mouseX, mouseY);
         }
     }
 
-    private void renderAdmin(GuiGraphics graphics, int x, int w, GachaNetwork.PoolView pool) {
+    private void renderAdmin(GuiGraphics graphics, int x, int w, GachaNetwork.PoolView pool,
+                             int mouseX, int mouseY) {
         if (pool == null) return;
         card(graphics, x, 61, w, 229);
         graphics.drawString(font, "Costo: " + pool.cost() + " ticket(s)",
@@ -331,12 +346,23 @@ public final class GachaScreen extends Screen {
             graphics.renderItem(prize.item(), x + 8, y);
             graphics.drawString(font, prize.item().getHoverName().getString(),
                 x + 30, y + 3, WHITE, false);
+            prizeHover(prize.item(), x, y, x + Math.max(110, w - 193), mouseX, mouseY);
             graphics.drawString(font, String.format(Locale.ROOT, "%d · %.2f%%",
                 prize.weight(), total <= 0 ? 0 : prize.weight() * 100.0 / total),
                 x + Math.max(110, w - 193), y + 3, GOLD, false);
         }
         graphics.drawCenteredString(font, Component.literal(
             "Editar un gacha publicado lo devuelve a borrador"), width / 2, 292, MUTED);
+    }
+
+    private void prizeHover(ItemStack item, int x, int y, int right, int mouseX, int mouseY) {
+        int end = Math.min(right, x + 30 + font.width(item.getHoverName()));
+        itemHover(item, x + 8, y, Math.max(16, end - x - 8), 18, mouseX, mouseY);
+    }
+
+    private void itemHover(ItemStack item, int x, int y, int w, int h, int mouseX, int mouseY) {
+        if (!item.isEmpty() && mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h)
+            hoveredItem = item;
     }
 
     private static String ticketName(String id) {

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-beta.8
+
+- Registra los eventos visuales de los arcos directamente en el cliente, eliminando las dos advertencias de `EventBusSubscriber.Bus` sin depender de la selección automática del bus de versiones posteriores.
+- Muestra la información estándar del objeto al pasar el mouse por el icono o nombre de los premios del gacha, tanto en el panel de jugador como en el editor.
+- Incluye encantamientos, atributos, nombre y descripción del objeto configurado mediante los tooltips nativos de Minecraft y NeoForge; también permite inspeccionar los premios pendientes y el icono del ticket.
+- Conserva los componentes completos que ya enviaba el servidor. No cambia probabilidades, cobros, entrega, animación ni el protocolo del gacha.
+
 ## 0.1.0-beta.7
 
 - Añade nueve piezas Dark Reaper con las mismas estadísticas mejoradas de netherita que el set Prismático, conservando el equipo existente.

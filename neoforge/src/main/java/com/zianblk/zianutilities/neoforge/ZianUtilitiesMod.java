@@ -12,6 +12,7 @@ import com.zianblk.zianutilities.neoforge.gacha.GachaNetwork;
 import com.zianblk.zianutilities.neoforge.gacha.GachaCommands;
 import com.zianblk.zianutilities.neoforge.gacha.GachaRuntime;
 import com.zianblk.zianutilities.neoforge.equipment.ZianArmor;
+import com.zianblk.zianutilities.neoforge.equipment.ZianEquipmentClient;
 import com.zianblk.zianutilities.neoforge.equipment.PlaneMining;
 import com.zianblk.zianutilities.neoforge.rewards.RewardCommands;
 import com.zianblk.zianutilities.neoforge.quests.CaptureEventProbe;
@@ -28,7 +29,9 @@ import com.zianblk.zianutilities.neoforge.quests.GlobalQuestListener;
 import com.zianblk.zianutilities.neoforge.quests.GlobalQuestNetwork;
 import com.zianblk.zianutilities.neoforge.quests.ProgressionQuestNetwork;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.NeoForge;
 
 @Mod(ZianUtilitiesMod.MOD_ID)
@@ -37,6 +40,9 @@ public final class ZianUtilitiesMod {
 
     public ZianUtilitiesMod(IEventBus modBus) {
         ZianArmor.register(modBus);
+        // Explicit registration also supports loaders predating automatic bus selection.
+        // Do not load the class containing client item-rendering code on a dedicated server.
+        if (FMLEnvironment.dist == Dist.CLIENT) ZianEquipmentClient.register(modBus);
         PlaneMining.install();
         modBus.addListener(GlobalQuestNetwork::register);
         modBus.addListener(ProgressionQuestNetwork::register);
