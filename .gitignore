@@ -1,5 +1,6 @@
 # Gradle
 .gradle/
+.build-temp/
 build/
 **/build/
 !gradle/wrapper/gradle-wrapper.jar

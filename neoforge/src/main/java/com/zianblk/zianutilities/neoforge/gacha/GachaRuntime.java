@@ -37,6 +37,7 @@ public final class GachaRuntime {
     private static final int MAX_POOLS = 8;
     private static final int MAX_PRIZES = 12;
     private static final int MAX_PENDING = 50;
+    private static final long MAX_JOURNAL_BYTES = 8L * 1024 * 1024;
 
     private GachaRuntime() {}
 
@@ -49,7 +50,7 @@ public final class GachaRuntime {
     public record Pending(UUID id, ItemStack item, String poolName, String phase) {
         public Pending { item = item.copy(); }
     }
-    public record Review(UUID id, String phase, String poolName, String ticket, int cost,
+    public record Review(UUID id, String phase, String reason, String poolName, String ticket, int cost,
                          ItemStack prize) {
         public Review { prize = prize.copy(); }
     }
@@ -61,7 +62,7 @@ public final class GachaRuntime {
 
     private static CompoundTag read(Path path) throws IOException {
         if (!Files.exists(path)) return new CompoundTag();
-        return NbtIo.readCompressed(path, NbtAccounter.unlimitedHeap());
+        return NbtIo.readCompressed(path, NbtAccounter.create(MAX_JOURNAL_BYTES));
     }
 
     private static void write(Path path, CompoundTag data) throws IOException {
@@ -166,7 +167,7 @@ public final class GachaRuntime {
         for (int i = ops.size() - 1; i >= 0; i--) {
             CompoundTag op = ops.getCompound(i);
             String phase = op.getString("phase");
-            if (!phase.equals("READY") && !phase.equals("RECOVERY_REQUIRED")) continue;
+            if (!phase.equals("READY") && !GachaRecovery.isBlocking(phase)) continue;
             ItemStack prize = stack(player, op.getCompound("prize"));
             if (!prize.isEmpty()) {
                 pending.add(new Pending(op.getUUID("id"), prize, op.getString("pool"), phase));
@@ -264,7 +265,7 @@ public final class GachaRuntime {
             CompoundTag op = ops.getCompound(i);
             String phase = op.getString("phase");
             if (phase.equals("DELIVERED") || phase.equals("REJECTED")) continue;
-            result.add(new Review(op.getUUID("id"), phase, op.getString("pool"),
+            result.add(new Review(op.getUUID("id"), phase, op.getString("reason"), op.getString("pool"),
                 op.getString("ticket"), op.getInt("cost"),
                 stack(player, op.getCompound("prize"))));
         }
@@ -278,7 +279,7 @@ public final class GachaRuntime {
         for (int i = 0; i < ops.size(); i++) {
             CompoundTag op = ops.getCompound(i);
             if (!op.getUUID("id").equals(id)) continue;
-            if (!op.getString("phase").equals("DELIVERING"))
+            if (!GachaRecovery.isDeliveryReview(op.getString("phase"), op.getString("reason")))
                 throw new IllegalStateException("Solo se puede confirmar una entrega interrumpida");
             op.putString("phase", "DELIVERED");
             op.putString("resolution", "operator_confirmed_delivery");
@@ -288,6 +289,55 @@ public final class GachaRuntime {
             return;
         }
         throw new IllegalStateException("Tirada inexistente");
+    }
+
+    /** The operator verifies the AVECOINS transaction externally; this never calls the wallet. */
+    public static synchronized void resolveDebit(ServerPlayer player, UUID id, UUID admin,
+                                                 boolean charged, String evidence) throws IOException {
+        String note = evidence(evidence);
+        ListTag ops = operations(player);
+        for (int i = 0; i < ops.size(); i++) {
+            CompoundTag op = ops.getCompound(i);
+            if (!op.getUUID("id").equals(id)) continue;
+            if (!GachaRecovery.isDebitReview(op.getString("phase"), op.getString("reason")))
+                throw new IllegalStateException("La fase no permite resolver el cobro; revisa el historial");
+            op.putString("phase", charged ? "READY" : "REJECTED");
+            op.putString("resolution", charged ? "operator_confirmed_charged" : "operator_confirmed_not_charged");
+            op.putString("evidence", note);
+            saveOperations(player, ops);
+            LOG.info("[ZIAN-AUDIT] action=gacha_resolve_debit admin={} playerUuid={} operation={} charged={} evidence={}",
+                admin, player.getUUID(), id, charged, note);
+            return;
+        }
+        throw new IllegalStateException("Tirada inexistente");
+    }
+
+    /** Close only after the operator has actually delivered the missing prize or equivalent compensation. */
+    public static synchronized void confirmCompensated(ServerPlayer player, UUID id, UUID admin,
+                                                       String evidence) throws IOException {
+        String note = evidence(evidence);
+        ListTag ops = operations(player);
+        for (int i = 0; i < ops.size(); i++) {
+            CompoundTag op = ops.getCompound(i);
+            if (!op.getUUID("id").equals(id)) continue;
+            if (!GachaRecovery.isDeliveryReview(op.getString("phase"), op.getString("reason")))
+                throw new IllegalStateException("La fase no permite confirmar una compensación");
+            op.putString("phase", "DELIVERED");
+            op.putString("resolution", "operator_confirmed_compensated");
+            op.putString("evidence", note);
+            saveOperations(player, ops);
+            LOG.info("[ZIAN-AUDIT] action=gacha_confirm_compensated admin={} playerUuid={} operation={} evidence={}",
+                admin, player.getUUID(), id, note);
+            return;
+        }
+        throw new IllegalStateException("Tirada inexistente");
+    }
+
+    private static String evidence(String text) {
+        String note = text.trim().replaceAll("\\p{Cntrl}", " ");
+        if (note.isEmpty() || note.length() > 160)
+            throw new IllegalStateException("Escribe una referencia de verificación de hasta 160 caracteres");
+        return note;
     }
 
     public static synchronized ItemStack roll(ServerPlayer player, int poolId) throws IOException {
@@ -309,8 +359,7 @@ public final class GachaRuntime {
                 rejectedPrepared = true;
                 continue;
             }
-            if (phase.equals("DEBIT_PENDING") || phase.equals("DELIVERING")
-                || phase.equals("RECOVERY_REQUIRED"))
+            if (GachaRecovery.isBlocking(phase))
                 throw new IllegalStateException("Tirada " + previous.getUUID("id")
                     + " pendiente de revisión (" + phase + ")");
             if (phase.equals("READY")) waiting++;
@@ -344,7 +393,7 @@ public final class GachaRuntime {
                 ? "No tienes tickets suficientes" : "No se pudo usar ese ticket");
         }
         if (debit instanceof EconomyMutationResult.Uncertain uncertain) {
-            op.putString("phase", "RECOVERY_REQUIRED");
+            op.putString("phase", "DEBIT_UNCERTAIN");
             op.putString("reason", uncertain.getReason());
             saveOperations(player, ops);
             throw new IllegalStateException("Cobro incierto; un admin debe revisar la tirada " + id);
@@ -381,9 +430,9 @@ public final class GachaRuntime {
         ItemStack copy = prize.copy();
         player.getInventory().add(copy);
         if (!copy.isEmpty()) {
-            op.putString("phase", "RECOVERY_REQUIRED");
+            op.putString("phase", "DELIVERY_UNCERTAIN");
             saveOperations(player, ops);
-            throw new IllegalStateException("Entrega incierta; un admin debe revisar el premio");
+            throw new IllegalStateException("Entrega incierta; un admin debe revisar el premio " + id);
         }
         op.putString("phase", "DELIVERED");
         saveOperations(player, ops);

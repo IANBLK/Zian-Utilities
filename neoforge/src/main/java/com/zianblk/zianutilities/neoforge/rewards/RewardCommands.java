@@ -10,6 +10,7 @@ import com.zianblk.zianutilities.core.rewards.RewardClaim;
 import com.zianblk.zianutilities.core.rewards.RewardClaimRecord;
 import com.zianblk.zianutilities.core.rewards.RewardClaimService;
 import com.zianblk.zianutilities.core.rewards.RewardComponent;
+import com.zianblk.zianutilities.neoforge.ZianFeatureSettings;
 import com.zianblk.zianutilities.neoforge.economy.AvecoinsContractProbe;
 import com.zianblk.zianutilities.neoforge.economy.AvecoinsEconomyPort;
 import net.minecraft.commands.CommandSourceStack;
@@ -67,8 +68,11 @@ public final class RewardCommands {
     private static int status(CommandSourceStack source) {
         var result = AvecoinsContractProbe.inspect();
         source.sendSuccess(
-            () -> Component.literal("M2 recompensas: registro preparado; misiones desactivadas; "
-                + "prueba de crédito " + (Boolean.getBoolean(TEST_FLAG) ? "activada" : "desactivada") + "."),
+            () -> Component.literal("Misiones: "
+                + (ZianFeatureSettings.get().quests() ? "activadas" : "desactivadas")
+                + "; pagos de misiones: "
+                + (ZianFeatureSettings.get().questRewardsActive() ? "activados" : "desactivados")
+                + "; prueba de crédito: " + (Boolean.getBoolean(TEST_FLAG) ? "activada" : "desactivada") + "."),
             false
         );
         source.sendSuccess(() -> Component.literal(result.detail()), false);

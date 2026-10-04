@@ -21,6 +21,8 @@ No hacen falta parámetros especiales en el startup. La interfaz principal se ab
 
 ## Estado de la beta
 
+La candidata **0.1.0-beta.6** incorpora las correcciones de recuperación y registro de pagos revisadas a partir de la auditoría externa. Consulta [las decisiones y comandos de recuperación](docs/BETA6_RECOVERY.md). El protocolo de misiones cambió: actualiza el mismo JAR en el servidor y los clientes.
+
 La lógica de la primera beta se probó como alpha.29 en un servidor **Youer 1.21.1** con dos cuentas: persistencia tras reinicio, pagos de misiones, campaña, tiradas de gacha y rechazo por tickets insuficientes. Beta.5 deja solo el set Prismático, corrige la animación del gacha a escala de interfaz ×2 y añade comandos de revisión de entregas interrumpidas. Los objetos de las tres familias antiguas y las cinco espadas elementales ya no están registrados; haz una copia del mundo antes de actualizar si se guardaron esos objetos. La beta.5 pasó compilación y pruebas automatizadas, pero sus cambios visuales y la reconciliación administrativa aún requieren una prueba dentro del juego. Consulta [la evidencia y sus límites](docs/BETA1_VALIDATION.md) y los [créditos del arte incluido](THIRD_PARTY_ASSETS.md).
 
 Consulta [el registro de cambios](CHANGELOG.md), [las funciones normales y sus interruptores](docs/PRODUCTION_FEATURES_ALPHA24.md) y [los criterios de publicación](docs/RELEASE_CHECKLIST.md). Antes de usar el mod en un mundo importante, conserva una copia de seguridad del mundo.

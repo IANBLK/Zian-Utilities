@@ -25,7 +25,7 @@ public final class ProgressionQuestNetwork {
     private ProgressionQuestNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("progression-quest-ui-2");
+        var registrar = event.registrar("progression-quest-ui-3");
         registrar.playToClient(State.TYPE, State.CODEC, ProgressionQuestNetwork::onState);
         registrar.playToServer(Action.TYPE, Action.CODEC, ProgressionQuestNetwork::onAction);
     }
@@ -42,6 +42,7 @@ public final class ProgressionQuestNetwork {
             PacketDistributor.sendToPlayer(player, new State(open, tab, GlobalQuestRuntime.rewardsEnabled(),
                 weekly.endsAt(), weekly.testWindow(), weekly.accepted(), weekly.captures(), weekly.battles(),
                 weekly.capturePaid(), weekly.battlePaid(),
+                weekly.captureSkipped(), weekly.battleSkipped(),
                 weekly.captureCurrency(), weekly.captureAmount(),
                 weekly.battleCurrency(), weekly.battleAmount(), campaigns));
         } catch (Exception error) {
@@ -95,6 +96,7 @@ public final class ProgressionQuestNetwork {
     public record State(boolean open, byte tab, boolean rewardsEnabled,
                         long weeklyEndsAt, boolean weeklyTest, boolean weeklyAccepted,
                         int captures, int battles, boolean capturePaid, boolean battlePaid,
+                        boolean captureSkipped, boolean battleSkipped,
                         String captureCurrency, long captureAmount,
                         String battleCurrency, long battleAmount,
                         List<ProgressionQuestRuntime.Campaign> campaigns) implements CustomPacketPayload {
@@ -112,6 +114,8 @@ public final class ProgressionQuestNetwork {
                 buffer.writeVarInt(value.battles);
                 buffer.writeBoolean(value.capturePaid);
                 buffer.writeBoolean(value.battlePaid);
+                buffer.writeBoolean(value.captureSkipped);
+                buffer.writeBoolean(value.battleSkipped);
                 buffer.writeUtf(value.captureCurrency, 128);
                 buffer.writeLong(value.captureAmount);
                 buffer.writeUtf(value.battleCurrency, 128);
@@ -128,6 +132,7 @@ public final class ProgressionQuestNetwork {
                     buffer.writeVarInt(campaign.eligibleSpecies());
                     buffer.writeVarInt(campaign.legacyCount());
                     buffer.writeBoolean(campaign.rewardPending());
+                    buffer.writeVarInt(campaign.skippedRewards());
                     buffer.writeUtf(campaign.currency(), 128);
                     buffer.writeLong(campaign.amount());
                     buffer.writeVarInt(campaign.species().size());
@@ -144,6 +149,8 @@ public final class ProgressionQuestNetwork {
                 int battles = buffer.readVarInt();
                 boolean capturePaid = buffer.readBoolean();
                 boolean battlePaid = buffer.readBoolean();
+                boolean captureSkipped = buffer.readBoolean();
+                boolean battleSkipped = buffer.readBoolean();
                 String captureCurrency = buffer.readUtf(128);
                 long captureAmount = buffer.readLong();
                 String battleCurrency = buffer.readUtf(128);
@@ -162,6 +169,9 @@ public final class ProgressionQuestNetwork {
                     int eligibleSpecies = buffer.readVarInt();
                     int legacyCount = buffer.readVarInt();
                     boolean rewardPending = buffer.readBoolean();
+                    int skippedRewards = buffer.readVarInt();
+                    if (skippedRewards < 0 || skippedRewards > 3)
+                        throw new IllegalArgumentException("invalid skipped reward count");
                     String currency = buffer.readUtf(128);
                     long amount = buffer.readLong();
                     int speciesCount = buffer.readVarInt();
@@ -171,11 +181,11 @@ public final class ProgressionQuestNetwork {
                     for (int j = 0; j < speciesCount; j++) species.add(buffer.readUtf(128));
                     campaigns.add(new ProgressionQuestRuntime.Campaign(generation, available,
                         campaignAccepted, chapter, capturedSpecies, goal, finalGoal,
-                        eligibleSpecies, legacyCount, rewardPending, currency, amount,
+                        eligibleSpecies, legacyCount, rewardPending, skippedRewards, currency, amount,
                         List.copyOf(species)));
                 }
                 return new State(open, tab, rewardsEnabled, ends, weeklyTest, accepted, captures, battles,
-                    capturePaid, battlePaid, captureCurrency, captureAmount,
+                    capturePaid, battlePaid, captureSkipped, battleSkipped, captureCurrency, captureAmount,
                     battleCurrency, battleAmount, List.copyOf(campaigns));
             });
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-beta.6
+
+- Separa cobros inciertos y entregas inciertas del gacha, conservando la revisión de los registros antiguos.
+- Añade resolución administrativa del cobro y confirmación de compensaciones ya entregadas; no vuelve a cobrar ni entrega automáticamente un premio incierto.
+- Permite reintentar recompensas rechazadas exclusivamente por billetera llena, conservando el identificador de operación y los componentes ya pagados.
+- Registra y muestra las misiones completadas sin pago cuando las recompensas están desactivadas. Conserva el avance de campaña sin generar pagos retroactivos automáticos.
+- Limita a 8 MiB la lectura NBT de los archivos del gacha y corrige el diagnóstico de misiones y pagos.
+- Amplía las pruebas de recuperación, reintentos, estados sin pago y lectura NBT.
+- Requiere actualizar tanto el servidor como los clientes por el cambio del protocolo de misiones.
+
 ## 0.1.0-beta.5
 
 - La animación del gacha ocupa una vista modal para evitar que los textos del panel se superpongan en escalado de interfaz ×2.
