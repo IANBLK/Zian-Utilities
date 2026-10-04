@@ -1,5 +1,7 @@
 package com.zianblk.zianutilities.neoforge.quests;
 
+import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
+
 import com.mojang.brigadier.Command;
 import com.zianblk.zianutilities.core.generation.Generation;
 import com.zianblk.zianutilities.core.quests.SharedCaptureMission;
@@ -31,7 +33,7 @@ public final class SharedCaptureMissionCommands {
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
-            Commands.literal("zian").requires(source -> true)
+            Commands.literal(ZianUtilitiesMod.COMMAND_ROOT).requires(source -> true)
                 .then(Commands.literal("quest")
                     .then(Commands.literal("shared")
                         .requires(source -> Boolean.getBoolean(TEST_FLAG))
@@ -100,7 +102,7 @@ public final class SharedCaptureMissionCommands {
             + mission.getObjective().getDescription() + "; tu avance " + count + "/"
             + SharedCaptureMission.GOAL + " " + state + "; cambia a las " + resetTime
             + " (Ecuador), quedan " + minutes + " min; sin recompensa."
-            + (progress == null ? " Usa /zian quest shared accept." : "")), false);
+            + (progress == null ? " Usa /ZianUtilities quest shared accept." : "")), false);
     }
 }
 

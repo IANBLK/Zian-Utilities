@@ -1,5 +1,7 @@
 package com.zianblk.zianutilities.neoforge.quests;
 
+import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
+
 import com.mojang.brigadier.Command;
 import com.zianblk.zianutilities.core.generation.Generation;
 import com.zianblk.zianutilities.core.quests.CaptureEligibilityPlan;
@@ -27,7 +29,7 @@ public final class CaptureMissionCommands {
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
-            Commands.literal("zian")
+            Commands.literal(ZianUtilitiesMod.COMMAND_ROOT)
                 .requires(source -> true)
                 .then(Commands.literal("quest")
                     .then(Commands.literal("capture")

@@ -1,5 +1,7 @@
 package com.zianblk.zianutilities.neoforge.hub;
 
+import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
+
 import com.mojang.brigadier.Command;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -10,7 +12,7 @@ public final class ZianHubCommands {
     private ZianHubCommands() {}
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal("zian")
+        event.getDispatcher().register(Commands.literal(ZianUtilitiesMod.COMMAND_ROOT)
             // Youer may rewrite a default root requirement into a Bukkit permission.
             // Keep this shared root public; protected child commands retain their checks.
             .requires(source -> true)

@@ -1,5 +1,7 @@
 package com.zianblk.zianutilities.neoforge.generation;
 
+import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
+
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -30,7 +32,7 @@ public final class GenerationCommands {
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
-            Commands.literal("zian")
+            Commands.literal(ZianUtilitiesMod.COMMAND_ROOT)
                 // Youer rewrites Brigadier's default root requirement to a Bukkit
                 // permission. Keep the shared root public; children enforce access.
                 .requires(source -> true)
@@ -237,4 +239,3 @@ public final class GenerationCommands {
         );
     }
 }
-

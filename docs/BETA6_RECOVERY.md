@@ -12,12 +12,12 @@ The original chosen prize is persisted as READY immediately after a confirmed ch
 
 Use operator permission level 2 or the server console. The player must be online.
 
-1. Inspect: `/zian gacha review <player>`.
+1. Inspect: `/ZianUtilities gacha review <player>`.
 2. For a pending or uncertain debit, verify the original charge using transaction evidence, backups or AVECOINS records. A current balance alone cannot prove a past charge.
-3. If the original charge occurred: `/zian gacha resolve-debit <player> <operationId> charged <evidence>`. The existing prize becomes READY for the player to claim.
-4. If the original charge did not occur: `/zian gacha resolve-debit <player> <operationId> not-charged <evidence>`. The operation closes without changing the wallet.
-5. For an uncertain delivery, verify whether the original prize was received. If verified, use `/zian gacha confirm-delivered <player> <operationId>`.
-6. If the player did not receive the whole prize, manually deliver only the verified missing amount or agreed compensation, then use `/zian gacha confirm-compensated <player> <operationId> <evidence>`.
+3. If the original charge occurred: `/ZianUtilities gacha resolve-debit <player> <operationId> charged <evidence>`. The existing prize becomes READY for the player to claim.
+4. If the original charge did not occur: `/ZianUtilities gacha resolve-debit <player> <operationId> not-charged <evidence>`. The operation closes without changing the wallet.
+5. For an uncertain delivery, verify whether the original prize was received. If verified, use `/ZianUtilities gacha confirm-delivered <player> <operationId>`.
+6. If the player did not receive the whole prize, manually deliver only the verified missing amount or agreed compensation, then use `/ZianUtilities gacha confirm-compensated <player> <operationId> <evidence>`.
 
 Evidence is a required reference of up to 160 characters for debit resolution and compensation. Administrative decisions are saved and logged. These commands do not prove the outcome themselves. If evidence is insufficient, leave the operation blocked.
 

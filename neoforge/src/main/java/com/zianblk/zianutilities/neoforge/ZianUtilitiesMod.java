@@ -37,6 +37,7 @@ import net.neoforged.neoforge.common.NeoForge;
 @Mod(ZianUtilitiesMod.MOD_ID)
 public final class ZianUtilitiesMod {
     public static final String MOD_ID = "zianutilities";
+    public static final String COMMAND_ROOT = "ZianUtilities";
 
     public ZianUtilitiesMod(IEventBus modBus) {
         ZianArmor.register(modBus);
