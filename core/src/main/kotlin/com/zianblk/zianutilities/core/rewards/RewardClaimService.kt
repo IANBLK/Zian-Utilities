@@ -11,8 +11,20 @@ class RewardClaimService(
         var record = store.load(request.claimId) ?: RewardClaimRecord.pending(request).also(store::save)
         require(record.claim == request) { "claim ID already belongs to a different reward definition" }
 
-        // Existing rejected/uncertain/in-flight outcomes must be resolved explicitly, not retried.
-        if (record.status() == ClaimStatus.REJECTED || record.status() == ClaimStatus.RECOVERY_REQUIRED) {
+        // A full wallet is a deterministic rejection before AVECOINS changes anything.
+        // Persist the retry intent before calling the provider, retaining the same operation ID.
+        if (record.status() == ClaimStatus.REJECTED) {
+            val retryable = record.components.filterValues {
+                it.status == ComponentStatus.REJECTED && it.reason == "wallet_full"
+            }
+            if (retryable.size != 1 || record.components.values.any {
+                    it.status == ComponentStatus.REJECTED && it.reason != "wallet_full"
+                }) return@withClaimLock record
+            record = record.withComponent(retryable.keys.single(), ComponentStatus.PENDING)
+            store.save(record)
+        }
+        // An in-flight or uncertain result may already have changed the external wallet.
+        if (record.status() == ClaimStatus.RECOVERY_REQUIRED) {
             return@withClaimLock record
         }
 

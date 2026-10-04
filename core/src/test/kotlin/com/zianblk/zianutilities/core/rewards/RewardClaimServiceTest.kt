@@ -26,6 +26,56 @@ class RewardClaimServiceTest {
     )
 
     @Test
+    fun `wallet full retries safely with the same operation after space is freed`() {
+        val ids = mutableListOf<UUID>()
+        var full = true
+        val delivery = RewardDeliveryPort { _, component, operationId ->
+            ids += operationId
+            if (component.id == "coins" && full) RewardDeliveryResult.Rejected("wallet_full")
+            else RewardDeliveryResult.Applied
+        }
+        val first = RewardClaimService(FileRewardClaimStore(directory), delivery).claim(claim)
+        assertEquals(ClaimStatus.REJECTED, first.status())
+        full = false
+        val second = RewardClaimService(FileRewardClaimStore(directory), delivery).claim(claim)
+        assertEquals(ClaimStatus.CLAIMED, second.status())
+        assertEquals(ids[0], ids[1])
+        assertEquals(3, ids.size)
+    }
+
+    @Test
+    fun `retrying a full wallet never repeats an already applied component`() {
+        val calls = mutableListOf<String>()
+        var full = true
+        val delivery = RewardDeliveryPort { _, component, _ ->
+            calls += component.id
+            if (component.id == "item" && full) RewardDeliveryResult.Rejected("wallet_full")
+            else RewardDeliveryResult.Applied
+        }
+        val store = FileRewardClaimStore(directory)
+        assertEquals(ClaimStatus.REJECTED, RewardClaimService(store, delivery).claim(claim).status())
+        full = false
+        val service = RewardClaimService(FileRewardClaimStore(directory), delivery)
+        assertEquals(ClaimStatus.CLAIMED, service.claim(claim).status())
+        assertEquals(ClaimStatus.CLAIMED, service.claim(claim).status())
+        assertEquals(listOf("coins", "item", "item"), calls)
+    }
+
+    @Test
+    fun `configuration rejection stays blocked after restart`() {
+        val calls = AtomicInteger()
+        val delivery = RewardDeliveryPort { _, _, _ ->
+            calls.incrementAndGet()
+            RewardDeliveryResult.Rejected("unsupported_currency")
+        }
+        val first = RewardClaimService(FileRewardClaimStore(directory), delivery).claim(claim)
+        val second = RewardClaimService(FileRewardClaimStore(directory), delivery).claim(claim)
+        assertEquals(ClaimStatus.REJECTED, second.status())
+        assertEquals(first, second)
+        assertEquals(1, calls.get())
+    }
+
+    @Test
     fun `retention removes only successful claims and keeps uncertain audit records`() {
         val store = FileRewardClaimStore(directory)
         val successful = RewardClaimService(store) { _, _, _ -> RewardDeliveryResult.Applied }

@@ -53,13 +53,14 @@ public final class ProgressionQuestRuntime {
 
     public record Weekly(long startsAt, long endsAt, boolean testWindow, boolean accepted, int captures,
                          int battles, boolean capturePaid, boolean battlePaid,
+                         boolean captureSkipped, boolean battleSkipped,
                          String captureCurrency, long captureAmount,
                          String battleCurrency, long battleAmount) {}
 
     public record Campaign(String generation, boolean available, boolean accepted,
                            int chapter, int capturedSpecies, int goal,
                            int finalGoal, int eligibleSpecies, int legacyCount,
-                           boolean rewardPending, String currency, long amount,
+                           boolean rewardPending, int skippedRewards, String currency, long amount,
                            List<String> species) {}
 
     static int halfGoal(int eligibleSpecies) {
@@ -97,6 +98,7 @@ public final class ProgressionQuestRuntime {
             .toInstant().toEpochMilli(), start != realStart, accepted(p), ids(p, "capture").size(),
             ids(p, "battle").size(), Boolean.parseBoolean(p.getProperty("capture.paid")),
             Boolean.parseBoolean(p.getProperty("battle.paid")),
+            QuestSettlement.skipped(p, "capture"), QuestSettlement.skipped(p, "battle"),
             p.getProperty("capture.currency", offer.getProperty("weekly.capture.currency")),
             amount(p, "capture.amount", amount(offer, "weekly.capture.amount", 5)),
             p.getProperty("battle.currency", offer.getProperty("weekly.battle.currency")),
@@ -124,7 +126,7 @@ public final class ProgressionQuestRuntime {
             result.add(new Campaign(generation.getId(), available, accepted(p),
                 chapter, total, goal, finalGoal,
                 (int) amount(p, "eligible.count", candidates), legacy,
-                chapter < 3 && total >= goal,
+                chapter < 3 && total >= goal, skippedChapters(p),
                 p.getProperty("reward.currency", COIN), amount(p, "reward.amount", 0), captured));
         }
         return result;
@@ -223,13 +225,13 @@ public final class ProgressionQuestRuntime {
         Path path = weeklyPath(start, player);
         for (String objective : List.of("capture", "battle")) {
             int goal = objective.equals("capture") ? 25 : 50;
-            if (ids(p, objective).size() < goal || Boolean.parseBoolean(p.getProperty(objective + ".paid"))) continue;
+            if (ids(p, objective).size() < goal || Boolean.parseBoolean(p.getProperty(objective + ".paid"))
+                || QuestSettlement.skipped(p, objective)) continue;
             ClaimStatus status = start == weekStart(start)
                 ? pay(player, "weekly:" + start + ":" + objective,
                     p.getProperty(objective + ".currency", COIN), amount(p, objective + ".amount", 0))
                 : null;
-            if (status == ClaimStatus.CLAIMED || status == null) {
-                p.setProperty(objective + ".paid", "true");
+            if (QuestSettlement.record(p, objective, status, start != weekStart(start))) {
                 write(path, p);
             }
         }
@@ -268,11 +270,21 @@ public final class ProgressionQuestRuntime {
                 : pay(player, "campaign:" + generation.getId() + ":" + chapter,
                     p.getProperty("reward.currency", COIN), amount(p, "reward.amount", 0));
             if (status != ClaimStatus.CLAIMED && status != null) return;
+            String rewardKey = "chapter." + chapter;
+            QuestSettlement.record(p, rewardKey, status, false);
+            p.setProperty(rewardKey + ".currency", p.getProperty("reward.currency", COIN));
+            p.setProperty(rewardKey + ".amount", p.getProperty("reward.amount", "0"));
             chapter++;
             p.setProperty("chapter", Integer.toString(chapter));
             if (chapter < 3) freezeChapterReward(p, config(), chapter);
             write(path, p);
         }
+    }
+
+    private static int skippedChapters(Properties p) {
+        int count = 0;
+        for (int i = 0; i < 3; i++) if (QuestSettlement.skipped(p, "chapter." + i)) count++;
+        return count;
     }
 
     static void migrateCampaign(Path path, Properties p, int candidates) throws IOException {

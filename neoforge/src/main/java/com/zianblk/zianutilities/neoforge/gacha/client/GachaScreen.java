@@ -1,6 +1,7 @@
 package com.zianblk.zianutilities.neoforge.gacha.client;
 
 import com.zianblk.zianutilities.neoforge.gacha.GachaNetwork;
+import com.zianblk.zianutilities.neoforge.gacha.GachaTiming;
 import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -50,6 +51,7 @@ public final class GachaScreen extends Screen {
     public static void receive(GachaNetwork.State state) {
         Minecraft minecraft = Minecraft.getInstance();
         minecraft.execute(() -> {
+            if (!state.open() && !(minecraft.screen instanceof GachaScreen)) return;
             if (state.open() || !(minecraft.screen instanceof GachaScreen old)) {
                 minecraft.setScreen(new GachaScreen(state, firstId(state), 0, 0, false, false));
             } else {
@@ -243,7 +245,7 @@ public final class GachaScreen extends Screen {
         graphics.drawCenteredString(font, awaitingRoll ? "Procesando tirada..." : "Gacha", width / 2, y + 13, GOLD);
         if (reel == null) return;
         long elapsed = Math.max(0, System.currentTimeMillis() - reel.started());
-        double progress = Math.min(1.0, elapsed / 3400.0);
+        double progress = Math.min(1.0, elapsed / (double) GachaTiming.SPIN_MILLIS);
         int last = reel.items().size() - 1;
         int position = Math.min(last, (int) Math.floor(last * (1 - Math.pow(1 - progress, 3))));
         for (int offset = -1; offset <= 1; offset++) {
@@ -265,7 +267,7 @@ public final class GachaScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
-        if (reel != null && System.currentTimeMillis() - reel.started() >= 5300) {
+        if (reel != null && System.currentTimeMillis() - reel.started() >= GachaTiming.REEL_MILLIS) {
             reel = null;
             reopen();
         }

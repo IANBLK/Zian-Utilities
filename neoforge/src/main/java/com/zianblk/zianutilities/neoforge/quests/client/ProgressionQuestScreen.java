@@ -136,6 +136,7 @@ public final class ProgressionQuestScreen extends Screen {
             state.capturePaid() ? GREEN : MUTED, false);
         graphics.drawString(font, "Generaciones activas", left + 10, top + 64, MUTED, false);
         graphics.drawString(font, state.weeklyTest() ? "Prueba sin pago" :
+            state.captureSkipped() ? "Completada sin pago" :
             !state.rewardsEnabled() ? "Pago desactivado" :
             "Premio: " + state.captureAmount() + " " + friendly(state.captureCurrency()), left + 10, top + 85,
             GOLD, false);
@@ -147,6 +148,7 @@ public final class ProgressionQuestScreen extends Screen {
             state.battlePaid() ? GREEN : MUTED, false);
         graphics.drawString(font, "Solo Pokémon salvajes", right + 10, top + 64, MUTED, false);
         graphics.drawString(font, state.weeklyTest() ? "Prueba sin pago" :
+            state.battleSkipped() ? "Completada sin pago" :
             !state.rewardsEnabled() ? "Pago desactivado" :
             "Premio: " + state.battleAmount() + " " + friendly(state.battleCurrency()), right + 10, top + 85,
             GOLD, false);
@@ -180,6 +182,8 @@ public final class ProgressionQuestScreen extends Screen {
             graphics.drawCenteredString(font, "✓ Campaña completada", width / 2, 124, GREEN);
             graphics.drawCenteredString(font, c.capturedSpecies() + " / " + c.finalGoal()
                 + " especies registradas", width / 2, 151, WHITE);
+            if (c.skippedRewards() > 0) graphics.drawCenteredString(font,
+                "Etapas completadas sin pago: " + c.skippedRewards(), width / 2, 173, MUTED);
             return;
         }
         graphics.drawCenteredString(font, "Etapa " + (c.chapter() + 1) + " de 3", width / 2, 112, GOLD);
@@ -190,7 +194,9 @@ public final class ProgressionQuestScreen extends Screen {
         graphics.drawCenteredString(font, !state.rewardsEnabled() ? "Pago desactivado" :
             c.rewardPending() ? "Premio pendiente de recuperación"
             : "Premio de etapa: " + c.amount() + " " + friendly(c.currency()), width / 2, 173, MUTED);
-        graphics.drawCenteredString(font, "Pulsa Capturados para ver tu registro personal",
+        graphics.drawCenteredString(font, c.skippedRewards() > 0
+            ? "Etapas previas sin pago: " + c.skippedRewards()
+            : "Pulsa Capturados para ver tu registro personal",
             width / 2, Math.min(height - 11, 240), MUTED);
     }
 
