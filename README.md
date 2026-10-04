@@ -7,7 +7,7 @@ Zian Utilities es un mod para **Minecraft 1.21.1**, **NeoForge 21.1.x** y **Cobb
 - **Generaciones:** el administrador habilita las generaciones acumulativamente; el control filtra apariciones naturales, pesca y Poké Snack sin retirar Pokémon ya existentes.
 - **Misiones:** dos objetivos compartidos por todo el servidor cada tres horas, con aceptación y progreso individual; misiones semanales de 25 capturas y 50 victorias salvajes; campañas persistentes para capturar especies distintas de cada generación. Las recompensas usan AVECOINS.
 - **Gachas:** el administrador crea y publica grupos de premios con probabilidades visibles y costo en tickets de AVECOINS. Las tiradas se validan en el servidor; los premios que no caben en el inventario quedan pendientes para reclamar.
-- **Equipo:** un set Prismático de armadura completa, espada y herramientas. Se encuentra en una pestaña creativa propia y no tiene recetas de fabricación.
+- **Equipo:** sets Prismático y Dark Reaper de armadura completa, espada y herramientas, junto con cuatro arcos con animación de tensado. Encantables, con estadísticas mejoradas y sin recetas; aparecen en una pestaña creativa propia.
 - **Encantamiento:** `zianutilities:mineria_3x3` para picos, disponible solo por comando. No aparece en mesa de encantamientos, comercio de aldeanos ni botín.
 
 ## Instalación y configuración
@@ -21,7 +21,7 @@ No hacen falta parámetros especiales en el startup. La interfaz principal se ab
 
 ## Estado de la beta
 
-La candidata **0.1.0-beta.6** incorpora las correcciones de recuperación y registro de pagos revisadas a partir de la auditoría externa. Consulta [las decisiones y comandos de recuperación](docs/BETA6_RECOVERY.md). El protocolo de misiones cambió: actualiza el mismo JAR en el servidor y los clientes.
+La candidata **0.1.0-beta.7** añade Dark Reaper y cuatro arcos conservando el equipo Prismático y las correcciones de recuperación de beta.6. Consulta [el equipo y sus comandos de prueba](docs/EQUIPMENT-BETA-7.md) y [las decisiones y comandos de recuperación](docs/BETA6_RECOVERY.md). Actualiza el mismo JAR en el servidor y los clientes.
 
 La lógica de la primera beta se probó como alpha.29 en un servidor **Youer 1.21.1** con dos cuentas: persistencia tras reinicio, pagos de misiones, campaña, tiradas de gacha y rechazo por tickets insuficientes. Beta.5 deja solo el set Prismático, corrige la animación del gacha a escala de interfaz ×2 y añade comandos de revisión de entregas interrumpidas. Los objetos de las tres familias antiguas y las cinco espadas elementales ya no están registrados; haz una copia del mundo antes de actualizar si se guardaron esos objetos. La beta.5 pasó compilación y pruebas automatizadas, pero sus cambios visuales y la reconciliación administrativa aún requieren una prueba dentro del juego. Consulta [la evidencia y sus límites](docs/BETA1_VALIDATION.md) y los [créditos del arte incluido](THIRD_PARTY_ASSETS.md).
 

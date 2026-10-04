@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "zianutilities:prismatic_helmet"
+    "zianutilities:prismatic_helmet",
+    "zianutilities:dark_reaper_helmet"
   ]
 }

@@ -21,9 +21,22 @@ class ZianEquipmentTagsTest {
             Path file = sourceFile(path);
             assertTrue(Files.isRegularFile(file), "Missing tag: " + file);
             var values = JsonParser.parseString(Files.readString(file)).getAsJsonObject().getAsJsonArray("values");
-            String expected = "zianutilities:prismatic_" + pair[1];
+            for (String set : new String[]{"prismatic", "dark_reaper"}) {
+            String expected = "zianutilities:" + set + "_" + pair[1];
             assertTrue(values.asList().stream().anyMatch(value -> expected.equals(value.getAsString())),
                 path + " does not include " + expected);
+            }
+        }
+    }
+
+    @Test
+    void bowsCanReceiveVanillaBowEnchantmentsWithoutReplacingVanillaMembers() throws Exception {
+        var tag = JsonParser.parseString(Files.readString(sourceFile("data/minecraft/tags/item/enchantable/bow.json"))).getAsJsonObject();
+        assertTrue(!tag.get("replace").getAsBoolean());
+        for (String shape : new String[]{"curve", "regular", "long", "harp"}) {
+            String expected = "zianutilities:" + shape + "_bow";
+            assertTrue(tag.getAsJsonArray("values").asList().stream()
+                .anyMatch(value -> expected.equals(value.getAsString())), expected);
         }
     }
 

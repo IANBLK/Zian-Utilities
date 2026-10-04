@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-beta.7
+
+- Añade nueve piezas Dark Reaper con las mismas estadísticas mejoradas de netherita que el set Prismático, conservando el equipo existente.
+- Añade cuatro arcos encantables (Curvo, Clásico, Largo y Arpa), con 2032 de durabilidad, +1 daño base de flecha y tres estados visuales de tensado.
+- Integra las texturas de MonGen's Cave y Chiaki Haruma con autorización escrita confirmada por el propietario del proyecto; no requiere ItemsAdder, Oraxen ni paquetes externos.
+- Las piezas nuevas aparecen en la pestaña de equipamiento, sin recetas. El pico Dark Reaper admite Minería 3×3 exclusivamente mediante comando.
+- Requiere beta.7 en servidor y clientes. Apariencia y uso en Youer pendientes de prueba del operador.
+
 ## 0.1.0-beta.6
 
 - Entrega el premio del gacha un segundo después de finalizar su vista animada: espera de 6,3 segundos gestionada por el servidor, con premio persistido desde el cobro.

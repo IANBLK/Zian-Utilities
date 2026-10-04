@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "zianutilities:prismatic_pickaxe"
+    "zianutilities:prismatic_pickaxe",
+    "zianutilities:dark_reaper_pickaxe"
   ]
 }

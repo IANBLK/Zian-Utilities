@@ -9,5 +9,18 @@
   "item.zianutilities.prismatic_axe": "Hacha Prismático",
   "item.zianutilities.prismatic_pickaxe": "Pico Prismático",
   "item.zianutilities.prismatic_shovel": "Pala Prismático",
-  "item.zianutilities.prismatic_hoe": "Azada Prismático"
+  "item.zianutilities.prismatic_hoe": "Azada Prismático",
+  "item.zianutilities.dark_reaper_helmet": "Casco Dark Reaper",
+  "item.zianutilities.dark_reaper_chestplate": "Pechera Dark Reaper",
+  "item.zianutilities.dark_reaper_leggings": "Grebas Dark Reaper",
+  "item.zianutilities.dark_reaper_boots": "Botas Dark Reaper",
+  "item.zianutilities.dark_reaper_sword": "Espada Dark Reaper",
+  "item.zianutilities.dark_reaper_axe": "Hacha Dark Reaper",
+  "item.zianutilities.dark_reaper_pickaxe": "Pico Dark Reaper",
+  "item.zianutilities.dark_reaper_shovel": "Pala Dark Reaper",
+  "item.zianutilities.dark_reaper_hoe": "Azada Dark Reaper",
+  "item.zianutilities.curve_bow": "Arco Curvo",
+  "item.zianutilities.regular_bow": "Arco Clásico",
+  "item.zianutilities.long_bow": "Arco Largo",
+  "item.zianutilities.harp_bow": "Arco Arpa"
 }
