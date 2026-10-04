@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "zianutilities:prismatic_chestplate"
+    "zianutilities:prismatic_chestplate",
+    "zianutilities:dark_reaper_chestplate"
   ]
 }

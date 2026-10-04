@@ -1,3 +1,9 @@
 Prismatic Set 1.6 textures: Inkless Studios.
 Included in Zian Utilities with written redistribution permission as confirmed
 by the project owner. These assets are not covered by the MIT code license.
+
+Bow Bundle Pack textures: Chiaki Haruma.
+The Dark Reaper Set textures: MonGen's Cave.
+The project owner confirmed written permission from both creators to include
+these resources in the public CurseForge JAR and GitHub repository.
+These assets remain the property of their creators and are not MIT licensed.

@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "zianutilities:prismatic_sword"
+    "zianutilities:prismatic_sword",
+    "zianutilities:dark_reaper_sword"
   ]
 }

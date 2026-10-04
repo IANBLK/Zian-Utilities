@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "zianutilities:prismatic_shovel"
+    "zianutilities:prismatic_shovel",
+    "zianutilities:dark_reaper_shovel"
   ]
 }
