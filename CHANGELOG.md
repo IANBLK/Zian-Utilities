@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.9
+
+- Rename the command root to /ZianUtilities, including every existing subcommand. The old /zian root is removed.
+- Preserve command permissions, operator checks, feature switches, configuration, and saved progress.
+- Update current help and recovery documentation. Existing scripts or GUI buttons using the old root must be updated.
+
 ## 0.1.0-beta.8
 
 - Registra los eventos visuales de los arcos directamente en el cliente, eliminando las dos advertencias de `EventBusSubscriber.Bus` sin depender de la selección automática del bus de versiones posteriores.

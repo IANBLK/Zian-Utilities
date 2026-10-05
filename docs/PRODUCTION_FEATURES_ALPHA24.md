@@ -13,6 +13,6 @@ gachas.payments.enabled=true
 
 Estas opciones se leen al arrancar. Edita el archivo con el servidor detenido y reinicia para aplicar cambios. Las recompensas de misiones se fijan al crear cada ventana de tres horas; cambiar `quests.rewards.enabled` no convierte una ventana de prueba ya creada en una ventana pagada. Gachas y pagos no estarán disponibles si sus interruptores están desactivados. Una configuración inválida o ilegible desactiva las cuatro funciones y deja el motivo en el log.
 
-Los antiguos parámetros `globalQuestRewardTestEnabled`, `gachaTestEnabled` y `gachaPaymentTestEnabled` ya no controlan las funciones normales. `globalQuestTestEnabled` solo conserva el comando administrativo `/zian quest test rotate`, que no paga recompensas. No incluyas este parámetro en un servidor normal.
+Los antiguos parámetros `globalQuestRewardTestEnabled`, `gachaTestEnabled` y `gachaPaymentTestEnabled` ya no controlan las funciones normales. `globalQuestTestEnabled` solo conserva el comando administrativo `/ZianUtilities quest test rotate`, que no paga recompensas. No incluyas este parámetro en un servidor normal.
 
 AVECOINS se comprueba en cada operación económica; una versión o contrato incompatible no autoriza créditos ni descuentos. Los premios de gacha pendientes y el progreso de misiones siguen en sus archivos de mundo existentes.

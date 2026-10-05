@@ -122,7 +122,7 @@ opens. Edit the config between periods/chapters; restarting the server is not
 required for the next new period/chapter to see the saved file.
 
 On a test server started with `-Dzianutilities.globalQuestTestEnabled=true`,
-`/zian quest test weekly rotate` starts a new no-payment weekly rehearsal without
+`/ZianUtilities quest test weekly rotate` starts a new no-payment weekly rehearsal without
 moving the real Monday reset. It clears the visible weekly progress for all
 players by changing the test period key; prior reward claims are untouched.
 The next real week ignores the test key and pays according to its normal rules.

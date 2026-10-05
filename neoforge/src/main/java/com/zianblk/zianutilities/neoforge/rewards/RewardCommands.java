@@ -1,5 +1,7 @@
 package com.zianblk.zianutilities.neoforge.rewards;
 
+import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
+
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.zianblk.zianutilities.core.rewards.ClaimStatus;
@@ -43,7 +45,7 @@ public final class RewardCommands {
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
-            Commands.literal("zian")
+            Commands.literal(ZianUtilitiesMod.COMMAND_ROOT)
                 .requires(source -> true)
                 .then(Commands.literal("reward")
                     .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
@@ -147,7 +149,7 @@ public final class RewardCommands {
                 "[ZIAN-AUDIT] action=reward_test_credit actorUuid={} claimId={} result=error",
                 player.getUUID(), claimId, error
             );
-            source.sendFailure(Component.literal("Prueba detenida; revisa /zian reward inspect "
+            source.sendFailure(Component.literal("Prueba detenida; revisa /ZianUtilities reward inspect "
                 + claimId + " antes de cualquier otro intento."));
             return 0;
         }

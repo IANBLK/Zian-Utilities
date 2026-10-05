@@ -1,5 +1,7 @@
 package com.zianblk.zianutilities.neoforge.quests;
 
+import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
+
 import com.mojang.brigadier.Command;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -12,7 +14,7 @@ public final class GlobalQuestCommands {
     private GlobalQuestCommands() {}
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal("zian")
+        event.getDispatcher().register(Commands.literal(ZianUtilitiesMod.COMMAND_ROOT)
             .requires(source -> true)
             .then(Commands.literal("quest")
                 .requires(source -> GlobalQuestRuntime.moduleEnabled())

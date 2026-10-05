@@ -1,5 +1,7 @@
 package com.zianblk.zianutilities.neoforge.gacha;
 
+import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
+
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -41,7 +43,7 @@ public final class GachaCommands {
                 .then(Commands.argument("operationId", StringArgumentType.word())
                     .then(Commands.argument("evidence", StringArgumentType.greedyString())
                         .executes(GachaCommands::confirmCompensated)))));
-        event.getDispatcher().register(Commands.literal("zian").requires(source -> true).then(gacha));
+        event.getDispatcher().register(Commands.literal(ZianUtilitiesMod.COMMAND_ROOT).requires(source -> true).then(gacha));
     }
 
     private static int open(CommandContext<CommandSourceStack> context) {
