@@ -80,3 +80,40 @@ Default permissions require authorization for GUI, submit and admin recovery.
    inspect third-party copyright notices for reused source.
 
 Do NOT expose the command as a working feature until these gates pass.
+
+
+## Decision update 2026-10-09: free breeding and optional speedups
+
+This section **supersedes** the initial mandatory fee/payment stage described above.
+The earlier `BreedingOperation.kt` paid-state prototype has NOT yet been refactored;
+it must be reconciled with this new policy before production implementation.
+
+- Starting a breeding request is FREE, lasting **24 hours** by default.
+- AVECOINS is used **only for optional time reduction**.
+- Proposed balancing values: each coin cuts **1 hour**, each Netherite Ticket cuts
+  **3 hours 40 minutes**, so six tickets reduce 24h to **2h**.
+- Maximum consumed per breeding operation: **12 coins and 6 tickets** combined;
+  the duration can never fall below **2 hours** measured from the original start.
+- Never consume an item that would not change the effective finish time.
+- Verify selected currency names against AVECOINS managed-currency IDs before
+  exposing options; these rates are **configurable defaults**, not a fixed economy.
+- Acceleration may be purchased while breeding is active. The server must
+  recompute the absolute completion deadline from the original start + total
+  accepted reductions, rather than resetting a fresh timer. Reject new purchases
+  when breeding is already READY/COMPLETED/RECOVERY_REQUIRED.
+- Every acceleration purchase needs a stable unique transaction ID, a journal
+  entry before the wallet debit, durable cumulative coin/ticket counts, and
+  APPLIED/REJECTED/UNCERTAIN outcomes. No blind retries of ambiguous debits.
+- Charge/refund races and a wallet mutation that precedes journal confirmation
+  need hard-kill testing before this feature is activated.
+- A default player has **one active breeding slot**; VIP has **two** via a
+  server-side permission/capacity resolver backed by LuckPerms-compatible
+  permission nodes. Suggested nodes:
+  `zianutilities.breeding.use`, `zianutilities.breeding.slots.2`,
+  `zianutilities.breeding.admin`. Deny beyond the greatest authorized
+  capacity, enforce on every submission, and resolve downgrade semantics
+  (recommended: do not cancel existing operations, but block new ones).
+- The policy helper `BreedingAccelerationPolicy` and its unit tests now codify
+  the proposed numeric rules. It is not yet wired to commands/GUI/economy.
+- No Cobbreeding/Incubator runtime dependency, no physical eggs, and child
+  identity is fixed before attempting PC delivery.
