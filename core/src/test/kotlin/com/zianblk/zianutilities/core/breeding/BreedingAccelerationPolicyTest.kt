@@ -33,7 +33,7 @@ class BreedingAccelerationPolicyTest {
 
     @Test fun noPaymentWhenAlreadyAtFloor() {
         assertFalse(policy.permittedAdditional(0, 6, 1, 0))
-        assertFalse(policy.permittedAdditional(13, 0, 1, 0))
+        assertFalse(policy.permittedAdditional(22, 0, 1, 0))
         assertTrue(policy.permittedAdditional(0, 0, 1, 0))
     }
 
