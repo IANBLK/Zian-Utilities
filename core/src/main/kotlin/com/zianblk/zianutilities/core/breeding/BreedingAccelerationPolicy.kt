@@ -20,11 +20,14 @@ data class BreedingAccelerationPolicy(
 
     fun durationMinutes(coins: Int, tickets: Int): Long {
         require(coins >= 0 && tickets >= 0) { "Amounts cannot be negative" }
-        val reduction = Math.addExact(
-            Math.multiplyExact(coins.toLong(), coinReductionMinutes),
-            Math.multiplyExact(tickets.toLong(), ticketReductionMinutes)
-        )
-        return if (reduction >= baseDurationMinutes - minimumDurationMinutes) minimumDurationMinutes else baseDurationMinutes - reduction
+        val maxReduction = baseDurationMinutes - minimumDurationMinutes
+        // Saturating calculation: even Int.MAX_VALUE items cannot overflow or reduce past the floor.
+        val coinReduction = coins.toLong() * coinReductionMinutes
+        val ticketReduction = tickets.toLong() * ticketReductionMinutes
+        val reduction = if (coinReduction >= maxReduction || ticketReduction >= maxReduction ||
+            coinReduction >= maxReduction - ticketReduction
+        ) maxReduction else coinReduction + ticketReduction
+        return baseDurationMinutes - reduction
     }
 
     fun effectiveReadyAtMillis(startMillis: Long, coins: Int, tickets: Int): Long =
@@ -40,6 +43,8 @@ data class BreedingAccelerationPolicy(
         if (coins < 0 || tickets < 0 || addCoins < 0 || addTickets < 0 || (addCoins == 0 && addTickets == 0)) return false
         val current = durationMinutes(coins, tickets)
         if (current == minimumDurationMinutes) return false
-        return true
+        // Counts use Int in this first slice; reject arithmetic overflow, not high valid counts.
+        if (coins > Int.MAX_VALUE - addCoins || tickets > Int.MAX_VALUE - addTickets) return false
+        return durationMinutes(coins + addCoins, tickets + addTickets) < current
     }
 }
