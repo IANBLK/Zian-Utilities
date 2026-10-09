@@ -29,7 +29,8 @@ data class CurrencyAccelerationRules(
             if (reduction == maximum) continue
             val needed = maximum - reduction
             // Avoid overflow and clamp safely for arbitrarily large quantities.
-            val contribution = if (amount >= (needed + minutes - 1) / minutes) needed else amount * minutes
+            val requiredUnits = needed / minutes + if (needed % minutes == 0L) 0L else 1L
+            val contribution = if (amount >= requiredUnits) needed else amount * minutes
             reduction += contribution
         }
         return baseMinutes - reduction
