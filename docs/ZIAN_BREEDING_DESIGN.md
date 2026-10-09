@@ -92,8 +92,8 @@ it must be reconciled with this new policy before production implementation.
 - AVECOINS is used **only for optional time reduction**.
 - Proposed balancing values: each coin cuts **1 hour**, each Netherite Ticket cuts
   **3 hours 40 minutes**, so six tickets reduce 24h to **2h**.
-- Maximum consumed per breeding operation: **12 coins and 6 tickets** combined;
-  the duration can never fall below **2 hours** measured from the original start.
+- No per-operation quantity cap for coins or tickets; however, the duration can
+  never fall below **2 hours** measured from the original start.
 - Never consume an item that would not change the effective finish time.
 - Verify selected currency names against AVECOINS managed-currency IDs before
   exposing options; these rates are **configurable defaults**, not a fixed economy.
@@ -114,6 +114,17 @@ it must be reconciled with this new policy before production implementation.
   capacity, enforce on every submission, and resolve downgrade semantics
   (recommended: do not cancel existing operations, but block new ones).
 - The policy helper `BreedingAccelerationPolicy` and its unit tests now codify
-  the proposed numeric rules. It is not yet wired to commands/GUI/economy.
+  the proposed numeric rules without item count caps. It is not yet wired to commands/GUI/economy.
 - No Cobbreeding/Incubator runtime dependency, no physical eggs, and child
   identity is fixed before attempting PC delivery.
+
+## Currency-tier proposal (not implemented)
+
+The player also requested a schedule based on AVECOINS denominations. Suggested
+rates to review with the real AVECOINS IDs: Copper Coin = 60 minutes, Diamond
+Coin = 120 minutes, Netherite Ticket = 220 minutes. The current domain helper
+only models a generic coin and ticket, **not** all three tiers. A production
+adapter must identify and debit the exact managed currency/item and reject
+purchases that would have no effect. The countdown cannot end before the
+2-hour minimum from the original operation start. These amounts are design
+proposals, not verified economic exchange rates.
