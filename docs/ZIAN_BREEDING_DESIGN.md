@@ -128,3 +128,7 @@ adapter must identify and debit the exact managed currency/item and reject
 purchases that would have no effect. The countdown cannot end before the
 2-hour minimum from the original operation start. These amounts are design
 proposals, not verified economic exchange rates.
+
+## Balancing revision: low-value coins (2026-10-09)
+
+Previous example rates of 60 minutes per Copper Coin and 120 minutes per Diamond Coin were rejected as too generous. No canonical item-denomination list or values have yet been verified from the AVECOINS runtime registry. Proposed **configurable**, unverified tiers for review: Copper Coin 2 min, Iron Coin 5 min, Gold Coin 10 min, Diamond Coin 20 min, Netherite Coin 35 min, Copper Ticket 45 min, Diamond Ticket 90 min, Netherite Ticket 220 min. Do not register names or assume availability until identified using AVECOINS MANAGED_RESULTS. The existing pure helper has generic coin/ticket parameters and does not implement these tier values. Keep unlimited item counts, a strict two-hour minimum from original start, and refuse any purchase with zero effective reduction.
