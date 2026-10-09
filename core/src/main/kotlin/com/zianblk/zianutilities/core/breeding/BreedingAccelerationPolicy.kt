@@ -9,26 +9,22 @@ data class BreedingAccelerationPolicy(
     val minimumDurationMinutes: Long = 2 * 60,
     val coinReductionMinutes: Long = 60,
     val ticketReductionMinutes: Long = 220,
-    val maxCoins: Int = 12,
-    val maxTickets: Int = 6,
     val defaultConcurrentLimit: Int = 1,
     val vipConcurrentLimit: Int = 2
 ) {
     init {
         require(baseDurationMinutes > minimumDurationMinutes && minimumDurationMinutes > 0)
         require(coinReductionMinutes > 0 && ticketReductionMinutes > coinReductionMinutes)
-        require(maxCoins >= 0 && maxTickets >= 0)
         require(defaultConcurrentLimit > 0 && vipConcurrentLimit >= defaultConcurrentLimit)
     }
 
     fun durationMinutes(coins: Int, tickets: Int): Long {
-        require(coins in 0..maxCoins) { "Coin limit exceeded" }
-        require(tickets in 0..maxTickets) { "Ticket limit exceeded" }
+        require(coins >= 0 && tickets >= 0) { "Amounts cannot be negative" }
         val reduction = Math.addExact(
             Math.multiplyExact(coins.toLong(), coinReductionMinutes),
             Math.multiplyExact(tickets.toLong(), ticketReductionMinutes)
         )
-        return (baseDurationMinutes - reduction).coerceAtLeast(minimumDurationMinutes)
+        return if (reduction >= baseDurationMinutes - minimumDurationMinutes) minimumDurationMinutes else baseDurationMinutes - reduction
     }
 
     fun effectiveReadyAtMillis(startMillis: Long, coins: Int, tickets: Int): Long =
@@ -41,9 +37,9 @@ data class BreedingAccelerationPolicy(
     fun permittedAdditional(
         coins: Int, tickets: Int, addCoins: Int, addTickets: Int
     ): Boolean {
-        if (coins !in 0..maxCoins || tickets !in 0..maxTickets) return false
-        if (addCoins < 0 || addTickets < 0 || (addCoins == 0 && addTickets == 0)) return false
-        if (addCoins > maxCoins - coins || addTickets > maxTickets - tickets) return false
-        return durationMinutes(coins + addCoins, tickets + addTickets) < durationMinutes(coins, tickets)
+        if (coins < 0 || tickets < 0 || addCoins < 0 || addTickets < 0 || (addCoins == 0 && addTickets == 0)) return false
+        val current = durationMinutes(coins, tickets)
+        if (current == minimumDurationMinutes) return false
+        return true
     }
 }
