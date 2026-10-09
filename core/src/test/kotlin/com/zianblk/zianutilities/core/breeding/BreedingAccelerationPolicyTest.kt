@@ -21,9 +21,10 @@ class BreedingAccelerationPolicyTest {
         assertTrue(policy.durationMinutes(0, 1) < policy.durationMinutes(1, 0))
     }
 
-    @Test fun bothLimitsAreEnforced() {
-        assertFailsWith<IllegalArgumentException> { policy.durationMinutes(13, 0) }
-        assertFailsWith<IllegalArgumentException> { policy.durationMinutes(0, 7) }
+    @Test fun noItemCountCapButDurationNeverBelowTwoHours() {
+        assertEquals(120L, policy.durationMinutes(100, 0))
+        assertEquals(120L, policy.durationMinutes(0, 100))
+        assertEquals(120L, policy.durationMinutes(Int.MAX_VALUE, Int.MAX_VALUE))
     }
 
     @Test fun combinedReductionsNeverPassFloor() {
@@ -32,7 +33,7 @@ class BreedingAccelerationPolicyTest {
 
     @Test fun noPaymentWhenAlreadyAtFloor() {
         assertFalse(policy.permittedAdditional(0, 6, 1, 0))
-        assertFalse(policy.permittedAdditional(12, 0, 1, 0))
+        assertFalse(policy.permittedAdditional(13, 0, 1, 0))
         assertTrue(policy.permittedAdditional(0, 0, 1, 0))
     }
 
