@@ -1,0 +1,52 @@
+<p><strong>✨ ZIAN UTILITIES — MORE PROGRESSION FOR YOUR COBBLEMON SERVER</strong></p>
+<p>Bring together Pokémon generation control, recurring quests, customizable gachas, and custom equipment in one in-game hub.</p>
+<p>Designed for <strong>Minecraft 1.21.1</strong>, <strong>NeoForge 21.1.x</strong>, and <strong>Cobblemon 1.8.1</strong>, with testing on <strong>Youer 1.21.1</strong>.</p>
+<p><strong>🌍 CONTROL POKÉMON GENERATIONS</strong></p>
+<p>Administrators choose which generations are enabled as their server progresses.</p>
+<p>Generation control filters supported natural spawns, fishing encounters, and Poké Snack spawns. Pokémon that players already own or that already exist in the world are retained.</p>
+<p><strong>📜 QUESTS THAT KEEP YOUR SERVER MOVING</strong></p>
+<p><strong>Every three hours:</strong> shared capture and wild-battle objectives, with individual acceptance, progress, and rewards. Eligible Pokémon targets rotate with the quest window.</p>
+<p><strong>Weekly challenges:</strong> capture <strong>25 eligible Pokémon</strong> and win <strong>50 battles against wild Pokémon</strong>. Each objective has its own reward, and the weekly cycle resets on Monday.</p>
+<p><strong>Generation campaigns:</strong> register distinct eligible species and progress through three persistent stages. The campaign target is fixed when accepted and is based on half of the generation’s naturally spawning species.</p>
+<p>Players can inspect their registered species and retain campaign progress while more generations are enabled. Quest progress persists across server restarts.</p>
+<p>Quest rewards integrate with <strong>AVECOINS</strong>. Objectives completed while rewards are disabled are recorded as completed without payment; re-enabling rewards does not automatically backpay those objectives.</p>
+<p><strong>🎰 CREATE YOUR OWN GACHAS</strong></p>
+<p>Administrators can create and publish prize pools through the in-game editor, with item rewards, visible probabilities, and an AVECOINS ticket cost.</p>
+<p>The animated reel reveals the reward before delivery. The server schedules delivery with an additional one-second wait after the animation’s intended end; network latency may slightly affect the visible timing.</p>
+<p>Hover over prize icons or names to inspect Minecraft’s normal item information, including configured enchantments and attributes. Tooltips are also available in the editor and for pending prizes and ticket icons.</p>
+<p>If the inventory is full, the reserved reward remains available to claim. Disconnects or restarts retain reserved prizes for later manual claim.</p>
+<p><strong>⚔️ CUSTOM EQUIPMENT</strong></p>
+<p>Discover the <strong>Prismatic</strong> and <strong>Dark Reaper</strong> equipment sets, each with a helmet, chestplate, leggings, boots, sword, axe, pickaxe, shovel, and hoe.</p>
+<p>Both sets are enchantable and fire resistant. Each armor piece provides <strong>+1 armor, +1 toughness, and +0.05 knockback resistance</strong> compared with its netherite counterpart. Tools use an enhanced netherite tier.</p>
+<p>Four custom bows — <strong>Curve, Regular, Long, and Harp</strong> — include drawing animations, <strong>2032 durability</strong>, and <strong>+1 arrow base damage</strong>.</p>
+<p>Equipment appears in its own creative tab. There are no crafting recipes or added natural loot sources. Textures are bundled in the mod; ItemsAdder, Oraxen, and a separate resource pack are not required.</p>
+<p>Equipment visuals may be refined during development. Included third-party artwork retains its creators’ rights; see the <a href="https://github.com/IANBLK/Zian-Utilities/blob/feat/brand-command-root/THIRD_PARTY_ASSETS.md">asset credits</a>.</p>
+<p><strong>⛏️ COMMAND-ONLY 3×3 MINING</strong></p>
+<p>The <strong>zianutilities:mineria_3x3</strong> enchantment allows compatible pickaxes to mine a 3×3×1 area.</p>
+<p>It is available only through commands and does not appear in enchanting tables, villager trades, or generated loot.</p>
+<p>With a compatible pickaxe held, an administrator can use <strong>/enchant &lt;player&gt; zianutilities:mineria_3x3 1</strong>.</p>
+<p>Additional blocks use normal player block-breaking checks, drops, and durability. Area mining skips unsupported blocks and does not run if the original break is cancelled.</p>
+<p><strong>⌨️ MAIN COMMANDS</strong></p>
+<p><strong>/ZianUtilities</strong> — Open the main hub.</p>
+<p><strong>/ZianUtilities menu</strong> — Open the main hub.</p>
+<p><strong>/ZianUtilities quest</strong> — Open quests.</p>
+<p><strong>/ZianUtilities gacha</strong> — Open gachas.</p>
+<p><strong>/ZianUtilities generation active</strong> — View enabled generations.</p>
+<p><strong>/ZianUtilities generation status [generation]</strong> — View generation information.</p>
+<p><strong>/ZianUtilities generation enable gen1</strong> — Enable Generation 1; administrators can replace gen1 with another supported generation ID.</p>
+<p><strong>/ZianUtilities generation disable gen1</strong> — Disable the specified generation.</p>
+<p><strong>/ZianUtilities gacha review &lt;player&gt;</strong> — Administrative inspection of pending or uncertain rolls.</p>
+<p><strong>/ZianUtilities gacha confirm-delivered &lt;player&gt; &lt;operationId&gt;</strong> — Confirm an interrupted delivery only after verifying that the reward was received.</p>
+<p>The old <strong>/zian</strong> root has been removed. Update scripts and menu buttons to use <strong>/ZianUtilities</strong>, preserving capitalization. Administrative generation and recovery actions remain protected by their server-side permission checks.</p>
+<p>Additional debit-resolution and compensation commands are documented in the <a href="https://github.com/IANBLK/Zian-Utilities/blob/feat/brand-command-root/docs/BETA6_RECOVERY.md">recovery guide</a>. These record verified administrative decisions and do not determine transaction outcomes automatically.</p>
+<p><strong>⚙️ CONFIGURATION</strong></p>
+<p>The server creates <strong>config/zianutilities-features.properties</strong> with four feature switches: <strong>quests.enabled</strong>, <strong>quests.rewards.enabled</strong>, <strong>gachas.enabled</strong>, and <strong>gachas.payments.enabled</strong>.</p>
+<p>These switches are enabled by default. Change them with the server stopped and restart to apply them. Normal features do not require special Java startup flags.</p>
+<p><strong>📦 INSTALLATION</strong></p>
+<p>Requires <strong>Minecraft 1.21.1</strong>, <strong>Java 21</strong>, <strong>NeoForge 21.1.251+</strong>, <strong>Cobblemon 1.8.1</strong>, and its required dependencies, including <strong>Kotlin for Forge 5.10+</strong>.</p>
+<p>Install the same Zian Utilities version on the server and every client. Use <strong>AVECOINS 2.3 or 2.4</strong> for quest payments and paid gacha rolls. Future economy versions are not accepted automatically.</p>
+<p><strong>🚧 BETA — ACTIVE DEVELOPMENT</strong></p>
+<p>Zian Utilities is in active development. Features, balance, and equipment textures may change during the beta period.</p>
+<p>Back up your world before updating. Older retired equipment families and elemental swords are no longer registered; worlds containing those items require attention before migration.</p>
+<p>Report issues with your versions, server platform, reproduction steps, and relevant logs through <a href="https://github.com/IANBLK/Zian-Utilities/issues">GitHub Issues</a>.</p>
+<p><strong>Created by IANBLK • Minecraft 1.21.1 • NeoForge • Cobblemon • Youer</strong></p>

@@ -1,0 +1,406 @@
+package com.zianblk.zianutilities.neoforge.gacha.client;
+
+import com.zianblk.zianutilities.neoforge.gacha.GachaNetwork;
+import com.zianblk.zianutilities.neoforge.gacha.GachaTiming;
+import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractButton;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.ConfirmScreen;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+
+import java.util.Locale;
+import java.util.ArrayList;
+import java.util.List;
+
+/** Client preview and admin editor. All mutation and random selection happens on the server. */
+public final class GachaScreen extends Screen {
+    private static final int GOLD = 0xFFF0C75E;
+    private static final int WHITE = 0xFFF4F7FA;
+    private static final int MUTED = 0xFF9FAAB5;
+    private static final int GREEN = 0xFF78D498;
+    private GachaNetwork.State state;
+    private int poolId;
+    private int prizePage;
+    private int pendingPage;
+    private boolean editing;
+    private boolean confirming;
+    private EditBox nameBox;
+    private boolean awaitingRoll;
+    private Reel reel;
+    private ItemStack hoveredItem = ItemStack.EMPTY;
+
+    private record Reel(long started, List<ItemStack> items) {}
+
+    private GachaScreen(GachaNetwork.State state, int poolId, int prizePage, int pendingPage,
+                        boolean editing, boolean confirming) {
+        super(Component.literal("Zian Utilities | Gachas"));
+        this.state = state;
+        this.poolId = poolId;
+        this.prizePage = prizePage;
+        this.pendingPage = pendingPage;
+        this.editing = editing && state.admin();
+        this.confirming = confirming;
+    }
+
+    public static void receive(GachaNetwork.State state) {
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.execute(() -> {
+            if (!state.open() && !(minecraft.screen instanceof GachaScreen)) return;
+            if (state.open() || !(minecraft.screen instanceof GachaScreen old)) {
+                minecraft.setScreen(new GachaScreen(state, firstId(state), 0, 0, false, false));
+            } else {
+                GachaScreen next = new GachaScreen(state, old.poolId, old.prizePage,
+                    old.pendingPage, old.editing, false);
+                next.awaitingRoll = old.awaitingRoll;
+                next.reel = old.reel;
+                minecraft.setScreen(next);
+            }
+        });
+    }
+
+    public static void receiveRollResult(GachaNetwork.RollResult result) {
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.execute(() -> {
+            if (!(minecraft.screen instanceof GachaScreen screen) || !screen.awaitingRoll) return;
+            screen.awaitingRoll = false;
+            if (!result.prize().isEmpty()) {
+                List<ItemStack> items = new ArrayList<>();
+                GachaNetwork.PoolView pool = screen.pool();
+                if (pool != null && pool.id() == result.poolId() && !pool.prizes().isEmpty()) {
+                    for (int i = 0; i < 23; i++)
+                        items.add(pool.prizes().get(i % pool.prizes().size()).item().copy());
+                }
+                items.add(result.prize().copy());
+                screen.reel = new Reel(System.currentTimeMillis(), items);
+            }
+            screen.reopen();
+        });
+    }
+
+    private static int firstId(GachaNetwork.State state) {
+        return state.pools().isEmpty() ? 0 : state.pools().getFirst().id();
+    }
+
+    private GachaNetwork.PoolView pool() {
+        for (var pool : state.pools()) if (pool.id() == poolId) return pool;
+        return state.pools().isEmpty() ? null : state.pools().getFirst();
+    }
+
+    private int poolIndex() {
+        for (int i = 0; i < state.pools().size(); i++)
+            if (state.pools().get(i).id() == poolId) return i;
+        return 0;
+    }
+
+    private void reopen() {
+        GachaScreen next = new GachaScreen(state, poolId, prizePage, pendingPage, editing, confirming);
+        next.awaitingRoll = awaitingRoll;
+        next.reel = reel;
+        Minecraft.getInstance().setScreen(next);
+    }
+
+    private int left() { return Math.max(10, (width - Math.min(width - 20, 470)) / 2); }
+    private int contentWidth() { return Math.min(width - 20, 470); }
+
+    @Override
+    protected void init() {
+        addRenderableWidget(new StyledButton(10, 9, 55, 18, "Inicio", ZianHubNetwork::requestHub));
+        if (state.admin()) addRenderableWidget(new StyledButton(width - 81, 9, 71, 18,
+            editing ? "Jugador" : "Editar", () -> { editing = !editing; confirming = false; reopen(); }));
+        int x = left(), w = contentWidth();
+        addRenderableWidget(new StyledButton(x, 40, 40, 19, "<", () -> movePool(-1)));
+        addRenderableWidget(new StyledButton(x + w - 40, 40, 40, 19, ">", () -> movePool(1)));
+        GachaNetwork.PoolView pool = pool();
+        if (editing) initAdmin(x, w, pool);
+        else initPlayer(x, w, pool);
+    }
+
+    private void movePool(int delta) {
+        if (state.pools().isEmpty()) return;
+        int index = Math.floorMod(poolIndex() + delta, state.pools().size());
+        poolId = state.pools().get(index).id();
+        prizePage = 0;
+        confirming = false;
+        reopen();
+    }
+
+    private void initPlayer(int x, int w, GachaNetwork.PoolView pool) {
+        if (pool != null) {
+            int prizeCount = pool.prizes().size();
+            addRenderableWidget(new StyledButton(x + 8, 202, 46, 18, "◀", () -> {
+                prizePage = Math.max(0, prizePage - 1); reopen();
+            })).active = prizePage > 0;
+            addRenderableWidget(new StyledButton(x + w - 54, 202, 46, 18, "▶", () -> {
+                prizePage = Math.min(Math.max(0, (prizeCount - 1) / 4), prizePage + 1); reopen();
+            })).active = (prizePage + 1) * 4 < prizeCount;
+            StyledButton roll = addRenderableWidget(new StyledButton(x + w / 2 - 77, 228, 154, 21,
+                confirming ? "Confirmar tirada" : "Girar una vez", () -> {
+                    if (!confirming) { confirming = true; reopen(); }
+                    else {
+                        confirming = false;
+                        awaitingRoll = true;
+                        GachaNetwork.request(9, pool.id(), 0, "");
+                        reopen();
+                    }
+                }));
+            roll.active = pool.enabled() && state.paymentEnabled() && !pool.prizes().isEmpty()
+                && !awaitingRoll && reel == null;
+        }
+        if (!state.pending().isEmpty()) {
+            pendingPage = Math.min(pendingPage, state.pending().size() - 1);
+            addRenderableWidget(new StyledButton(x, 284, 40, 18, "<", () -> {
+                pendingPage = Math.floorMod(pendingPage - 1, state.pending().size()); reopen();
+            }));
+            addRenderableWidget(new StyledButton(x + w - 40, 284, 40, 18, ">", () -> {
+                pendingPage = (pendingPage + 1) % state.pending().size(); reopen();
+            }));
+            var pending = state.pending().get(pendingPage);
+            addRenderableWidget(new StyledButton(x + w / 2 - 65, 308, 130, 19,
+                "Reclamar premio", () -> GachaNetwork.request(10, 0, 0, pending.id())));
+        }
+        addRenderableWidget(new StyledButton(x + w - 76, height - 27, 76, 18,
+            "Actualizar", () -> GachaNetwork.request(0, 0, 0, "")));
+    }
+
+    private void initAdmin(int x, int w, GachaNetwork.PoolView pool) {
+        addRenderableWidget(new StyledButton(x + w - 174, 40, 130, 19,
+            "Crear gacha nuevo", () -> GachaNetwork.request(1, 0, 0, "")));
+        if (pool == null) return;
+        addRenderableWidget(new StyledButton(x + 8, 72, 100, 18,
+            "Eliminar gacha", () -> Minecraft.getInstance().setScreen(new ConfirmScreen(confirmed -> {
+                Minecraft.getInstance().setScreen(this);
+                if (confirmed) GachaNetwork.request(11, pool.id(), 0, pool.name());
+            }, Component.literal("¿Eliminar " + pool.name() + "?"),
+                Component.literal("Se borrará este gacha y sus premios configurados.")))));
+        nameBox = new EditBox(font, x + w / 2 - 85, 72, 170, 18, Component.literal("Nombre"));
+        nameBox.setMaxLength(32);
+        nameBox.setValue(pool.name());
+        addRenderableWidget(nameBox);
+        addRenderableWidget(new StyledButton(x + w - 84, 72, 76, 18, "Guardar", () ->
+            GachaNetwork.request(2, pool.id(), 0, nameBox.getValue())));
+        addRenderableWidget(new StyledButton(x + 90, 94, 153, 18,
+            ticketName(pool.ticket()), () -> GachaNetwork.request(3, pool.id(), 0, "")));
+        addRenderableWidget(new StyledButton(x + 249, 94, 26, 18, "-", () ->
+            GachaNetwork.request(4, pool.id(), -1, "")));
+        addRenderableWidget(new StyledButton(x + 279, 94, 26, 18, "+", () ->
+            GachaNetwork.request(4, pool.id(), 1, "")));
+        addRenderableWidget(new StyledButton(x + 8, 117, 130, 18,
+            "Añadir objeto en mano", () -> GachaNetwork.request(5, pool.id(), 0, "")));
+        addRenderableWidget(new StyledButton(x + w - 116, 117, 108, 18,
+            pool.enabled() ? "Desactivar" : "Publicar", () -> GachaNetwork.request(8, pool.id(), 0, "")));
+        for (int row = 0; row < 4; row++) {
+            int index = prizePage * 4 + row;
+            if (index >= pool.prizes().size()) break;
+            int y = 150 + row * 26;
+            addRenderableWidget(new StyledButton(x + w - 106, y, 25, 18, "-", () ->
+                GachaNetwork.request(6, pool.id(), index, "-1")));
+            addRenderableWidget(new StyledButton(x + w - 77, y, 25, 18, "+", () ->
+                GachaNetwork.request(6, pool.id(), index, "1")));
+            addRenderableWidget(new StyledButton(x + w - 48, y, 40, 18, "Quitar", () ->
+                GachaNetwork.request(7, pool.id(), index, "")));
+        }
+        addRenderableWidget(new StyledButton(x + 8, 260, 42, 18, "◀", () -> {
+            prizePage = Math.max(0, prizePage - 1); reopen();
+        })).active = prizePage > 0;
+        addRenderableWidget(new StyledButton(x + w - 50, 260, 42, 18, "▶", () -> {
+            prizePage++; reopen();
+        })).active = (prizePage + 1) * 4 < pool.prizes().size();
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // This screen draws its own opaque background to avoid stacked NeoForge blur.
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        hoveredItem = ItemStack.EMPTY;
+        // The reel is a modal view. Drawing the normal screen first lets its widgets
+        // bleed through the card at smaller GUI scales because item rendering changes depth.
+        if (awaitingRoll || reel != null) {
+            renderReel(graphics);
+            return;
+        }
+        graphics.fill(0, 0, width, height, 0xE00D1117);
+        graphics.fill(0, 0, width, 4, GOLD);
+        graphics.drawCenteredString(font, title, width / 2, 12, GOLD);
+        int x = left(), w = contentWidth();
+        GachaNetwork.PoolView pool = pool();
+        graphics.drawCenteredString(font, Component.literal(pool == null ? "No hay gachas disponibles"
+            : pool.name() + (state.admin() && !pool.enabled() ? " (sin publicar)" : "")), width / 2, 45, WHITE);
+        if (editing) renderAdmin(graphics, x, w, pool, mouseX, mouseY);
+        else renderPlayer(graphics, x, w, pool, mouseX, mouseY);
+        super.render(graphics, mouseX, mouseY, partialTick);
+        // Use the complete synchronized stack and Minecraft's standard tooltip pipeline.
+        // Render last so widgets and item depth changes cannot cover the tooltip.
+        if (!hoveredItem.isEmpty()) graphics.renderTooltip(font, hoveredItem, mouseX, mouseY);
+    }
+
+    private void renderReel(GuiGraphics graphics) {
+        int x = width / 2 - 146, y = height / 2 - 67;
+        graphics.fill(0, 0, width, height, 0xB8000000);
+        card(graphics, x, y, 292, 134);
+        graphics.drawCenteredString(font, awaitingRoll ? "Procesando tirada..." : "Gacha", width / 2, y + 13, GOLD);
+        if (reel == null) return;
+        long elapsed = Math.max(0, System.currentTimeMillis() - reel.started());
+        double progress = Math.min(1.0, elapsed / (double) GachaTiming.SPIN_MILLIS);
+        int last = reel.items().size() - 1;
+        int position = Math.min(last, (int) Math.floor(last * (1 - Math.pow(1 - progress, 3))));
+        for (int offset = -1; offset <= 1; offset++) {
+            int index = Math.max(0, Math.min(last, position + offset));
+            int slotX = width / 2 + offset * 67 - 23;
+            graphics.fill(slotX, y + 35, slotX + 46, y + 81,
+                offset == 0 ? 0xFF323B45 : 0xFF232A32);
+            graphics.renderOutline(slotX, y + 35, 46, 46,
+                offset == 0 ? GOLD : 0xFF526575);
+            graphics.renderItem(reel.items().get(index), slotX + 15, y + 50);
+        }
+        ItemStack shown = reel.items().get(position);
+        graphics.drawCenteredString(font, shown.getHoverName(), width / 2, y + 92, WHITE);
+        graphics.drawCenteredString(font,
+            progress < 1 ? "Girando..." : "¡Premio obtenido!",
+            width / 2, y + 113, progress < 1 ? MUTED : GREEN);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (reel != null && System.currentTimeMillis() - reel.started() >= GachaTiming.REEL_MILLIS) {
+            reel = null;
+            reopen();
+        }
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (awaitingRoll || reel != null) return true;
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private void renderPlayer(GuiGraphics graphics, int x, int w, GachaNetwork.PoolView pool,
+                              int mouseX, int mouseY) {
+        if (pool != null) {
+            card(graphics, x, 65, w, 158);
+            String costLabel = "Costo: " + pool.cost() + " " + ticketName(pool.ticket());
+            graphics.drawString(font, costLabel, x + 8, 75, GOLD, false);
+            ItemStack ticketIcon = BuiltInRegistries.ITEM.getOptional(ResourceLocation.parse(pool.ticket()))
+                .map(ItemStack::new).orElse(ItemStack.EMPTY);
+            if (!ticketIcon.isEmpty()) {
+                int ticketX = x + 14 + font.width(costLabel);
+                graphics.renderItem(ticketIcon, ticketX, 71);
+                itemHover(ticketIcon, ticketX, 71, 16, 16, mouseX, mouseY);
+            }
+            long total = pool.prizes().stream().mapToLong(GachaNetwork.PrizeView::weight).sum();
+            for (int row = 0; row < 4; row++) {
+                int index = prizePage * 4 + row;
+                if (index >= pool.prizes().size()) break;
+                var prize = pool.prizes().get(index);
+                int y = 96 + row * 24;
+                graphics.renderItem(prize.item(), x + 8, y);
+                graphics.drawString(font, prize.item().getHoverName().getString(),
+                    x + 30, y + 2, WHITE, false);
+                prizeHover(prize.item(), x, y, x + w - 60, mouseX, mouseY);
+                String odds = total <= 0 ? "0%" : String.format(Locale.ROOT, "%.2f%%",
+                    prize.weight() * 100.0 / total);
+                graphics.drawString(font, odds, x + w - 53, y + 2, GOLD, false);
+            }
+            graphics.drawCenteredString(font, Component.literal(
+                state.paymentEnabled() ? (confirming ? "Confirma: se descontarán tickets"
+                    : "Cada tirada da un objeto") : "Tiradas de pago desactivadas"),
+                width / 2, 255, MUTED);
+        }
+        if (!state.pending().isEmpty()) {
+            var pending = state.pending().get(Math.min(pendingPage, state.pending().size() - 1));
+            graphics.drawString(font, "Premios pendientes: " + state.pending().size(),
+                x, 273, GOLD, false);
+            graphics.renderItem(pending.item(), x + 48, 285);
+            graphics.drawCenteredString(font, pending.item().getHoverName(),
+                width / 2, 289, WHITE);
+            itemHover(pending.item(), x + 48, 285, 16, 16, mouseX, mouseY);
+            int nameWidth = font.width(pending.item().getHoverName());
+            itemHover(pending.item(), width / 2 - nameWidth / 2, 289, nameWidth, 9, mouseX, mouseY);
+        }
+    }
+
+    private void renderAdmin(GuiGraphics graphics, int x, int w, GachaNetwork.PoolView pool,
+                             int mouseX, int mouseY) {
+        if (pool == null) return;
+        card(graphics, x, 61, w, 229);
+        graphics.drawString(font, "Costo: " + pool.cost() + " ticket(s)",
+            x + 313, 99, MUTED, false);
+        graphics.drawString(font, pool.enabled() ? "Publicado" : "Borrador",
+            x + 145, 121, pool.enabled() ? GREEN : MUTED, false);
+        long total = pool.prizes().stream().mapToLong(GachaNetwork.PrizeView::weight).sum();
+        for (int row = 0; row < 4; row++) {
+            int index = prizePage * 4 + row;
+            if (index >= pool.prizes().size()) break;
+            var prize = pool.prizes().get(index);
+            int y = 150 + row * 26;
+            graphics.renderItem(prize.item(), x + 8, y);
+            graphics.drawString(font, prize.item().getHoverName().getString(),
+                x + 30, y + 3, WHITE, false);
+            prizeHover(prize.item(), x, y, x + Math.max(110, w - 193), mouseX, mouseY);
+            graphics.drawString(font, String.format(Locale.ROOT, "%d · %.2f%%",
+                prize.weight(), total <= 0 ? 0 : prize.weight() * 100.0 / total),
+                x + Math.max(110, w - 193), y + 3, GOLD, false);
+        }
+        graphics.drawCenteredString(font, Component.literal(
+            "Editar un gacha publicado lo devuelve a borrador"), width / 2, 292, MUTED);
+    }
+
+    private void prizeHover(ItemStack item, int x, int y, int right, int mouseX, int mouseY) {
+        int end = Math.min(right, x + 30 + font.width(item.getHoverName()));
+        itemHover(item, x + 8, y, Math.max(16, end - x - 8), 18, mouseX, mouseY);
+    }
+
+    private void itemHover(ItemStack item, int x, int y, int w, int h, int mouseX, int mouseY) {
+        if (!item.isEmpty() && mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h)
+            hoveredItem = item;
+    }
+
+    private static String ticketName(String id) {
+        return switch (id) {
+            case "avecoins:goldticket" -> "Ticket de Oro";
+            case "avecoins:diamondticket" -> "Ticket de Diamante";
+            case "avecoins:netheriteticket" -> "Ticket de Netherita";
+            default -> id;
+        };
+    }
+
+    private static void card(GuiGraphics graphics, int x, int y, int w, int h) {
+        graphics.fill(x, y, x + w, y + h, 0xFF59616B);
+        graphics.fill(x + 1, y + 1, x + w - 1, y + h - 1, 0xFF181D24);
+        graphics.fill(x + 1, y + 1, x + w - 1, y + 4, GOLD);
+    }
+
+    @Override public boolean isPauseScreen() { return false; }
+
+    private static final class StyledButton extends AbstractButton {
+        private final Runnable action;
+        StyledButton(int x, int y, int width, int height, String label, Runnable action) {
+            super(x, y, width, height, Component.literal(label));
+            this.action = action;
+        }
+        @Override public void onPress() { action.run(); }
+        @Override protected void updateWidgetNarration(NarrationElementOutput output) {
+            defaultButtonNarrationText(output);
+        }
+        @Override protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            int border = isHovered && active ? GOLD : (active ? 0xFF526575 : 0xFF3B4148);
+            graphics.fill(getX(), getY(), getX() + width, getY() + height,
+                active ? 0xFF20262D : 0xFF161A20);
+            graphics.renderOutline(getX(), getY(), width, height, border);
+            graphics.drawCenteredString(Minecraft.getInstance().font, getMessage(),
+                getX() + width / 2, getY() + (height - 8) / 2,
+                active ? WHITE : 0xFF7C838B);
+        }
+    }
+}
+

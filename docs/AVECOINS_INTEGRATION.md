@@ -1,8 +1,13 @@
 # AVECOINS integration plan
 
-Current inspected target:
+Supported and operator-tested targets:
 
-`AVECOINS 2.3`
+`AVECOINS 2.3` and `AVECOINS 2.4`
+
+AVECOINS 2.4 passes the runtime wallet-layout probe. On the Youer test server,
+the operator confirmed mission credits, gacha ticket debits, prize delivery,
+and persistent progress across restart. A future AVECOINS version is rejected
+until its contract and economic operations are deliberately verified.
 
 Historical reference implementation:
 
@@ -148,3 +153,4 @@ If AVECOINS later exposes a stable public API for:
 - transaction lookup
 
 prefer that API over reflection while keeping the Zian Utilities `EconomyPort` stable.
+

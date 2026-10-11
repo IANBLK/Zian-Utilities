@@ -1,0 +1,7 @@
+{
+  "parent": "zianutilities:item/regular_bow",
+  "textures": {
+    "layer0": "zianutilities:item/regular_bow_0"
+  },
+  "overrides": []
+}

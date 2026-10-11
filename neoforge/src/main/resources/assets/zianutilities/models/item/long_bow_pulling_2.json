@@ -1,0 +1,7 @@
+{
+  "parent": "zianutilities:item/long_bow",
+  "textures": {
+    "layer0": "zianutilities:item/long_bow_2"
+  },
+  "overrides": []
+}

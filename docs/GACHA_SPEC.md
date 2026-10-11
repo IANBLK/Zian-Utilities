@@ -1,12 +1,38 @@
 # Zian Utilities Gacha - functional specification
 
-Status: future module specification.
+Status: design in progress; ticket payment and administrator-created pools confirmed.
 
 This document describes desired behavior only. Gacha is not part of Milestone 1.
 
 ## Goals
 
-Provide configurable Gacha pools that can use AVECOINS and/or tickets while preserving transaction safety and recoverability.
+Let administrators create custom Gacha pools. A roll consumes an AVECOINS ticket balance, while AVECOINS coins remain reserved for quest rewards. Preserve transaction safety and recoverability.
+
+## Decisions confirmed for the first playable version
+
+- Pools are created and controlled by server administrators, not generated per player.
+- A roll is paid with an AVECOINS ticket, not with an AVECOINS coin.
+- AVECOINS 2.3 exposes `avecoins:goldticket`, `avecoins:diamondticket`, and `avecoins:netheriteticket` as managed wallet currencies on the tested Youer server. These are wallet balances for this design, not inventory item stacks.
+- Each pool chooses which of the supported AVECOINS ticket currencies it accepts and how many tickets a roll costs.
+- The first version awards inventory items only; Pokémon, currency, commands, and other reward types are later extensions.
+- Administrators create and edit pools through an in-game interface. Only authorized administrators can publish, disable, or change them.
+- A custom pool definition must freeze its ticket type, cost, prize entries, and weights for each accepted roll. Later administrator edits affect new rolls only.
+- Administrators add a prize by copying an item stack from their inventory into the editor. The source item remains in the administrator's inventory; the published prize retains its count and item data.
+- If the winner's inventory has no safe space for the complete prize, the prize becomes pending in a durable claim list. It is never dropped on the ground.
+- The player sees the exact odds for each prize before spending a ticket. The server derives displayed percentages from the same published weights used by the roll.
+- Every paid roll awards exactly one configured item prize. A published pool cannot contain an empty outcome.
+- There is no pity/guaranteed-rarity counter in the first version. It may be added later only with explicit display of how it changes each player's odds.
+- The client may preview a pool and request a roll, but the server checks the ticket balance, chooses the outcome, and delivers the prize.
+
+Ticket prices and prize weights are set by the administrator; no fixed economic values are baked into the mod.
+
+## Administrator and player flow
+
+1. An authorized administrator opens the Gachas editor from `/zian`, creates a pool, names it, selects its AVECOINS ticket type and ticket cost, and copies prize stacks from their inventory.
+2. The editor assigns each prize a positive weight and shows the resulting percentage. An empty or invalid pool cannot be published. Publishing produces a new immutable revision; disabling a pool blocks new rolls without erasing operation history or pending prizes.
+3. A player opens Gachas from `/zian`, views the published pools, ticket cost, prizes, and odds, then confirms one roll. The client sends a single request; the server determines the result.
+4. The server records the operation before deducting tickets, records the deduction outcome, selects and persists the prize once, and then attempts delivery. An interrupted or uncertain operation is inspected/recovered by an administrator, never charged or rolled again blindly.
+5. A prize that does not fit remains claimable from the Gachas screen. A successful claim removes it from pending storage exactly once. The player's history shows ticket cost, prize, and outcome.
 
 ## Non-goal
 
@@ -42,11 +68,17 @@ Definitions should be data-driven.
 
 ## Payment methods
 
-Planned methods:
+First version:
 
 ```text
-AVECOINS
-Gacha Ticket
+AVECOINS managed ticket balance (goldticket, diamondticket, or netheriteticket)
+```
+
+Future possible methods:
+
+```text
+AVECOINS coins
+physical item tickets
 future custom payment adapter
 ```
 
@@ -115,7 +147,7 @@ Do not rely on replaying RNG after restart to reconstruct a result.
 
 ## Pity
 
-Planned support:
+Future support only; omitted from the first version:
 
 ```text
 hard pity
@@ -188,13 +220,14 @@ Examples:
 
 ## First Gacha milestone
 
-Recommended first slice after Quests/Rewards are stable:
+First slice after Quests/Rewards are stable:
 
 ```text
-one configurable pool
-AVECOINS payment
-item rewards
-hard pity
+administrator-created custom pools through an in-game interface
+one chosen AVECOINS ticket currency and configurable ticket cost per pool
+exactly one item reward per roll, always
+no pity counter in the first version
+server-side published pool revisions and disclosed odds
 operation journal
 history
 recovery states

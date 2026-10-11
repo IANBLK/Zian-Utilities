@@ -1,62 +1,13 @@
-# Equipment and Enchantments - future scope
+# Equipo y encantamiento de minería (beta.5)
 
-Status: future product scope only.
+El equipo actual consiste en un solo set Prismático: casco, pechera, grebas, botas, espada, hacha, pico, pala y azada. Todas las piezas están en la pestaña creativa **Zian Utilities | Equipamiento** y no tienen recetas.
 
-These systems are intentionally outside Milestone 1.
+Cada pieza de armadura prismática tiene 1 punto de defensa más que la pieza de netherita correspondiente. La dureza es 4 (netherita: 3) y la resistencia al retroceso por pieza es 0,15 (netherita: 0,10). Durabilidad, encantabilidad, resistencia al fuego y reparación siguen la base de netherita.
 
-## Equipment
+La espada y las herramientas usan la categoría de minería de netherita, 2032 usos, velocidad de minería 10, bono de daño del material 5 y encantabilidad 16. Las etiquetas vanilla correspondientes permiten sus encantamientos normales.
 
-Planned categories:
+El encantamiento `zianutilities:mineria_3x3` se aplica **solo por comando** a un pico: `/enchant <jugador> zianutilities:mineria_3x3 1`. No está en las etiquetas de mesa de encantamientos, botín ni comercio de aldeanos. Rompe hasta ocho bloques vecinos del plano perpendicular a la cara golpeada, usando la ruta normal de rotura para aplicar protecciones, botín y desgaste. No actúa si la rotura inicial se cancela, no carga chunks, omite contenedores y bloques más duros, y no se activa recursivamente.
 
-```text
-Weapons
-Armor
-Tools
-```
+Para probar una pieza: `/give <jugador> zianutilities:prismatic_helmet 1` o `/give <jugador> zianutilities:prismatic_sword 1`. Instala el mismo JAR en cliente y servidor; no hacen falta parámetros de startup.
 
-The project should eventually support ordinary registered equipment plus optional custom behavior.
-
-Potential future capabilities:
-
-- custom attributes;
-- durability;
-- repair materials;
-- special effects;
-- cooldown abilities;
-- set bonuses;
-- model/resource-pack integration;
-- recipe/datapack configuration where appropriate.
-
-Do not make Quests or Gacha depend directly on equipment implementation classes. Equipment should be awardable through the generic item/reward layer.
-
-## Enchantments
-
-Custom enchantments are considered feasible for Minecraft 1.21.1, but their exact implementation must be designed specifically around the 1.21.1 enchantment/data model.
-
-Potential categories:
-
-- combat effects;
-- utility/mining effects;
-- Cobblemon-adjacent utility where technically safe;
-- equipment-specific effects.
-
-## Constraints
-
-- avoid per-tick global scans when event-driven behavior is possible;
-- keep server-authoritative effects server-side;
-- define compatibility/conflict rules between custom enchantments;
-- use data-driven configuration where Minecraft 1.21.1 supports it cleanly;
-- do not couple Generation Control to Equipment/Enchantments.
-
-## Before implementation
-
-Research and decide:
-
-- NeoForge 1.21.1 enchantment registration/data APIs;
-- resource/data pack responsibilities;
-- attribute modifier strategy;
-- networking needs;
-- Youer compatibility;
-- whether custom visuals require an optional resource pack.
-
-No production code should be added merely to reserve classes for these future systems.
+Los objetos antiguos `captura_*`, `explorador_*` y `campeon_*` se retiraron por petición del propietario. Antes de actualizar un mundo donde existan esos objetos, haz una copia de seguridad y decide cómo sustituirlos.

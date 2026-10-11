@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "zianutilities:curve_bow",
+    "zianutilities:regular_bow",
+    "zianutilities:long_bow",
+    "zianutilities:harp_bow"
+  ]
+}

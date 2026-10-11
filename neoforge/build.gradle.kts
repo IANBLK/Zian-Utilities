@@ -29,6 +29,7 @@ neoForge {
     mods {
         create(providers.gradleProperty("mod_id").get()) {
             sourceSet(sourceSets.main.get())
+            sourceSet(project(":core").extensions.getByType<SourceSetContainer>().getByName("main"))
         }
     }
 
@@ -46,6 +47,10 @@ dependencies {
     }
 
     compileOnly("thedarkcolour:kotlinforforge-neoforge:${providers.gradleProperty("kotlin_for_forge_version").get()}")
+
+    runtimeOnly("com.cobblemon:neoforge:${providers.gradleProperty("cobblemon_version").get()}") { isTransitive = false }
+    runtimeOnly("thedarkcolour:kotlinforforge-neoforge:${providers.gradleProperty("kotlin_for_forge_version").get()}")
+
 
     testCompileOnly("com.cobblemon:neoforge:${providers.gradleProperty("cobblemon_version").get()}") {
         isTransitive = false

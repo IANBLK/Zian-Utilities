@@ -8,8 +8,7 @@ version="${mod_version}"
 displayName="${mod_name}"
 authors="ZIANBLK"
 description='''
-Modular server utilities for Minecraft 1.21.1 with Cobblemon integration.
-Milestone 1 focuses on Core + Generation Control.
+Cobblemon generation control, quests, gachas, themed equipment and a command-only 3x3 mining enchantment for Minecraft 1.21.1.
 '''
 
 [[dependencies.${mod_id}]]

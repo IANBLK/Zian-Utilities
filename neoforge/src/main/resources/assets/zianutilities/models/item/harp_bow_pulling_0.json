@@ -1,0 +1,7 @@
+{
+  "parent": "zianutilities:item/harp_bow",
+  "textures": {
+    "layer0": "zianutilities:item/harp_bow_0"
+  },
+  "overrides": []
+}

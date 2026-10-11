@@ -16,7 +16,16 @@ Planned areas:
 8. Equipment
 9. Enchantments
 
-## Current milestone
+## Current status (0.1.0-beta.1)
+
+The original milestone plan below is historical. The current build contains
+generation control, three-hour global quests, weekly quests, persistent
+generation campaigns, AVECOINS-backed rewards and gachas, and themed equipment
+with a command-only mining enchantment. The operator has tested these features
+on Youer 1.21.1; see `BETA1_VALIDATION.md` for the available evidence and its
+limits. New generations are enabled cumulatively.
+
+## Original milestone plan
 
 ### Milestone 1: Core + Generation Control
 
@@ -43,9 +52,13 @@ Habitat-related spawning remains subject to explicit runtime verification before
 - quest foundation
 
 ### Milestone 3
-- Campaign Quests
-- Daily Quests
-- Weekly Quests
+- Weekly Quests (25 eligible captures and 50 wild victories)
+- Generation Campaigns (persistent, unlocked as generations are enabled)
+
+The existing three-hour global quests fill the repeatable daily-play role. No
+separate daily quest family is planned. Generation availability is cumulative:
+the first 15 days can run with only Gen 1, then later generations are added
+without removing earlier ones.
 
 ### Milestone 4
 - Gacha
@@ -53,7 +66,7 @@ Habitat-related spawning remains subject to explicit runtime verification before
 - recoverable transaction state
 - AVECOINS and/or ticket payments
 
-### Later
+### Later (implemented in beta.1)
 - weapons
 - armor
 - tools
