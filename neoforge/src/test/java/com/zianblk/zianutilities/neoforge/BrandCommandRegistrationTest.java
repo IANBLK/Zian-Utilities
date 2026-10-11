@@ -30,6 +30,9 @@ class BrandCommandRegistrationTest {
         GachaCommands.onRegisterCommands(event);
         com.zianblk.zianutilities.neoforge.breeding.BreedingCommands.register(event);
 
+        for(String parent:java.util.List.of("crianza","breeding-admin"))for(var node:dispatcher.getRoot().getChild("ZianUtilities").getChild(parent).getChildren()){
+            var id=node.getChild("id");if(id instanceof com.mojang.brigadier.tree.ArgumentCommandNode<?,?> argument)assertNotNull(argument.getCustomSuggestions(),"UUID autocomplete missing for "+node.getName());
+        }
         assertNull(dispatcher.getRoot().getChild("zian"));
         assertEquals(1, dispatcher.getRoot().getChildren().size());
         var root = dispatcher.getRoot().getChild("ZianUtilities");
@@ -37,7 +40,7 @@ class BrandCommandRegistrationTest {
         assertNotNull(root.getCommand(), "Opening the hub must remain available");
         assertTrue(root.getRequirement().test(null), "The shared root must stay public on Youer");
         for (String[] path : new String[][] {
-            {"crianza", "start", "first", "second"}, {"breeding-admin", "resolve-debit", "id", "charged", "evidence"},
+            {"crianza", "start", "first", "second"}, {"breeding-admin", "complete", "id"}, {"breeding-admin", "resolve-debit", "id", "charged", "evidence"},
             {"generation", "active"}, {"generation", "enable", "gen"},
             {"reward", "inspect"}, {"gacha", "review", "player"},
             {"gacha", "confirm-delivered", "player", "operationId"},

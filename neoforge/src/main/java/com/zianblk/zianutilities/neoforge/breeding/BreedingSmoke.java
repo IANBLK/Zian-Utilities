@@ -142,6 +142,15 @@ final class BreedingSmoke {
                 && FrozenOffspring.materialize(pichu).getMoveSet().getMoves().stream()
                     .anyMatch(move -> move.getTemplate().getName().equals("volttackle")),
             "Light Ball egg move inheritance failed: " + pichu.properties());
+        require(
+            BreedingCompatibility.pair(mother, father).isEmpty(), "Valid pair preview rejected");
+        require(
+            BreedingCompatibility.pair(mother, pokemon("bulbasaur gender=female"))
+                .contains("macho"),
+            "Same-sex incompatibility reason missing");
+        require(
+            BreedingCompatibility.individual(pokemon("pichu")).contains("descubierto"),
+            "Ineligible species explanation missing");
         jobId = UUID.randomUUID();
         var reserved = BreedingRuntime.start(player, mother.getUuid(), father.getUuid(), jobId);
         require(
@@ -243,24 +252,63 @@ final class BreedingSmoke {
                       + " insufficient funds rejected, interrupted debit held for admin",
                   currency);
         }
-        // Test-only expired snapshot: production config/commands never bypass the two-hour floor.
-        long began = BreedingRuntime.store.now() - reserved.baseMillis() - 1000;
-        var ready =
-            new BreedingJob(
-                reserved.id(),
-                reserved.owner(),
-                reserved.first(),
-                reserved.second(),
-                reserved.child(),
-                began,
-                reserved.baseMillis(),
-                reserved.minimumMillis(),
-                reserved.reductionMillis(),
-                BreedingRuntime.store.now(),
-                BreedingJob.Status.ACTIVE,
-                "fixture",
-                reserved.purchases());
-        BreedingRuntime.store.put(ready);
+        var dispatcher = BreedingRuntime.server.getCommands().getDispatcher();
+        var console = BreedingRuntime.server.createCommandSourceStack();
+        var suggestions =
+            dispatcher
+                .getCompletionSuggestions(
+                    dispatcher.parse("ZianUtilities breeding-admin complete ", console))
+                .join();
+        require(
+            suggestions.getList().stream().anyMatch(v -> v.getText().equals(jobId.toString())),
+            "Admin UUID autocomplete missing");
+        var ordinary =
+            new ServerPlayer(
+                BreedingRuntime.server,
+                BreedingRuntime.server.overworld(),
+                new GameProfile(UUID.randomUUID(), "BreedPrivate"),
+                ClientInformation.createDefault()) {
+              @Override
+              public void sendSystemMessage(Component m) {}
+            };
+        var privateSuggestions =
+            dispatcher
+                .getCompletionSuggestions(
+                    dispatcher.parse(
+                        "ZianUtilities crianza accelerate ", ordinary.createCommandSourceStack()))
+                .join();
+        require(
+            privateSuggestions.getList().stream()
+                .noneMatch(v -> v.getText().equals(jobId.toString())),
+            "UUID autocomplete leaked another player's breeding");
+        require(
+            BreedingRuntime.server
+                    .getCommands()
+                    .getDispatcher()
+                    .execute(
+                        "ZianUtilities breeding-admin complete " + jobId,
+                        BreedingRuntime.server.createCommandSourceStack())
+                == 1,
+            "Admin instant completion command failed");
+        require(
+            BreedingRuntime.store.jobs.get(jobId).readyAt() <= BreedingRuntime.store.now()
+                && BreedingRuntime.store.jobs.get(jobId).startedAt() == reserved.startedAt(),
+            "Admin override changed original timing");
+        var preview = BreedingNetwork.preview(player);
+        var buffer =
+            new net.minecraft.network.RegistryFriendlyByteBuf(
+                io.netty.buffer.Unpooled.buffer(), player.registryAccess());
+        try {
+          BreedingNetwork.State.CODEC.encode(buffer, preview);
+          var decoded = BreedingNetwork.State.CODEC.decode(buffer);
+          require(
+              decoded.parents().size() == 2
+                  && decoded.parents().getFirst().stats().size() == 6
+                  && !decoded.parents().getFirst().icon().isEmpty(),
+              "Pokemon UI snapshot/codec failed");
+        } finally {
+          buffer.release();
+        }
         generations.save(GenerationState.Companion.none());
         BreedingRuntime.claim(player, jobId);
         require(
@@ -316,8 +364,9 @@ final class BreedingSmoke {
       done = true;
       LoggerFactory.getLogger("ZianUtilities/Breeding")
           .info(
-              "Breeding native smoke PASSED: genetics, generation block, parent ownership, PC full,"
-                  + " parent lease, nonce replay, persisted PC UUID={}",
+              "Breeding native smoke PASSED: UI codec, admin instant, compatibility, genetics,"
+                  + " generation block, parent ownership, PC full, parent lease, nonce replay,"
+                  + " persisted PC UUID={}",
               job.child().uuid());
     } catch (Throwable failure) {
       done = true;

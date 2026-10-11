@@ -16,7 +16,62 @@ public record BreedingJob(
     long observedAt,
     Status status,
     String reason,
-    List<Purchase> purchases) {
+    List<Purchase> purchases,
+    long readyOverrideAt) {
+  /** Compatibility constructor for existing jobs and callers; zero means no admin override. */
+  public BreedingJob(
+      UUID id,
+      UUID owner,
+      UUID first,
+      UUID second,
+      Child child,
+      long startedAt,
+      long baseMillis,
+      long minimumMillis,
+      long reductionMillis,
+      long observedAt,
+      Status status,
+      String reason,
+      List<Purchase> purchases) {
+    this(
+        id,
+        owner,
+        first,
+        second,
+        child,
+        startedAt,
+        baseMillis,
+        minimumMillis,
+        reductionMillis,
+        observedAt,
+        status,
+        reason,
+        purchases,
+        0);
+  }
+
+  public BreedingJob completeNow(long now, String operator) {
+    if (status != Status.ACTIVE && status != Status.BLOCKED)
+      throw new IllegalStateException(
+          "Solo se pueden adelantar crianzas en espera, sin cobros ni entregas inciertos");
+    if (now <= 0 || now < startedAt) throw new IllegalArgumentException("Invalid override clock");
+    return new BreedingJob(
+        id,
+        owner,
+        first,
+        second,
+        child,
+        startedAt,
+        baseMillis,
+        minimumMillis,
+        reductionMillis,
+        Math.max(observedAt, now),
+        Status.ACTIVE,
+        "Admin complete: " + operator,
+        purchases,
+        now);
+  }
+
   public enum Status {
     ACTIVE,
     ACCELERATING,
@@ -84,6 +139,8 @@ public record BreedingJob(
 
   public BreedingJob {
     purchases = List.copyOf(purchases);
+    if (readyOverrideAt < 0 || (readyOverrideAt > 0 && readyOverrideAt < startedAt))
+      throw new IllegalArgumentException("Invalid admin override");
     if (id == null
         || owner == null
         || first == null
@@ -104,7 +161,11 @@ public record BreedingJob(
   }
 
   public long readyAt() {
-    return BreedingRules.readyAt(startedAt, baseMillis, minimumMillis, reductionMillis);
+    return readyOverrideAt > 0
+        ? Math.min(
+            readyOverrideAt,
+            BreedingRules.readyAt(startedAt, baseMillis, minimumMillis, reductionMillis))
+        : BreedingRules.readyAt(startedAt, baseMillis, minimumMillis, reductionMillis);
   }
 
   public BreedingJob phase(Status next, String why, long now) {
@@ -121,11 +182,14 @@ public record BreedingJob(
         Math.max(observedAt, now),
         next,
         why,
-        purchases);
+        purchases,
+        readyOverrideAt);
   }
 
   public BreedingJob begin(Purchase purchase, long now) {
-    if (status != Status.ACTIVE || purchases.stream().anyMatch(p -> p.id().equals(purchase.id())))
+    if (status != Status.ACTIVE
+        || readyOverrideAt > 0
+        || purchases.stream().anyMatch(p -> p.id().equals(purchase.id())))
       throw new IllegalStateException("Operation not available");
     var list = new ArrayList<>(purchases);
     list.add(purchase);
@@ -142,7 +206,8 @@ public record BreedingJob(
         Math.max(observedAt, now),
         Status.ACCELERATING,
         "",
-        list);
+        list,
+        readyOverrideAt);
   }
 
   public BreedingJob payment(Payment result, long now) {
@@ -177,6 +242,7 @@ public record BreedingJob(
         Math.max(observedAt, now),
         result == Payment.UNCERTAIN ? Status.UNCERTAIN : Status.ACTIVE,
         result == Payment.UNCERTAIN ? "PAYMENT" : "",
-        list);
+        list,
+        readyOverrideAt);
   }
 }

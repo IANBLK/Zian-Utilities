@@ -14,5 +14,11 @@ class BreedingSafetyTest {
  @Test fun `torn record preserved and rejected`() {val p=Files.createTempDirectory("breeding").resolve("journal");BreedingJournal.open(p,{}).use{it.append("entry")};val b=Files.readAllBytes(p);Files.write(p,b.copyOf(b.size-1));assertFailsWith<IOException>{BreedingJournal.open(p,{})};assertEquals(b.size-1,Files.size(p).toInt())}
  @Test fun `failure after force locks live session but replays persisted operation`() {val p=Files.createTempDirectory("breeding").resolve("journal");BreedingJournal.open(p,{}, {if(it==BreedingJournal.Point.AFTER_FORCE)throw IOException("injected")}).use{j->assertFailsWith<IOException>{j.append("reserved")};assertTrue(j.locked());assertFailsWith<IOException>{j.append("duplicate")}};val values=mutableListOf<String>();BreedingJournal.open(p,{values.add(it)}).use{};assertEquals(listOf("reserved"),values)}
  @Test fun `only one writer can own a journal`() {val p=Files.createTempDirectory("breeding").resolve("journal");BreedingJournal.open(p,{}).use{assertFailsWith<IOException>{BreedingJournal.open(p,{})}};BreedingJournal.open(p,{}).use{it.append("next")}}
+ @Test fun `admin completion preserves original snapshot and cannot bypass uncertain mutation`() {
+  val j=job();val finished=j.completeNow(hour,"admin-test")
+  assertEquals(hour,finished.readyAt());assertEquals(j.startedAt(),finished.startedAt());assertEquals(j.child(),finished.child());assertEquals(j.purchases(),finished.purchases());assertEquals(hour,finished.phase(BreedingJob.Status.DELIVERING,"",hour).readyAt())
+  assertFailsWith<IllegalStateException>{j.phase(BreedingJob.Status.UNCERTAIN,"PAYMENT",hour).completeNow(hour,"admin-test")}
+  assertFailsWith<IllegalStateException>{j.phase(BreedingJob.Status.DELIVERED,"",hour).completeNow(hour,"admin-test")}
+ }
  private fun job():BreedingJob {val child=BreedingJob.Child(1,UUID.randomUUID(),"cobblemon:bulbasaur","normal","species=bulbasaur",List(6){31},"hardy","overgrow","female","cobblemon:poke_ball",false,false,1f);return BreedingJob(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),child,0,24*hour,2*hour,0,0,BreedingJob.Status.ACTIVE,"",emptyList())}
 }

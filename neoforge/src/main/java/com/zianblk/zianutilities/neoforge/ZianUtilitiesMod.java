@@ -50,6 +50,7 @@ public final class ZianUtilitiesMod {
         modBus.addListener(ProgressionQuestNetwork::register);
         modBus.addListener(ZianHubNetwork::register);
         modBus.addListener(GachaNetwork::register);
+        modBus.addListener(com.zianblk.zianutilities.neoforge.breeding.BreedingNetwork::register);
         NeoForge.EVENT_BUS.addListener(GenerationCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(RewardCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(CaptureTrialCommands::onRegisterCommands);

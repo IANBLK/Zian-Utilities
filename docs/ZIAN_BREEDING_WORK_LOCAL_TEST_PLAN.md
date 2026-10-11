@@ -1,4 +1,4 @@
-# Crianza beta.10 — validación y límites
+# Crianza beta.11 — validación y límites
 
 Fecha: 2026-10-10 (America/Guayaquil). Rama `feat/zian-breeding-core`.
 [PR 70](https://github.com/IANBLK/Zian-Utilities/pull/70), mantenido como draft.
@@ -6,7 +6,7 @@ La rama integra la producción beta.9 antes de añadir la crianza.
 
 ## Ejecutado
 
-- `./gradlew build --no-daemon`: 80 pruebas core y 63 NeoForge, sin fallos.
+- `./gradlew build --no-daemon`: 81 pruebas core y 64 NeoForge, sin fallos.
 - Pruebas de piso de tiempo, cantidades enormes, unidad parcial y no cobrar
   tiempo transcurrido; nonce repetido y reconciliación sin aplicar dos veces.
 - Registro WAL: repetición exacta, corrupción, escritura cortada, fallo después
@@ -23,6 +23,11 @@ La rama integra la producción beta.9 antes de añadir la crianza.
   saldo insuficiente y nonce repetido sin cobrar otra vez. Interrupción simulada
   después del débito y antes del recibo; reinicio del módulo conserva UNCERTAIN,
   impide entregar y permite reconciliar mediante el comando administrativo.
+- Beta.11: snapshot e ida/vuelta del paquete con iconos Pokémon reales, seis
+  estadísticas, sexo e IV; explicaciones de parejas incompatibles. Comando
+  administrativo complete y persistencia del plazo, sin cambiar la fecha original
+  ni permitir completar estados inciertos. Autocompletado completo de UUID y
+  aislamiento de los IDs de otro propietario.
 - Dos arranques y cierres normales del servidor local, conservando el registro.
 
 ## Reproducir
@@ -41,7 +46,7 @@ mínimo; no se consideran pruebas de pérdida de datos existentes.
 
 ## Pendiente antes de habilitar en producción
 
-- Prueba visual de los menús con cliente beta.10, incluidas teclas rápidas,
+- Prueba visual de los menús con cliente beta.11, incluidas teclas rápidas,
   arrastre, expulsión de objetos, escalado y dobles clics.
 - Youer 1.21.1 real con LuckPerms: rango normal/VIP, denies, degradación de rango
   y varios jugadores. Las pruebas locales usan el fallback de permisos NeoForge.

@@ -1,4 +1,4 @@
-# Zian Breeding — implementación candidata beta.10
+# Zian Breeding — implementación candidata beta.11
 
 Minecraft 1.21.1 · NeoForge 21.1.x · Cobblemon 1.8.1 · Java 21.
 La rama conserva todas las funciones de beta.9. La crianza viene desactivada
@@ -7,8 +7,11 @@ La rama conserva todas las funciones de beta.9. La crianza viene desactivada
 ## Uso
 
 `/ZianUtilities crianza` o el botón «Abrir crianza Pokémon» del panel principal.
-El contenedor pertenece al servidor: sus iconos no se pueden extraer, mover con
-shift, intercambiar con la barra rápida ni usar como inventario. Selecciona dos
+La pantalla usa las tarjetas oscuras, acentos dorados y botones de Misiones/Gachas.
+Muestra los seis Pokémon del equipo con sus iconos nativos de Cobblemon, nivel y
+sexo. Estadísticas, IV, naturaleza, habilidad y grupos huevo se consultan al pasar
+el mouse. Las tarjetas explican los impedimentos (grupo, sexo, Ditto, padres
+reservados y generación) sin sortear una cría. Selecciona dos
 padres del equipo y confirma el inicio gratuito. El resultado no se revela antes
 de entregarse. El contador se actualiza cada segundo.
 
@@ -86,6 +89,13 @@ CANCELLED. El estado listo se deriva del tiempo, sin duplicar plazos.
   de compra; la GUI añade una confirmación con coste y reducción visibles.
 - `/ZianUtilities breeding-admin reload`
 - `/ZianUtilities breeding-admin inspect <id>`
+- `/ZianUtilities breeding-admin complete <id>`: exclusiva de administración,
+  adelanta la crianza para pruebas sin modificar su fecha original, genética ni
+  pagos. Registra al operador y persiste un plazo especial; no admite cobros o
+  entregas inciertos. PC lleno, generación bloqueada o padres ausentes siguen
+  reteniendo la entrega. Si el dueño está desconectado, espera su conexión.
+- Todos los argumentos ID tienen autocompletado: propios para acciones de jugador
+  y estados correspondientes para reconciliación administrativa.
 - `/ZianUtilities breeding-admin resolve-debit <id> <charged true/false> <evidencia>`
 - `/ZianUtilities breeding-admin resolve-delivery <id> <delivered true/false> <evidencia>`
 
@@ -99,5 +109,5 @@ Permisos LuckPerms: `zianutilities.breeding.use`, `.slots.vip`, `.slots.1` …
 Un deny explícito se respeta; fallo del proveedor deniega acceso. Se toma la
 mayor capacidad concedida y se limita al máximo configurado.
 
-La candidata requiere el mismo JAR en cliente y servidor: el panel usa el
-protocolo `zian-hub-3`. No se ha instalado ni activado en Rassvet.
+La candidata requiere el mismo JAR en cliente y servidor: el panel usa `zian-hub-3` y la crianza `breeding-ui-1`. La beta.10 ya está
+instalada y habilitada en Rassvet; la beta.11 requiere actualizar ambos lados.

@@ -44,6 +44,36 @@ class BreedingPersistenceTest {
   }
 
   @Test
+  void adminDeadlinePersistsAndLegacySnapshotsStillLoad() throws Exception {
+    var original = job();
+    var ready = original.completeNow(10000, "admin-test");
+    var path = directory.resolve("admin.wal");
+    try (var store = new BreedingStore(path)) {
+      store.put(ready);
+    }
+    try (var store = new BreedingStore(path)) {
+      assertEquals(10000, store.jobs.get(original.id()).readyAt());
+      assertEquals(original.startedAt(), store.jobs.get(original.id()).startedAt());
+    }
+    var event = new com.google.gson.JsonObject();
+    event.addProperty("schema", 1);
+    event.addProperty("sequence", 1);
+    event.addProperty("observedAt", 10000);
+    var payload = new com.google.gson.Gson().toJsonTree(original).getAsJsonObject();
+    payload.remove("readyOverrideAt");
+    event.add("job", payload);
+    var legacy = directory.resolve("legacy.wal");
+    try (var journal =
+        com.zianblk.zianutilities.core.breeding.BreedingJournal.open(legacy, t -> {})) {
+      journal.append(event.toString());
+    }
+    try (var store = new BreedingStore(legacy)) {
+      assertEquals(original.readyAt(), store.jobs.get(original.id()).readyAt());
+      assertEquals(0, store.jobs.get(original.id()).readyOverrideAt());
+    }
+  }
+
+  @Test
   void pendingDebitReplaysWithExactNonceAndNoAssumedReduction() throws Exception {
     var original = job();
     var debit =

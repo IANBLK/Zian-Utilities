@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-beta.11 — interfaz de crianza
+
+- Sustituye el inventario básico por una pantalla con el estilo de Misiones/Gachas: tarjetas oscuras, bordes dorados y botones uniformes.
+- Muestra los iconos reales de los Pokémon, nivel, sexo, estadísticas, IV, naturaleza, habilidad y grupos huevo; explica incompatibilidades dentro del panel sin revelar la cría.
+- Añade sesiones y confirmaciones controladas por el servidor, lista de crianzas, temporizador y compra de aceleraciones con saldo visible.
+- Añade `/ZianUtilities breeding-admin complete <id>` para pruebas instantáneas, exclusivo de administración, persistente y sin saltarse controles del PC, padres ni cobros inciertos.
+- Añade autocompletado a todos los IDs de crianza, limitado por propietario, permisos y tipo de operación.
+- Conserva los registros beta.10; los plazos administrativos se guardan aparte de la fecha original. Requiere beta.11 en cliente y servidor.
+
 ## 0.1.0-beta.10 — candidata de crianza
 
 - Añade crianza desde el equipo, gratuita, con base de 24 h y mínimo de 2 h configurable desde ese piso.

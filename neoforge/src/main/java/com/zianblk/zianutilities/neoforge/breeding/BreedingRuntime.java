@@ -181,6 +181,8 @@ public final class BreedingRuntime {
   }
 
   static BreedingRules.Quote quote(BreedingJob j, String currency, long units) {
+    if (j.readyAt() <= store.now())
+      throw new IllegalStateException("La crianza ya terminó; no necesita aceleración");
     if (!currencies().contains(currency))
       throw new IllegalArgumentException("Moneda desconocida o deshabilitada");
     return BreedingRules.quote(
@@ -236,6 +238,17 @@ public final class BreedingRuntime {
           outcome == BreedingJob.Payment.UNCERTAIN
               ? "Cobro incierto: necesita revisión; no se repetirá"
               : "Saldo insuficiente o moneda rechazada");
+  }
+
+  static void completeNow(UUID id, String operator) throws Exception {
+    if (!enabled()) throw new IllegalStateException("Crianza no disponible");
+    var job = store.jobs.get(id);
+    if (job == null) throw new IllegalArgumentException("Crianza inexistente");
+    var ready = job.completeNow(store.now(), operator);
+    store.put(ready);
+    LOG.info("Admin breeding completion operator={} owner={} job={}", operator, job.owner(), id);
+    var player = server.getPlayerList().getPlayer(job.owner());
+    if (player != null) deliver(player, ready);
   }
 
   static void cancel(ServerPlayer p, UUID id) throws Exception {

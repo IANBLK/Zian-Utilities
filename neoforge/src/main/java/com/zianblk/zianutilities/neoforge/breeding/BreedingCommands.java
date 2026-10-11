@@ -99,6 +99,7 @@ public final class BreedingCommands {
           Commands.literal(action)
               .then(
                   Commands.argument("id", StringArgumentType.word())
+                      .suggests(BreedingCommands::suggestIds)
                       .suggests(
                           (c, b) ->
                               SharedSuggestionProvider.suggest(
@@ -123,6 +124,7 @@ public final class BreedingCommands {
         Commands.literal("accelerate")
             .then(
                 Commands.argument("id", StringArgumentType.word())
+                    .suggests(BreedingCommands::suggestIds)
                     .then(
                         Commands.argument("currency", StringArgumentType.word())
                             .suggests(
@@ -150,6 +152,37 @@ public final class BreedingCommands {
                         ? s.hasPermission(2)
                         : BreedingPermissions.allows(s.getPlayer(), "admin", true));
     admin.then(
+        Commands.literal("complete")
+            .then(
+                Commands.argument("id", StringArgumentType.word())
+                    .suggests(
+                        (c, b) ->
+                            SharedSuggestionProvider.suggest(
+                                BreedingRuntime.store == null
+                                    ? java.util.stream.Stream.<String>empty()
+                                    : BreedingRuntime.store.jobs.values().stream()
+                                        .filter(
+                                            j ->
+                                                j.status() == BreedingJob.Status.ACTIVE
+                                                    || j.status() == BreedingJob.Status.BLOCKED)
+                                        .map(j -> j.id().toString()),
+                                b))
+                    .executes(
+                        c ->
+                            run(
+                                c.getSource(),
+                                () -> {
+                                  BreedingRuntime.completeNow(id(c), c.getSource().getTextName());
+                                  c.getSource()
+                                      .sendSuccess(
+                                          () ->
+                                              Component.literal(
+                                                  "Crianza adelantada para prueba. La entrega"
+                                                      + " conserva las comprobaciones del PC y las"
+                                                      + " generaciones."),
+                                          true);
+                                }))));
+    admin.then(
         Commands.literal("reload")
             .executes(
                 c ->
@@ -166,6 +199,7 @@ public final class BreedingCommands {
         Commands.literal("inspect")
             .then(
                 Commands.argument("id", StringArgumentType.word())
+                    .suggests(BreedingCommands::suggestIds)
                     .executes(
                         c ->
                             run(
@@ -192,6 +226,7 @@ public final class BreedingCommands {
         Commands.literal("resolve-debit")
             .then(
                 Commands.argument("id", StringArgumentType.word())
+                    .suggests(BreedingCommands::suggestIds)
                     .then(
                         Commands.argument("charged", BoolArgumentType.bool())
                             .then(
@@ -236,6 +271,7 @@ public final class BreedingCommands {
         Commands.literal("resolve-delivery")
             .then(
                 Commands.argument("id", StringArgumentType.word())
+                    .suggests(BreedingCommands::suggestIds)
                     .then(
                         Commands.argument("delivered", BoolArgumentType.bool())
                             .then(
@@ -293,6 +329,41 @@ public final class BreedingCommands {
                 .requires(s -> true)
                 .then(root)
                 .then(admin));
+  }
+
+  private static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions>
+      suggestIds(
+          com.mojang.brigadier.context.CommandContext<CommandSourceStack> c,
+          com.mojang.brigadier.suggestion.SuggestionsBuilder b) {
+    if (BreedingRuntime.store == null) return b.buildFuture();
+    var player = c.getSource().getPlayer();
+    boolean admin =
+        player == null
+            ? c.getSource().hasPermission(2)
+            : BreedingPermissions.allows(player, "admin", true);
+    String input = c.getInput();
+    return SharedSuggestionProvider.suggest(
+        BreedingRuntime.store.jobs.values().stream()
+            .filter(
+                j ->
+                    (admin && input.contains(" breeding-admin "))
+                        || (player != null && j.owner().equals(player.getUUID())))
+            .filter(
+                j ->
+                    input.contains(" resolve-debit ")
+                        ? j.status() == BreedingJob.Status.UNCERTAIN
+                            && j.reason().startsWith("PAYMENT")
+                        : input.contains(" resolve-delivery ")
+                            ? j.status() == BreedingJob.Status.UNCERTAIN
+                                && j.reason().startsWith("DELIVERY")
+                            : input.contains(" inspect ")
+                                || ((j.status() == BreedingJob.Status.ACTIVE
+                                        || j.status() == BreedingJob.Status.BLOCKED)
+                                    && (!input.contains(" accelerate ")
+                                        || (j.status() == BreedingJob.Status.ACTIVE
+                                            && j.readyAt() > BreedingRuntime.store.now()))))
+            .map(j -> j.id().toString()),
+        b);
   }
 
   private static void evidence(com.mojang.brigadier.context.CommandContext<CommandSourceStack> c) {
