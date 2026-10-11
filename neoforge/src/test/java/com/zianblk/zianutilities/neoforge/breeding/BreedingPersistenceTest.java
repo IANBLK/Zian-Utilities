@@ -11,6 +11,15 @@ import org.junit.jupiter.api.io.TempDir;
 class BreedingPersistenceTest {
   @TempDir Path directory;
 
+  @Test
+  void breedingGenerationPolicyDefaultsIndependentAndCanBeRestricted() throws Exception {
+    var path = directory.resolve("breeding.json");
+    Files.writeString(path, "{\"enabled\":true}");
+    assertFalse(BreedingConfig.load(path).respectGenerationRestrictions);
+    Files.writeString(path, "{\"enabled\":true,\"respectGenerationRestrictions\":true}");
+    assertTrue(BreedingConfig.load(path).respectGenerationRestrictions);
+  }
+
   private BreedingJob job() {
     var child =
         new BreedingJob.Child(

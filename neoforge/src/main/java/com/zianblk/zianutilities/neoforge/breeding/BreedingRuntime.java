@@ -117,6 +117,7 @@ public final class BreedingRuntime {
   }
 
   static boolean allowed(Species species) {
+    if (!config.respectGenerationRestrictions) return true;
     return !(GenerationEnforcement.decide(
             RESOLVER.resolve(species), new NeoForgeGenerationStateStore(server).load())
         instanceof SpawnDecision.Deny);

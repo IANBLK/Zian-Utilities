@@ -1,4 +1,14 @@
-# Zian Breeding — implementación candidata beta.12
+# Zian Breeding — implementación candidata beta.13
+
+## Crianza independiente del spawn (beta.13)
+
+`respectGenerationRestrictions` vale `false` por defecto: los Pokémon que ya posee
+un jugador pueden criar aunque la generación de su cría no esté habilitada para
+el spawn salvaje. La selección y la entrega al PC usan la misma regla. Puede
+activarse con `true` y `/ZianUtilities breeding-admin reload` si el administrador
+desea limitar también la crianza. Se conservan las restricciones de grupos huevo,
+sexo, propiedad y padres ocupados. Los Pokémon del grupo No descubierto siguen
+excluidos. No cambia el estado de generaciones del spawn ni el formato guardado.
 
 Minecraft 1.21.1 · NeoForge 21.1.x · Cobblemon 1.8.1 · Java 21.
 La rama conserva todas las funciones de beta.9. La crianza viene desactivada
@@ -50,8 +60,10 @@ operación de forma explícita.
 
 El hijo se sortea al inicio, antes de cualquier entrega, y se guarda con UUID,
 propiedades y atributos concretos. No vuelve a sortearse. Se filtran las posibles
-crías según Generation Control y se revisa otra vez la generación al entregar.
-Si se deshabilita su generación, queda bloqueado sin perder el hijo.
+crías según Generation Control solamente si `respectGenerationRestrictions=true`;
+en ese caso se revisa otra vez al entregar. Si se deshabilita su generación,
+queda bloqueado sin perder el hijo. Con la opción desactivada, solo el spawn
+salvaje depende de Generation Control.
 
 ## Persistencia y recuperación
 
@@ -92,7 +104,7 @@ CANCELLED. El estado listo se deriva del tiempo, sin duplicar plazos.
 - `/ZianUtilities breeding-admin complete <id>`: exclusiva de administración,
   adelanta la crianza para pruebas sin modificar su fecha original, genética ni
   pagos. Registra al operador y persiste un plazo especial; no admite cobros o
-  entregas inciertos. PC lleno, generación bloqueada o padres ausentes siguen
+  entregas inciertos. PC lleno, generación bloqueada (si se activó esa política) o padres ausentes siguen
   reteniendo la entrega. Si el dueño está desconectado, espera su conexión.
 - Todos los argumentos ID tienen autocompletado: propios para acciones de jugador
   y estados correspondientes para reconciliación administrativa.

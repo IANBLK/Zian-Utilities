@@ -48,6 +48,21 @@ final class BreedingSmoke {
       require(BreedingRuntime.enabled(), "Smoke requires enabled fixture config");
       var generations = new NeoForgeGenerationStateStore(BreedingRuntime.server);
       if (player == null) {
+        generations.save(GenerationState.Companion.none());
+        BreedingRuntime.config.respectGenerationRestrictions = false;
+        require(
+            BreedingCompatibility.pair(pokemon("ditto"), pokemon("lucario")).isEmpty(),
+            "Wild-spawn restriction leaked into Lucario/Ditto breeding");
+        require(
+            BreedingCompatibility.pair(pokemon("ditto"), pokemon("chikorita")).isEmpty(),
+            "Wild-spawn restriction leaked into Chikorita/Ditto breeding");
+        require(
+            !BreedingCompatibility.pair(pokemon("ditto"), pokemon("lugia")).isEmpty(),
+            "Legendary breeding restriction bypassed");
+        BreedingRuntime.config.respectGenerationRestrictions = true;
+        require(
+            !BreedingCompatibility.pair(pokemon("ditto"), pokemon("lucario")).isEmpty(),
+            "Explicit breeding generation restriction ignored");
         generations.save(GenerationState.Companion.all());
         var profile = new GameProfile(UUID.randomUUID(), "ZianBreedSmoke");
         player =
@@ -66,7 +81,13 @@ final class BreedingSmoke {
                     + " special_attack_iv=31 special_defence_iv=31 speed_iv=31");
         var father = pokemon("bulbasaur gender=male nature=timid");
         mother.swapHeldItem(new ItemStack(CobblemonItems.EVERSTONE), false, false);
-        father.swapHeldItem(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("cobblemon","destiny_knot"))), false, false);
+        father.swapHeldItem(
+            new ItemStack(
+                net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                        "cobblemon", "destiny_knot"))),
+            false,
+            false);
         var party = Cobblemon.INSTANCE.getStorage().getParty(player);
         require(party.add(mother) && party.add(father), "Parents were not inserted");
         for (int seed = 0; seed < 25; seed++) {
@@ -93,7 +114,10 @@ final class BreedingSmoke {
         }
         require(
             mother.heldItem().getItem() == CobblemonItems.EVERSTONE
-                && father.heldItem().getItem() == net.minecraft.core.registries.BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("cobblemon","destiny_knot")),
+                && father.heldItem().getItem()
+                    == net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                        net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                            "cobblemon", "destiny_knot")),
             "Held items consumed");
         require(
             FrozenOffspring.generate(
@@ -135,7 +159,13 @@ final class BreedingSmoke {
           }
         }
         var pikachu = pokemon("pikachu gender=female");
-        pikachu.swapHeldItem(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("cobblemon","light_ball"))), false, false);
+        pikachu.swapHeldItem(
+            new ItemStack(
+                net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                        "cobblemon", "light_ball"))),
+            false,
+            false);
         var pichu = FrozenOffspring.generate(List.of(pikachu, pokemon("ditto")), 8, f -> true, 0);
         require(
             pichu.species().equals("cobblemon:pichu")
@@ -310,6 +340,7 @@ final class BreedingSmoke {
           buffer.release();
         }
         generations.save(GenerationState.Companion.none());
+        BreedingRuntime.config.respectGenerationRestrictions = true;
         BreedingRuntime.claim(player, jobId);
         require(
             BreedingRuntime.store.jobs.get(jobId).status() == BreedingJob.Status.BLOCKED,

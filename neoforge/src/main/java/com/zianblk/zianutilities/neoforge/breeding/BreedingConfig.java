@@ -7,6 +7,10 @@ import java.util.*;
 /** Loaded only by the server; omitted currencies are disabled, never silently free. */
 public final class BreedingConfig {
   public boolean enabled = false;
+
+  /** Optional server policy; wild-spawn generation limits do not restrict breeding by default. */
+  public boolean respectGenerationRestrictions = false;
+
   public long baseMinutes = 1440, minimumMinutes = 120;
   public int defaultSlots = 1, vipSlots = 2, maxSlots = 8;
   public double alphaChance = 0.05;
