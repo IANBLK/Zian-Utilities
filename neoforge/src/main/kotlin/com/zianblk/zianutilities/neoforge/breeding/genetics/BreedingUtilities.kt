@@ -23,6 +23,8 @@ import kotlin.random.nextUInt
 
 /** Adapted from Cobbreeding 2.4.0: MIT, Copyright 2023 Ludichat and Fuzuki. */
 object BreedingUtilities {
+    // Stable registry identity: Cobblemon 1.8.2 changed concrete field types for decorative items.
+    private fun heldItemType(id: String): Item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("cobblemon", id))
     private val randomScope = ThreadLocal<Random>()
     private val rng: Random get() = randomScope.get() ?: Random.Default
     @JvmStatic fun generate(parents: List<Pokemon>, random: Random, allowed: java.util.function.Predicate<FormData>): PokemonProperties? {
@@ -299,7 +301,7 @@ object BreedingUtilities {
         ivs.remove(iv)
 
         var ivCount =
-            if (father.heldItem().item == CobblemonItems.DESTINY_KNOT || mother.heldItem().item == CobblemonItems.DESTINY_KNOT) 4
+            if (father.heldItem().item == heldItemType("destiny_knot") || mother.heldItem().item == heldItemType("destiny_knot")) 4
             else 2
         while (ivCount != 0) {
             iv = ivs.random(rng)
@@ -352,7 +354,7 @@ object BreedingUtilities {
         }
 
         @Suppress("SpellCheckingInspection")
-        if (child.species.name == "Pichu" && parents.toList().any { p -> p.heldItem().item == CobblemonItems.LIGHT_BALL })
+        if (child.species.name == "Pichu" && parents.toList().any { p -> p.heldItem().item == heldItemType("light_ball") })
             eggMoves.add("volttackle")
 
         return eggMoves

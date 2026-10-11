@@ -62,6 +62,8 @@ def run(pass_number):
     gradle = str(ROOT / "gradlew.bat") if os.name == "nt" else "gradle"
     with log.open("w", encoding="utf-8") as output:
         command = [gradle, "--no-daemon", ":neoforge:runBreedingSmoke"]
+        if os.environ.get("ZIANUTILITIES_SMOKE_GRADLE_INIT"):
+            command += ["--init-script", os.environ["ZIANUTILITIES_SMOKE_GRADLE_INIT"]]
         # A fresh CI checkout needs MDG's generated asset properties. Existing local
         # environments can skip the download after that required file exists.
         if (ROOT / "build/moddev/minecraft_assets.properties").exists():

@@ -66,7 +66,7 @@ final class BreedingSmoke {
                     + " special_attack_iv=31 special_defence_iv=31 speed_iv=31");
         var father = pokemon("bulbasaur gender=male nature=timid");
         mother.swapHeldItem(new ItemStack(CobblemonItems.EVERSTONE), false, false);
-        father.swapHeldItem(new ItemStack(CobblemonItems.DESTINY_KNOT), false, false);
+        father.swapHeldItem(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("cobblemon","destiny_knot"))), false, false);
         var party = Cobblemon.INSTANCE.getStorage().getParty(player);
         require(party.add(mother) && party.add(father), "Parents were not inserted");
         for (int seed = 0; seed < 25; seed++) {
@@ -93,7 +93,7 @@ final class BreedingSmoke {
         }
         require(
             mother.heldItem().getItem() == CobblemonItems.EVERSTONE
-                && father.heldItem().getItem() == CobblemonItems.DESTINY_KNOT,
+                && father.heldItem().getItem() == net.minecraft.core.registries.BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("cobblemon","destiny_knot")),
             "Held items consumed");
         require(
             FrozenOffspring.generate(
@@ -135,7 +135,7 @@ final class BreedingSmoke {
           }
         }
         var pikachu = pokemon("pikachu gender=female");
-        pikachu.swapHeldItem(new ItemStack(CobblemonItems.LIGHT_BALL), false, false);
+        pikachu.swapHeldItem(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("cobblemon","light_ball"))), false, false);
         var pichu = FrozenOffspring.generate(List.of(pikachu, pokemon("ditto")), 8, f -> true, 0);
         require(
             pichu.species().equals("cobblemon:pichu")

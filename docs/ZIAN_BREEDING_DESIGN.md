@@ -1,4 +1,4 @@
-# Zian Breeding — implementación candidata beta.11
+# Zian Breeding — implementación candidata beta.12
 
 Minecraft 1.21.1 · NeoForge 21.1.x · Cobblemon 1.8.1 · Java 21.
 La rama conserva todas las funciones de beta.9. La crianza viene desactivada
@@ -110,4 +110,5 @@ Un deny explícito se respeta; fallo del proveedor deniega acceso. Se toma la
 mayor capacidad concedida y se limita al máximo configurado.
 
 La candidata requiere el mismo JAR en cliente y servidor: el panel usa `zian-hub-3` y la crianza `breeding-ui-1`. La beta.10 ya está
-instalada y habilitada en Rassvet; la beta.11 requiere actualizar ambos lados.
+instalada y habilitada en Rassvet; la beta.12 requiere actualizar ambos lados y conserva la pantalla beta.11.
+Los dos objetos de crianza afectados por 1.8.2 se resuelven por su ID de registro.

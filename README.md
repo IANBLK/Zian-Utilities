@@ -19,9 +19,9 @@ Zian Utilities es un mod para **Minecraft 1.21.1**, **NeoForge 21.1.x** y **Cobb
 
 No hacen falta parámetros especiales en el startup. La interfaz principal se abre con `/ZianUtilities`. Los administradores pueden consultar las generaciones activas con `/ZianUtilities generation active` y habilitar otra con `/ZianUtilities generation enable gen1` (sustituye `gen1` según corresponda). Para revisar una tirada bloqueada usa `/ZianUtilities gacha review <jugador>`; si verificaste que el premio ya fue entregado, cierra esa operación con `/ZianUtilities gacha confirm-delivered <jugador> <operationId>`.
 
-## Crianza — candidata beta.11
+## Crianza — candidata beta.12
 
-La beta.11 muestra la crianza con el estilo de Misiones/Gachas, iconos Pokémon, sexo, estadísticas e incompatibilidades. Añade `/ZianUtilities breeding-admin complete <id>` para pruebas instantáneas y autocompletado de IDs. Esta rama añade crianza gratuita de 24 h, aceleraciones opcionales mediante AVECOINS y entrega persistente al PC, sin huevos ni incubadoras. Acceso: `/ZianUtilities crianza` y el panel principal. Está desactivada inicialmente hasta probar la candidata en Youer. Consulta [uso y recuperación](docs/ZIAN_BREEDING_DESIGN.md) y [configuración](docs/ZIAN_BREEDING_CURRENCY_CONFIG.md). Conserva todas las funciones de beta.9 y requiere actualizar el JAR en ambos lados.
+La beta.12 conserva la pantalla beta.11 y corrige la compatibilidad de Lazo Destino y Bola Luminosa con Cobblemon 1.8.2. La interfaz muestra la crianza con el estilo de Misiones/Gachas, iconos Pokémon, sexo, estadísticas e incompatibilidades. Añade `/ZianUtilities breeding-admin complete <id>` para pruebas instantáneas y autocompletado de IDs. Esta rama añade crianza gratuita de 24 h, aceleraciones opcionales mediante AVECOINS y entrega persistente al PC, sin huevos ni incubadoras. Acceso: `/ZianUtilities crianza` y el panel principal. Está desactivada inicialmente hasta probar la candidata en Youer. Consulta [uso y recuperación](docs/ZIAN_BREEDING_DESIGN.md) y [configuración](docs/ZIAN_BREEDING_CURRENCY_CONFIG.md). Conserva todas las funciones de beta.9 y requiere actualizar el JAR en ambos lados.
 
 ## Estado de la beta
 

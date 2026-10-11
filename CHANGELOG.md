@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-beta.12 — compatibilidad de crianza
+
+- Resuelve Lazo Destino y Bola Luminosa por su ID de registro; sus tipos concretos cambiaron en Cobblemon 1.8.2 y rompían los JAR anteriores.
+- Conserva la interfaz beta.11, la finalización administrativa y todos los datos existentes.
+- Prueba la crianza funcionalmente tanto con Cobblemon 1.8.1 como con 1.8.2.
+- La actualización del servidor completo a 1.8.2 sigue limitada por la referencia incompatible de RCT API a Bola Férrea.
+
 ## 0.1.0-beta.11 — interfaz de crianza
 
 - Sustituye el inventario básico por una pantalla con el estilo de Misiones/Gachas: tarjetas oscuras, bordes dorados y botones uniformes.
