@@ -24,13 +24,25 @@ import net.neoforged.neoforge.network.registration.NetworkRegistry;
 public final class BreedingNetwork {
   private static final Map<UUID, Session> sessions = new HashMap<>();
 
-  private static final class Session {
+  static final class Session {
     final UUID token = UUID.randomUUID();
     UUID first, second, job;
     String currency;
     Pending pending;
     long seen, lastPoll;
     String message = "";
+
+    void select(UUID selected, int slot) {
+      if (slot == 1) {
+        if (selected.equals(second)) second = first;
+        first = selected;
+      } else if (slot == 2) {
+        if (selected.equals(first)) first = second;
+        second = selected;
+      } else throw new IllegalArgumentException("Invalid parent slot");
+      pending = null;
+      job = null;
+    }
   }
 
   private record Pending(
@@ -47,7 +59,16 @@ public final class BreedingNetwork {
       String groups,
       List<Integer> stats,
       List<Integer> ivs,
+      ItemStack held,
       String reason) {}
+
+  public record Offspring(
+      ItemStack icon,
+      String name,
+      String form,
+      List<Integer> stats,
+      List<Integer> ivs,
+      String detail) {}
 
   public record Job(String id, String status, long readyAt, String reason) {}
 
@@ -72,7 +93,8 @@ public final class BreedingNetwork {
       String pending,
       String confirmation,
       String message,
-      long serverNow)
+      long serverNow,
+      List<Offspring> offspring)
       implements CustomPacketPayload {
     public static final Type<State> TYPE =
         new Type<>(
@@ -94,6 +116,7 @@ public final class BreedingNetwork {
                 text(b, p.groups, 256);
                 for (int n : p.stats) b.writeVarInt(n);
                 for (int n : p.ivs) b.writeVarInt(n);
+                ItemStack.OPTIONAL_STREAM_CODEC.encode(b, p.held);
                 text(b, p.reason, 512);
               }
               b.writeVarInt(s.jobs.size());
@@ -120,6 +143,15 @@ public final class BreedingNetwork {
               text(b, s.confirmation, 512);
               text(b, s.message, 512);
               b.writeLong(s.serverNow);
+              b.writeVarInt(s.offspring.size());
+              for (var child : s.offspring) {
+                ItemStack.OPTIONAL_STREAM_CODEC.encode(b, child.icon);
+                text(b, child.name, 128);
+                text(b, child.form, 128);
+                for (int n : child.stats) b.writeVarInt(n);
+                for (int n : child.ivs) b.writeVarInt(n);
+                text(b, child.detail, 512);
+              }
             },
             b -> {
               boolean open = b.readBoolean();
@@ -151,6 +183,7 @@ public final class BreedingNetwork {
                         groups,
                         stats,
                         ivs,
+                        ItemStack.OPTIONAL_STREAM_CODEC.decode(b),
                         b.readUtf(512)));
               }
               var jobs = new ArrayList<Job>();
@@ -180,12 +213,29 @@ public final class BreedingNetwork {
                   b.readUtf(24),
                   b.readUtf(512),
                   b.readUtf(512),
-                  b.readLong());
+                  b.readLong(),
+                  readOffspring(b));
             });
 
     public Type<? extends CustomPacketPayload> type() {
       return TYPE;
     }
+  }
+
+  private static List<Offspring> readOffspring(RegistryFriendlyByteBuf b) {
+    int count = bounded(b.readVarInt(), 8);
+    var result = new ArrayList<Offspring>();
+    for (int i = 0; i < count; i++) {
+      var icon = ItemStack.OPTIONAL_STREAM_CODEC.decode(b);
+      String name = b.readUtf(128), form = b.readUtf(128);
+      var stats = new ArrayList<Integer>();
+      var ivs = new ArrayList<Integer>();
+      for (int n = 0; n < 6; n++) stats.add(b.readVarInt());
+      for (int n = 0; n < 6; n++) ivs.add(b.readVarInt());
+      result.add(
+          new Offspring(icon, name, form, List.copyOf(stats), List.copyOf(ivs), b.readUtf(512)));
+    }
+    return List.copyOf(result);
   }
 
   public record Action(String session, byte kind, String target, boolean maximum)
@@ -228,7 +278,7 @@ public final class BreedingNetwork {
   public static void register(RegisterPayloadHandlersEvent event) {
     var r =
         event
-            .registrar("breeding-ui-1")
+            .registrar("breeding-ui-2")
             .executesOn(net.neoforged.neoforge.network.registration.HandlerThread.MAIN);
     r.playToClient(
         State.TYPE,
@@ -242,7 +292,7 @@ public final class BreedingNetwork {
     try {
       BreedingRuntime.check(p);
       if (!NetworkRegistry.hasChannel(p.connection, State.TYPE.id()))
-        throw new IllegalStateException("Instala Zian Utilities beta.11 también en el cliente");
+        throw new IllegalStateException("Instala Zian Utilities beta.14 también en el cliente");
       sessions
           .entrySet()
           .removeIf(e -> BreedingRuntime.server.getPlayerList().getPlayer(e.getKey()) == null);
@@ -274,6 +324,12 @@ public final class BreedingNetwork {
       s.message = "";
       var party = Cobblemon.INSTANCE.getStorage().getParty(p);
       switch (a.kind) {
+        case 12, 13 -> {
+          UUID selected = UUID.fromString(a.target);
+          if (party.get(selected) == null)
+            throw new IllegalArgumentException("Este Pokémon ya no está en tu equipo");
+          s.select(selected, a.kind == 12 ? 1 : 2);
+        }
         case 1 -> {
           UUID selected = UUID.fromString(a.target);
           var pokemon = party.get(selected);
@@ -436,6 +492,7 @@ public final class BreedingNetwork {
               order.stream()
                   .map(stat -> pokemon.getIvs().get(stat) == null ? 0 : pokemon.getIvs().get(stat))
                   .toList(),
+              pokemon.heldItem().copy(),
               why));
     }
     var jobs =
@@ -498,7 +555,8 @@ public final class BreedingNetwork {
         s.pending == null ? "" : s.pending.kind,
         confirmation,
         s.message,
-        BreedingRuntime.store.now());
+        BreedingRuntime.store.now(),
+        why.isEmpty() ? BreedingPreview.of(party.get(s.first), party.get(s.second)) : List.of());
   }
 
   private static String duration(long millis) {

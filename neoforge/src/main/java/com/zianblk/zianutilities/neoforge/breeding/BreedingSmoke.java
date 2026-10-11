@@ -50,6 +50,33 @@ final class BreedingSmoke {
       if (player == null) {
         generations.save(GenerationState.Companion.none());
         BreedingRuntime.config.respectGenerationRestrictions = false;
+        var previewDitto =
+            pokemon(
+                "ditto hp_iv=31 attack_iv=31 defence_iv=31 special_attack_iv=31"
+                    + " special_defence_iv=31 speed_iv=31");
+        previewDitto.swapHeldItem(
+            new ItemStack(
+                net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                        "cobblemon", "destiny_knot"))),
+            false,
+            false);
+        var previewLucario = pokemon("lucario");
+        int jobsBeforePreview = BreedingRuntime.store.jobs.size();
+        var childPreview = BreedingPreview.of(previewDitto, previewLucario);
+        var repeatedPreview = BreedingPreview.of(previewDitto, previewLucario);
+        require(
+            childPreview.size() == 1
+                && childPreview.getFirst().name().equals("Riolu")
+                && childPreview.getFirst().ivs().equals(repeatedPreview.getFirst().ivs())
+                && childPreview.getFirst().stats().equals(repeatedPreview.getFirst().stats())
+                && !childPreview.getFirst().icon().isEmpty()
+                && BreedingRuntime.store.jobs.size() == jobsBeforePreview
+                && !previewDitto.heldItem().isEmpty(),
+            "Preview rolled offspring, consumed held item or changed jobs");
+        require(
+            BreedingPreview.of(previewDitto, pokemon("lugia")).isEmpty(),
+            "Incompatible pair leaked preview");
         require(
             BreedingCompatibility.pair(pokemon("ditto"), pokemon("lucario")).isEmpty(),
             "Wild-spawn restriction leaked into Lucario/Ditto breeding");
@@ -90,6 +117,20 @@ final class BreedingSmoke {
             false);
         var party = Cobblemon.INSTANCE.getStorage().getParty(player);
         require(party.add(mother) && party.add(father), "Parents were not inserted");
+        var uiSession = new BreedingNetwork.Session();
+        uiSession.select(mother.getUuid(), 2);
+        require(
+            uiSession.first == null && uiSession.second.equals(mother.getUuid()),
+            "Selecting mother filled wrong slot");
+        uiSession.select(father.getUuid(), 1);
+        uiSession.select(mother.getUuid(), 1);
+        require(
+            uiSession.first.equals(mother.getUuid()) && uiSession.second.equals(father.getUuid()),
+            "Slot swap duplicated parent");
+        var selectedUiPreview = BreedingNetwork.view(player, uiSession, false);
+        require(
+            selectedUiPreview.compatible() && selectedUiPreview.offspring().size() == 1,
+            "Selected parents did not produce UI preview");
         for (int seed = 0; seed < 25; seed++) {
           var frozen = FrozenOffspring.generate(List.of(mother, father), seed, form -> true, 0);
           var stats =
@@ -329,12 +370,26 @@ final class BreedingSmoke {
             new net.minecraft.network.RegistryFriendlyByteBuf(
                 io.netty.buffer.Unpooled.buffer(), player.registryAccess());
         try {
-          BreedingNetwork.State.CODEC.encode(buffer, preview);
+          BreedingNetwork.State.CODEC.encode(buffer, selectedUiPreview);
           var decoded = BreedingNetwork.State.CODEC.decode(buffer);
           require(
               decoded.parents().size() == 2
                   && decoded.parents().getFirst().stats().size() == 6
-                  && !decoded.parents().getFirst().icon().isEmpty(),
+                  && !decoded.parents().getFirst().icon().isEmpty()
+                  && !decoded.parents().getFirst().held().isEmpty()
+                  && decoded.first().equals(mother.getUuid().toString())
+                  && decoded.second().equals(father.getUuid().toString())
+                  && decoded.offspring().size() == 1
+                  && decoded
+                      .offspring()
+                      .getFirst()
+                      .ivs()
+                      .equals(selectedUiPreview.offspring().getFirst().ivs())
+                  && decoded
+                      .offspring()
+                      .getFirst()
+                      .stats()
+                      .equals(selectedUiPreview.offspring().getFirst().stats()),
               "Pokemon UI snapshot/codec failed");
         } finally {
           buffer.release();

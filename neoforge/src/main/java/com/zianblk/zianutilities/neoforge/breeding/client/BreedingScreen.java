@@ -19,7 +19,8 @@ public final class BreedingScreen extends Screen {
       RED = 0xFFF19191;
   private BreedingNetwork.State state;
   private boolean jobs;
-  private int jobIndex, currencyIndex, ticks;
+  private int jobIndex, currencyIndex, ticks, picker, childIndex;
+  private boolean childHovered;
   private long received = System.nanoTime();
   private String hovered = "";
 
@@ -96,6 +97,7 @@ public final class BreedingScreen extends Screen {
         "Elegir padres",
         () -> {
           jobs = false;
+          picker = 0;
           rebuildWidgets();
         },
         true);
@@ -106,23 +108,49 @@ public final class BreedingScreen extends Screen {
         "Mis crianzas (" + state.used() + "/" + state.capacity() + ")",
         () -> {
           jobs = true;
+          picker = 0;
           rebuildWidgets();
         },
         true);
     if (!jobs) {
-      int gap = 6, cw = (w - 2 * gap) / 3, ch = cardHeight();
-      for (int i = 0; i < state.parents().size(); i++) {
-        var p = state.parents().get(i);
-        final String id = p.id();
-        addRenderableWidget(
-            new PokemonButton(
-                x + (i % 3) * (cw + gap),
-                65 + (i / 3) * (ch + gap),
-                cw,
-                ch,
-                p,
-                () -> act(1, id, false)));
+      int gap = 6, ch = cardHeight();
+      if (picker != 0) {
+        int cw = (w - 2 * gap) / 3;
+        for (int i = 0; i < state.parents().size(); i++) {
+          var p = state.parents().get(i);
+          final String id = p.id();
+          final int slot = picker;
+          addRenderableWidget(
+              new PokemonButton(
+                  x + (i % 3) * (cw + gap),
+                  79 + (i / 3) * (ch + gap),
+                  cw,
+                  ch,
+                  p,
+                  () -> {
+                    picker = 0;
+                    act(slot == 1 ? 12 : 13, id, false);
+                    rebuildWidgets();
+                  }));
+        }
+        button(
+            x,
+            height - 29,
+            w,
+            "Volver a la pareja",
+            () -> {
+              picker = 0;
+              rebuildWidgets();
+            },
+            true);
+        return;
       }
+      int cw = Math.min(185, (w - 16) / 2);
+      addRenderableWidget(new ParentSlot(width / 2 - cw - 8, 65, cw, ch, 1));
+      addRenderableWidget(new ParentSlot(width / 2 + 8, 65, cw, ch, 2));
+      int childWidth = Math.min(w, 260);
+      addRenderableWidget(
+          new OffspringButton((width - childWidth) / 2, 65 + ch + 12, childWidth, ch));
       button(
           x,
           height - 29,
@@ -178,7 +206,7 @@ public final class BreedingScreen extends Screen {
   }
 
   private int cardHeight() {
-    return Math.max(43, Math.min(88, (height - 142) / 2));
+    return Math.max(44, Math.min(88, (height - 150) / 2));
   }
 
   private long now() {
@@ -224,6 +252,7 @@ public final class BreedingScreen extends Screen {
     g.fill(0, 0, width, 4, GOLD);
     g.drawCenteredString(font, title, width / 2, 12, GOLD);
     hovered = "";
+    childHovered = false;
     int x = left(), w = contentWidth();
     if (jobs && state.pending().isEmpty()) card(g, x, 64, w, height - 98, GOLD);
     if (!state.pending().isEmpty()) {
@@ -254,32 +283,33 @@ public final class BreedingScreen extends Screen {
           MUTED,
           3);
     } else if (!jobs) {
-      if (state.parents().isEmpty())
+      if (picker != 0) {
+        g.drawCenteredString(
+            font,
+            "Elige " + (picker == 1 ? "el padre" : "la madre") + " de tu equipo",
+            width / 2,
+            65,
+            GOLD);
+        if (state.parents().isEmpty()) wrap(g, "Tu equipo está vacío", x, 90, w, MUTED, 2);
+      } else {
+        int y = 65 + 2 * cardHeight() + 18;
         wrap(
             g,
-            "Tu equipo está vacío. Añade dos Pokémon y vuelve a abrir Crianza.",
-            x + 12,
-            80,
-            w - 24,
-            MUTED,
-            3);
-      int y = 65 + 2 * (cardHeight() + 6) + 2;
-      wrap(
-          g,
-          !state.message().isEmpty()
-              ? state.message()
-              : state.compatible()
-                  ? "Pareja compatible · Inicio gratuito · "
-                      + state.baseMinutes() / 60
-                      + " h (mínimo "
-                      + state.minimumMinutes() / 60
-                      + " h)"
-                  : state.compatibility(),
-          x,
-          y,
-          w,
-          state.compatible() ? GREEN : MUTED,
-          2);
+            !state.message().isEmpty()
+                ? state.message()
+                : state.compatible()
+                    ? "Pareja compatible · Gratis · "
+                        + state.baseMinutes() / 60
+                        + " h (mínimo "
+                        + state.minimumMinutes() / 60
+                        + " h)"
+                    : state.compatibility(),
+            x,
+            y,
+            w,
+            state.compatible() ? GREEN : MUTED,
+            2);
+      }
 
     } else if (state.jobs().isEmpty())
       wrap(
@@ -350,9 +380,34 @@ public final class BreedingScreen extends Screen {
                   labels[i] + ": " + p.stats().get(i) + " · IV " + p.ivs().get(i) + "/31"));
         lines.add(Component.literal("Grupos huevo: " + p.groups()));
         lines.add(
+            Component.literal("Objeto: ")
+                .append(
+                    p.held().isEmpty() ? Component.literal("Ninguno") : p.held().getHoverName()));
+        lines.add(
             Component.literal(p.reason().isEmpty() ? "Disponible para seleccionar" : p.reason()));
         g.renderComponentTooltip(font, lines, mx, my);
       }
+    }
+    if (childHovered && !state.offspring().isEmpty()) {
+      var child = state.offspring().get(Math.floorMod(childIndex, state.offspring().size()));
+      var lines = new ArrayList<Component>();
+      lines.add(Component.literal(child.name() + " · Posible cría · Nv. 1"));
+      lines.add(Component.literal("Forma: " + child.form()));
+      String[] labels = {"PS", "Ataque", "Defensa", "At. especial", "Def. especial", "Velocidad"};
+      for (int i = 0; i < 6; i++)
+        lines.add(
+            Component.literal(
+                labels[i]
+                    + " ≈ "
+                    + child.stats().get(i)
+                    + " · IV medio ≈ "
+                    + child.ivs().get(i)
+                    + "/31"));
+      for (String sentence : child.detail().split("\\. ")) lines.add(Component.literal(sentence));
+      lines.add(Component.literal("Sexo, naturaleza, habilidad y shiny se determinan al iniciar."));
+      if (state.offspring().size() > 1)
+        lines.add(Component.literal("Haz clic para ver otra especie o forma posible."));
+      g.renderComponentTooltip(font, lines, mx, my);
     }
   }
 
@@ -400,6 +455,129 @@ public final class BreedingScreen extends Screen {
     g.fill(x, y, x + w, y + h, 0xFF59616B);
     g.fill(x + 1, y + 1, x + w - 1, y + h - 1, 0xFF181D24);
     g.fill(x + 1, y + 1, x + w - 1, y + 4, accent);
+  }
+
+  private BreedingNetwork.Parent parent(int slot) {
+    String id = slot == 1 ? state.first() : state.second();
+    return state.parents().stream().filter(p -> p.id().equals(id)).findFirst().orElse(null);
+  }
+
+  private final class ParentSlot extends StyledButton {
+    private final int slot;
+
+    ParentSlot(int x, int y, int w, int h, int slot) {
+      super(
+          x,
+          y,
+          w,
+          h,
+          slot == 1 ? "Padre" : "Madre",
+          () -> {
+            picker = slot;
+            rebuildWidgets();
+          });
+      this.slot = slot;
+    }
+
+    @Override
+    protected void renderWidget(GuiGraphics g, int mx, int my, float partial) {
+      var p = parent(slot);
+      card(g, getX(), getY(), width, height, isHovered ? GOLD : 0xFF526575);
+      g.drawString(font, getMessage(), getX() + 8, getY() + 8, GOLD, false);
+      if (p == null) {
+        g.drawCenteredString(font, "+", getX() + width / 2, getY() + 24, WHITE);
+        if (height >= 60)
+          g.drawCenteredString(font, "Elegir del equipo", getX() + width / 2, getY() + 44, MUTED);
+      } else {
+        g.renderItem(p.icon(), getX() + 8, getY() + 24);
+        g.drawString(font, fit(p.name(), width - 40), getX() + 32, getY() + 24, WHITE, false);
+        if (height >= 60)
+          g.drawString(
+              font,
+              fit(sex(p.sex()) + " · Nv. " + p.level(), width - 16),
+              getX() + 8,
+              getY() + 46,
+              MUTED,
+              false);
+        if (height >= 80)
+          g.drawString(font, "Cambiar Pokémon", getX() + 8, getY() + 64, GREEN, false);
+        if (isHovered) hovered = p.id();
+      }
+    }
+  }
+
+  private final class OffspringButton extends StyledButton {
+    OffspringButton(int x, int y, int w, int h) {
+      super(
+          x,
+          y,
+          w,
+          h,
+          "Posible cría",
+          () -> {
+            if (!state.offspring().isEmpty())
+              childIndex = (childIndex + 1) % state.offspring().size();
+          });
+    }
+
+    @Override
+    protected void renderWidget(GuiGraphics g, int mx, int my, float partial) {
+      card(g, getX(), getY(), width, height, state.compatible() ? GREEN : 0xFF526575);
+      g.drawString(font, getMessage(), getX() + 8, getY() + 8, GOLD, false);
+      if (state.offspring().isEmpty()) {
+        g.drawCenteredString(font, "?", getX() + width / 2, getY() + 24, WHITE);
+        if (height >= 60)
+          g.drawCenteredString(
+              font, "Elige una pareja compatible", getX() + width / 2, getY() + 44, MUTED);
+        return;
+      }
+      var child = state.offspring().get(Math.floorMod(childIndex, state.offspring().size()));
+      g.renderItem(child.icon(), getX() + 8, getY() + 24);
+      g.drawString(
+          font, fit(child.name() + " · Nv. 1", width - 40), getX() + 32, getY() + 24, WHITE, false);
+      if (height >= 65) {
+        g.drawString(
+            font,
+            "≈ PS "
+                + child.stats().get(0)
+                + "  Atq "
+                + child.stats().get(1)
+                + "  Def "
+                + child.stats().get(2),
+            getX() + 8,
+            getY() + 46,
+            MUTED,
+            false);
+        if (height >= 80)
+          g.drawString(
+              font,
+              "≈ AtE "
+                  + child.stats().get(3)
+                  + "  DfE "
+                  + child.stats().get(4)
+                  + "  Vel "
+                  + child.stats().get(5),
+              getX() + 8,
+              getY() + 59,
+              MUTED,
+              false);
+      }
+      if (height >= 80)
+        g.drawString(
+            font,
+            state.offspring().size() > 1
+                ? "Estimación · "
+                    + (Math.floorMod(childIndex, state.offspring().size()) + 1)
+                    + "/"
+                    + state.offspring().size()
+                    + " posibilidades"
+                : "Estimación · no garantizada",
+            getX() + 8,
+            getY() + 73,
+            GREEN,
+            false);
+      childHovered = isHovered;
+    }
   }
 
   private final class PokemonButton extends StyledButton {

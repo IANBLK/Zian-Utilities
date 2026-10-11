@@ -1,4 +1,23 @@
-# Zian Breeding — implementación candidata beta.13
+# Zian Breeding — implementación candidata beta.14
+
+## Interfaz de tres cuadros (beta.14)
+
+La pantalla inicial muestra Padre, Madre y Posible cría. Cada cuadro de progenitor
+abre el equipo para elegir o reemplazar ese padre; se puede elegir primero
+cualquiera de los dos y mover un Pokémon al otro cuadro sin duplicarlo. Ditto y
+los Pokémon sin sexo siguen usando sus reglas reales de compatibilidad.
+
+Los padres conservan sus datos al pasar el ratón y muestran su objeto equipado.
+La cría muestra la especie y forma posible con estadísticas aproximadas a nivel
+1, EV 0 y naturaleza neutra, e IV medios de la distribución de herencia. El Lazo
+Destino y los objetos recios afectan a ese cálculo. Si hay varias especies o
+formas posibles se recorren pulsando el cuadro de la cría. El límite de vista
+es ocho alternativas. No son el resultado real ni valores garantizados.
+
+La previsualización solo consulta padres y datos de especies: no crea un hijo,
+no reserva UUID, no consume objetos ni lee la genética de una crianza existente.
+Se mantiene el sorteo único al confirmar el inicio. El protocolo cambia a
+`breeding-ui-2`: servidor y cliente necesitan beta.14 para esta interfaz.
 
 ## Crianza independiente del spawn (beta.13)
 
