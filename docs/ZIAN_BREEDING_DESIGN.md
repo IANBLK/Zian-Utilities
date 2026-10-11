@@ -1,4 +1,14 @@
-# Zian Breeding — implementación candidata beta.14
+# Zian Breeding — implementación candidata beta.15
+
+## Ajuste visual (beta.15)
+
+Las pestañas y las acciones inferiores se alinean con la fila de padres. Los
+cuadros tienen menos espacio vacío; la cría pasa de 260 a 190 píxeles de ancho
+en escala GUI y los padres de 185 a 170. Los iconos de los tres Pokémon crecen
+de 16 a 52 píxeles según el espacio disponible. Los textos se ajustan al ancho
+y los tooltips conservan la información completa. No cambia la selección, la
+genética, los pagos ni el protocolo `breeding-ui-2`: el cliente beta.15 puede
+usar el servidor beta.14 instalado.
 
 ## Interfaz de tres cuadros (beta.14)
 

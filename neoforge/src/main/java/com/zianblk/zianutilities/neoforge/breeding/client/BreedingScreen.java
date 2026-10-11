@@ -48,7 +48,7 @@ public final class BreedingScreen extends Screen {
   }
 
   private int contentWidth() {
-    return Math.min(width - 20, 620);
+    return Math.min(width - 20, 420);
   }
 
   private void act(int kind, String target, boolean maximum) {
@@ -90,10 +90,12 @@ public final class BreedingScreen extends Screen {
       button(x + w / 2 + 6, height - 29, 105, "Volver", () -> act(10, "", false), true);
       return;
     }
+    int tabWidth = Math.min(170, (w - 12) / 2);
+    int tabLeft = width / 2 - tabWidth - 6;
     button(
-        x,
+        tabLeft,
         39,
-        Math.min(150, w / 2 - 4),
+        tabWidth,
         "Elegir padres",
         () -> {
           jobs = false;
@@ -102,9 +104,9 @@ public final class BreedingScreen extends Screen {
         },
         true);
     button(
-        x + w / 2,
+        width / 2 + 6,
         39,
-        Math.min(170, w / 2),
+        tabWidth,
         "Mis crianzas (" + state.used() + "/" + state.capacity() + ")",
         () -> {
           jobs = true;
@@ -145,23 +147,23 @@ public final class BreedingScreen extends Screen {
             true);
         return;
       }
-      int cw = Math.min(185, (w - 16) / 2);
-      addRenderableWidget(new ParentSlot(width / 2 - cw - 8, 65, cw, ch, 1));
-      addRenderableWidget(new ParentSlot(width / 2 + 8, 65, cw, ch, 2));
-      int childWidth = Math.min(w, 260);
+      int cw = tabWidth;
+      addRenderableWidget(new ParentSlot(tabLeft, 65, cw, ch, 1));
+      addRenderableWidget(new ParentSlot(width / 2 + 6, 65, cw, ch, 2));
+      int childWidth = Math.min(w, 190);
       addRenderableWidget(
           new OffspringButton((width - childWidth) / 2, 65 + ch + 12, childWidth, ch));
       button(
-          x,
+          tabLeft,
           height - 29,
-          Math.min(145, w / 2 - 5),
+          tabWidth,
           "Limpiar selección",
           () -> act(2, "", false),
           !state.first().isEmpty() || !state.second().isEmpty());
       button(
-          x + w / 2,
+          width / 2 + 6,
           height - 29,
-          w / 2,
+          tabWidth,
           "Iniciar gratis",
           () -> act(3, "", false),
           state.compatible() && state.used() < state.capacity());
@@ -206,7 +208,7 @@ public final class BreedingScreen extends Screen {
   }
 
   private int cardHeight() {
-    return Math.max(44, Math.min(88, (height - 150) / 2));
+    return Math.max(44, Math.min(80, (height - 150) / 2));
   }
 
   private long now() {
@@ -304,9 +306,9 @@ public final class BreedingScreen extends Screen {
                         + state.minimumMinutes() / 60
                         + " h)"
                     : state.compatibility(),
-            x,
+            width / 2 - Math.min(170, (w - 12) / 2) - 6,
             y,
-            w,
+            2 * Math.min(170, (w - 12) / 2) + 12,
             state.compatible() ? GREEN : MUTED,
             2);
       }
@@ -457,6 +459,16 @@ public final class BreedingScreen extends Screen {
     g.fill(x + 1, y + 1, x + w - 1, y + 4, accent);
   }
 
+  private void pokemonIcon(
+      GuiGraphics g, net.minecraft.world.item.ItemStack icon, int x, int y, int size) {
+    g.pose().pushPose();
+    g.pose().translate(x, y, 0);
+    float scale = size / 16.0f;
+    g.pose().scale(scale, scale, 1);
+    g.renderItem(icon, 0, 0);
+    g.pose().popPose();
+  }
+
   private BreedingNetwork.Parent parent(int slot) {
     String id = slot == 1 ? state.first() : state.second();
     return state.parents().stream().filter(p -> p.id().equals(id)).findFirst().orElse(null);
@@ -489,18 +501,16 @@ public final class BreedingScreen extends Screen {
         if (height >= 60)
           g.drawCenteredString(font, "Elegir del equipo", getX() + width / 2, getY() + 44, MUTED);
       } else {
-        g.renderItem(p.icon(), getX() + 8, getY() + 24);
-        g.drawString(font, fit(p.name(), width - 40), getX() + 32, getY() + 24, WHITE, false);
-        if (height >= 60)
-          g.drawString(
-              font,
-              fit(sex(p.sex()) + " · Nv. " + p.level(), width - 16),
-              getX() + 8,
-              getY() + 46,
-              MUTED,
-              false);
-        if (height >= 80)
-          g.drawString(font, "Cambiar Pokémon", getX() + 8, getY() + 64, GREEN, false);
+        int iconSize = Math.min(52, height - 28);
+        pokemonIcon(g, p.icon(), getX() + 8, getY() + 22, iconSize);
+        int textX = getX() + iconSize + 15, textWidth = width - iconSize - 23;
+        g.drawString(font, fit(p.name(), textWidth), textX, getY() + 25, WHITE, false);
+        if (height >= 60) {
+          g.drawString(font, fit(sex(p.sex()), textWidth), textX, getY() + 39, MUTED, false);
+          g.drawString(font, "Nv. " + p.level(), textX, getY() + 51, MUTED, false);
+        }
+        if (height >= 75)
+          g.drawString(font, fit("Cambiar", textWidth), textX, getY() + 65, GREEN, false);
         if (isHovered) hovered = p.id();
       }
     }
@@ -532,48 +542,54 @@ public final class BreedingScreen extends Screen {
         return;
       }
       var child = state.offspring().get(Math.floorMod(childIndex, state.offspring().size()));
-      g.renderItem(child.icon(), getX() + 8, getY() + 24);
+      int iconSize = Math.min(52, height - 28);
+      pokemonIcon(g, child.icon(), getX() + 8, getY() + 22, iconSize);
+      int textX = getX() + iconSize + 15, textWidth = width - iconSize - 23;
       g.drawString(
-          font, fit(child.name() + " · Nv. 1", width - 40), getX() + 32, getY() + 24, WHITE, false);
+          font, fit(child.name() + " · Nv. 1", textWidth), textX, getY() + 25, WHITE, false);
       if (height >= 65) {
         g.drawString(
             font,
-            "≈ PS "
-                + child.stats().get(0)
-                + "  Atq "
-                + child.stats().get(1)
-                + "  Def "
-                + child.stats().get(2),
-            getX() + 8,
-            getY() + 46,
+            fit(
+                "≈ PS "
+                    + child.stats().get(0)
+                    + " Atq "
+                    + child.stats().get(1)
+                    + " Def "
+                    + child.stats().get(2),
+                textWidth),
+            textX,
+            getY() + 39,
             MUTED,
             false);
-        if (height >= 80)
-          g.drawString(
-              font,
-              "≈ AtE "
-                  + child.stats().get(3)
-                  + "  DfE "
-                  + child.stats().get(4)
-                  + "  Vel "
-                  + child.stats().get(5),
-              getX() + 8,
-              getY() + 59,
-              MUTED,
-              false);
-      }
-      if (height >= 80)
         g.drawString(
             font,
-            state.offspring().size() > 1
-                ? "Estimación · "
-                    + (Math.floorMod(childIndex, state.offspring().size()) + 1)
-                    + "/"
-                    + state.offspring().size()
-                    + " posibilidades"
-                : "Estimación · no garantizada",
-            getX() + 8,
-            getY() + 73,
+            fit(
+                "≈ AE "
+                    + child.stats().get(3)
+                    + " DE "
+                    + child.stats().get(4)
+                    + " Vel "
+                    + child.stats().get(5),
+                textWidth),
+            textX,
+            getY() + 51,
+            MUTED,
+            false);
+      }
+      if (height >= 75)
+        g.drawString(
+            font,
+            fit(
+                state.offspring().size() > 1
+                    ? "Estimación "
+                        + (Math.floorMod(childIndex, state.offspring().size()) + 1)
+                        + "/"
+                        + state.offspring().size()
+                    : "Estimación",
+                textWidth),
+            textX,
+            getY() + 65,
             GREEN,
             false);
       childHovered = isHovered;
