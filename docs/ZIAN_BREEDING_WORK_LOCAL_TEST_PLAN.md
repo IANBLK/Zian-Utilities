@@ -1,54 +1,56 @@
-# Zian Breeding - Work Local implementation and test gates
+# Crianza beta.10 — validación y límites
 
-Status: implementation plan, not yet a playable mod. Date: 2026-10-09.
-PR: https://github.com/IANBLK/Zian-Utilities/pull/70
+Fecha: 2026-10-10 (America/Guayaquil). Rama `feat/zian-breeding-core`.
+[PR 70](https://github.com/IANBLK/Zian-Utilities/pull/70), mantenido como draft.
+La rama integra la producción beta.9 antes de añadir la crianza.
 
-## Locked user choices
+## Ejecutado
 
-- Command: `/zianutilities crianza`, with a NeoForge GUI selecting compatible party parents.
-- Breeding starts free, default 24 hours; speedups may reduce elapsed completion target no further than 2 hours from original start.
-- No limit on *quantities* of accepted AVECOINS currencies/tickets; a purchase that has no effective time reduction is rejected before debit.
-- Multiple denominations: the real set of managed AVECOINS results, not a hardcoded enumeration. Reduction minutes configurable separately per item ID.
-- Current example denomination rates are *illustrative and unconfirmed*, not final default values.
-- Default: one active breeding, VIP: two through server-side permission checks.
-- No physical eggs or runtime Cobbreeding/Incubator JAR dependencies.
-- One immutable child identity/outcome per operation, direct Cobblemon PC delivery.
-- Minecraft 1.21.1, NeoForge, Java 21, Cobblemon 1.8.1, Youer smoke tests.
+- `./gradlew build --no-daemon`: 80 pruebas core y 63 NeoForge, sin fallos.
+- Pruebas de piso de tiempo, cantidades enormes, unidad parcial y no cobrar
+  tiempo transcurrido; nonce repetido y reconciliación sin aplicar dos veces.
+- Registro WAL: repetición exacta, corrupción, escritura cortada, fallo después
+  de force, bloqueo del escritor y dos aperturas simultáneas.
+- Recarga de tarifas sin cambiar compras previas, JSON duplicado rechazado y
+  checkpoint que no retrocede ante un reloj anterior.
+- Arranque real NeoForge/Cobblemon 1.8.1 sin Cobbreeding/Incubator.
+- Motor real: Piedra Eterna, Lazo Destino, Ditto/genderless, formas regionales,
+  familias especiales, especies incompatibles, repetición de atributos/UUID,
+  objetos conservados y movimientos huevo.
+- Entrega real: generación bloqueada, padre ausente, PC lleno conserva el
+  mismo hijo, guardado/readback del PC y cierre sin repetir entrega.
+- AVECOINS 2.4 real: moneda gestionada con namespace, cobro exacto, rechazo por
+  saldo insuficiente y nonce repetido sin cobrar otra vez. Interrupción simulada
+  después del débito y antes del recibo; reinicio del módulo conserva UNCERTAIN,
+  impide entregar y permite reconciliar mediante el comando administrativo.
+- Dos arranques y cierres normales del servidor local, conservando el registro.
 
-## Known blockers before a playable beta
+## Reproducir
 
-1. Legacy `BreedingOperation.kt` still models a mandatory fee. Refactor into a FREE start and separate journaled optional acceleration purchases.
-2. Old `BreedingAccelerationPolicy.kt` models just generic coin/ticket and obsolete rates. Retire, rewrite or delegate to `CurrencyAccelerationRules` so there is ONE production rule engine.
-3. Implement real JSON/TOML config loader and validated reload, source of active AVECOINS currency IDs, permissions, Brigadier command, NeoForge menu/network/GUI, party lookup, genetics, PC delivery, persistent operations and journal.
-4. Ensure player cannot swap parent identities between GUI selection and confirmation. Store immutable snapshot of both parents; decide parent lock or snapshot policy.
-5. Define cancellation and refund rules before coding the UI. Never automatically refund an uncertain debit.
-6. Verify the PC mutation's persistence/recovery semantics with hard-kill tests.
-7. Verify third-party MIT attribution and inspect any copied assets for additional licenses.
+`python tools/breeding-smoke.py` ejecuta dos servidores consecutivos sobre
+`neoforge/build/breeding-smoke`, solo localhost (25986/25987). Copia únicamente
+una instancia local de AVECOINS si se establece
+`ZIANUTILITIES_SMOKE_AVECOINS_JAR=/ruta/avecoins-2.4.jar`.
+Los saldos son de propietarios ficticios en ese mundo. Nunca copia datos de
+jugadores ni modifica Rassvet. Evidencias locales: `build/breeding-smoke-evidence`.
+El fixture se excluye del JAR publicado; no existe comando para saltar el mínimo.
 
-## Suggested release scope
+Los mensajes de Cobblemon sobre archivos .old inexistentes para cuentas recién
+creadas y el mixin opcional de Adorn ausente se observaron también en el entorno
+mínimo; no se consideran pruebas de pérdida de datos existentes.
 
-- First beta: free breeding, party compatibility, persistence, direct PC delivery, admin status and crash tests.
-- Second beta: configurable AVECOINS acceleration, permissions, UI, audit records.
-- Later: previews, notifications, statistics, breeding history, extended options.
-- Keep `enabled=false` until runtime and hard-kill gates pass.
+## Pendiente antes de habilitar en producción
 
-## Minimum test matrix
+- Prueba visual de los menús con cliente beta.10, incluidas teclas rápidas,
+  arrastre, expulsión de objetos, escalado y dobles clics.
+- Youer 1.21.1 real con LuckPerms: rango normal/VIP, denies, degradación de rango
+  y varios jugadores. Las pruebas locales usan el fallback de permisos NeoForge.
+- Hard-kill del proceso y cortes de almacenamiento después de cada frontera
+  WAL/AVECOINS/PC. La inyección de fallos y reinicio del módulo no equivalen a
+  cortar la alimentación ni demuestran atomicidad entre tres almacenes.
+- Size Variation instalado, datapacks del servidor y otros mods que intercepten
+  inserciones/intercambios del PC.
+- Reconexión con entregas pendientes y consecuencias de reloj adelantado.
 
-- No compatible parents, same parent twice, removed/swapped parents, Ditto and special offspring rules.
-- Gen-restricted/unbreedable species and custom forms.
-- Default 1 active request, VIP 2, VIP downgrade with in-flight requests.
-- Free 24h request; 2h minimum; assorted currencies; invalid ID, negative/huge quantities; wallet insufficient.
-- Config changes must not retroactively alter already purchased reductions.
-- Two parallel submissions/purchases; race with logout/stop/restart and clock-boundary completion.
-- PC online/full/offline; final child UUID remains unchanged after delivery rejection or restart.
-- Graceful panel 6h restarts and kill -9 after every WAL/payment/delivery stage; no duplicates or double charge.
-- SavedData schema versioning and migration, WAL replay/corruption, quarantine and admin reconciliation.
-- Full build/tests on exact SHA, final NeoForge JAR smoke test on Youer without Cobbreeding/Incubator.
-
-## Git workflow for Work Local
-
-Use branch `feat/zian-breeding-core`, fetch latest from remote. Keep commits small,
-push every completed unit to GitHub, inspect GitHub Actions and correct failures
-before proceeding. Do not merge into main or call a milestone complete without
-a successful CI and applicable server tests. Do not represent this documentation
-as a completed runtime integration.
+La función viene `enabled=false`. No se ha desplegado esta candidata en Rassvet,
+no se ha marcado el PR listo para fusionar ni se ha publicado una release.

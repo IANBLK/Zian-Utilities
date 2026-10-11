@@ -28,6 +28,7 @@ class BrandCommandRegistrationTest {
         GlobalQuestCommands.onRegisterCommands(event);
         ZianHubCommands.onRegisterCommands(event);
         GachaCommands.onRegisterCommands(event);
+        com.zianblk.zianutilities.neoforge.breeding.BreedingCommands.register(event);
 
         assertNull(dispatcher.getRoot().getChild("zian"));
         assertEquals(1, dispatcher.getRoot().getChildren().size());
@@ -36,6 +37,7 @@ class BrandCommandRegistrationTest {
         assertNotNull(root.getCommand(), "Opening the hub must remain available");
         assertTrue(root.getRequirement().test(null), "The shared root must stay public on Youer");
         for (String[] path : new String[][] {
+            {"crianza", "start", "first", "second"}, {"breeding-admin", "resolve-debit", "id", "charged", "evidence"},
             {"generation", "active"}, {"generation", "enable", "gen"},
             {"reward", "inspect"}, {"gacha", "review", "player"},
             {"gacha", "confirm-delivered", "player", "operationId"},

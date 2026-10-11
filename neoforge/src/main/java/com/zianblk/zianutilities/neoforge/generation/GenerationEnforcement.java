@@ -14,11 +14,11 @@ import java.util.Set;
  * <p>Keeping the policy call here prevents natural, fishing, Poke Snack and
  * preselection guards from silently diverging if enforcement options change.</p>
  */
-final class GenerationEnforcement {
+public final class GenerationEnforcement {
     private GenerationEnforcement() {
     }
 
-    static SpawnDecision decide(Set<Generation> resolved, GenerationState state) {
+    public static SpawnDecision decide(Set<Generation> resolved, GenerationState state) {
         return GenerationPolicy.INSTANCE.decide(
             resolved,
             state,

@@ -1,5 +1,6 @@
 plugins {
     java
+    kotlin("jvm")
     id("net.neoforged.moddev")
 }
 
@@ -20,6 +21,11 @@ neoForge {
     version = providers.gradleProperty("neo_version").get()
 
     runs {
+        create("breedingSmoke") {
+            server()
+            gameDirectory = project.file("build/breeding-smoke")
+            programArgument("--nogui")
+        }
         create("server") {
             server()
             programArgument("--nogui")
@@ -94,6 +100,7 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.jar {
+    exclude("com/zianblk/zianutilities/neoforge/breeding/BreedingSmoke*.class")
     archiveFileName.set("Zian-Utilities-${providers.gradleProperty("mod_version").get()}-NeoForge-1.21.1.jar")
 
     // Core stays a separate Gradle module for architecture/testing, while the
@@ -107,4 +114,7 @@ tasks.jar {
 
 tasks.test {
     useJUnitPlatform()
+    if (System.getProperty("os.name").lowercase().contains("windows")) systemProperty("junit.jupiter.tempdir.cleanup.mode.default", "NEVER")
 }
+
+kotlin { jvmToolchain(21) }

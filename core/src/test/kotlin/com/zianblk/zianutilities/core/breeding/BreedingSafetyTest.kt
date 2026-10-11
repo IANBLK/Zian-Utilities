@@ -1,0 +1,18 @@
+package com.zianblk.zianutilities.core.breeding
+import kotlin.test.*
+import java.nio.file.Files
+import java.util.UUID
+import java.io.IOException
+class BreedingSafetyTest {
+ private val hour=3600000L
+ @Test fun `minimum from original start and no expired time charged`() {val q=BreedingRules.quote(0,24*hour,2*hour,0,23*hour,hour,1);assertEquals(hour,q.reductionMillis());assertEquals(23*hour,q.nextReadyAtMillis());assertFailsWith<IllegalArgumentException>{BreedingRules.quote(0,24*hour,2*hour,0,23*hour,hour,2)}}
+ @Test fun `last partial unit allowed once and floor never crossed`() {val q=BreedingRules.quote(0,24*hour,2*hour,0,0,220*60000L,6);assertEquals(2*hour,q.nextReadyAtMillis());assertFailsWith<IllegalStateException>{BreedingRules.quote(0,24*hour,2*hour,22*hour,0,hour,1)}}
+ @Test fun `huge quantities rejected before multiplication`() {assertFailsWith<IllegalArgumentException>{BreedingRules.quote(0,24*hour,2*hour,0,0,Long.MAX_VALUE,Long.MAX_VALUE)}}
+ @Test fun `free operation and pending child occupy a slot`() {val j=job();assertTrue(j.occupiesSlot());assertTrue(j.phase(BreedingJob.Status.BLOCKED,"PC_FULL",0).occupiesSlot());assertFalse(j.phase(BreedingJob.Status.DELIVERED,"",0).occupiesSlot())}
+ @Test fun `confirmation cannot debit twice and uncertain does not apply reduction`() {val j=job();val p=BreedingJob.Purchase(UUID.randomUUID(),"goldcoin",1,hour,hour,BreedingJob.Payment.PENDING);val pending=j.begin(p,0);val uncertain=pending.payment(BreedingJob.Payment.UNCERTAIN,0);assertEquals(0,uncertain.reductionMillis());assertFailsWith<IllegalStateException>{uncertain.begin(p,0)};val applied=uncertain.payment(BreedingJob.Payment.APPLIED,0);assertEquals(hour,applied.reductionMillis());assertFailsWith<IllegalStateException>{applied.begin(p,0)}}
+ @Test fun `journal replay exact and tampering fail closed`() {val p=Files.createTempDirectory("breeding").resolve("journal");BreedingJournal.open(p,{}).use{it.append("one");it.append("two")};val values=mutableListOf<String>();BreedingJournal.open(p,{values.add(it)}).use{};assertEquals(listOf("one","two"),values);val b=Files.readAllBytes(p);b[5]=(b[5].toInt() xor 1).toByte();Files.write(p,b);assertFailsWith<IOException>{BreedingJournal.open(p,{})}}
+ @Test fun `torn record preserved and rejected`() {val p=Files.createTempDirectory("breeding").resolve("journal");BreedingJournal.open(p,{}).use{it.append("entry")};val b=Files.readAllBytes(p);Files.write(p,b.copyOf(b.size-1));assertFailsWith<IOException>{BreedingJournal.open(p,{})};assertEquals(b.size-1,Files.size(p).toInt())}
+ @Test fun `failure after force locks live session but replays persisted operation`() {val p=Files.createTempDirectory("breeding").resolve("journal");BreedingJournal.open(p,{}, {if(it==BreedingJournal.Point.AFTER_FORCE)throw IOException("injected")}).use{j->assertFailsWith<IOException>{j.append("reserved")};assertTrue(j.locked());assertFailsWith<IOException>{j.append("duplicate")}};val values=mutableListOf<String>();BreedingJournal.open(p,{values.add(it)}).use{};assertEquals(listOf("reserved"),values)}
+ @Test fun `only one writer can own a journal`() {val p=Files.createTempDirectory("breeding").resolve("journal");BreedingJournal.open(p,{}).use{assertFailsWith<IOException>{BreedingJournal.open(p,{})}};BreedingJournal.open(p,{}).use{it.append("next")}}
+ private fun job():BreedingJob {val child=BreedingJob.Child(1,UUID.randomUUID(),"cobblemon:bulbasaur","normal","species=bulbasaur",List(6){31},"hardy","overgrow","female","cobblemon:poke_ball",false,false,1f);return BreedingJob(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),child,0,24*hour,2*hour,0,0,BreedingJob.Status.ACTIVE,"",emptyList())}
+}

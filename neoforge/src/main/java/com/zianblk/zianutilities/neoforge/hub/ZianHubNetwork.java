@@ -21,7 +21,7 @@ public final class ZianHubNetwork {
     private ZianHubNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("zian-hub-2");
+        var registrar = event.registrar("zian-hub-3");
         registrar.playToClient(State.TYPE, State.CODEC, ZianHubNetwork::onState);
         registrar.playToServer(Navigate.TYPE, Navigate.CODEC, ZianHubNetwork::onNavigate);
     }
@@ -38,7 +38,7 @@ public final class ZianHubNetwork {
             return;
         }
         PacketDistributor.sendToPlayer(player, new State(GlobalQuestRuntime.moduleEnabled(),
-            GachaRuntime.enabled()));
+            GachaRuntime.enabled(), com.zianblk.zianutilities.neoforge.breeding.BreedingRuntime.enabled()));
     }
 
     private static void onState(State state, IPayloadContext context) {
@@ -59,19 +59,21 @@ public final class ZianHubNetwork {
             case 2 -> {
                 if (GachaRuntime.enabled()) GachaNetwork.send(player, true);
             }
+            case 3 -> com.zianblk.zianutilities.neoforge.breeding.BreedingMenu.open(player);
             default -> { }
         }
     }
 
-    public record State(boolean questsEnabled, boolean gachasEnabled) implements CustomPacketPayload {
+    public record State(boolean questsEnabled, boolean gachasEnabled, boolean breedingEnabled) implements CustomPacketPayload {
         public static final Type<State> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(
             ZianUtilitiesMod.MOD_ID, "hub_state"));
         public static final StreamCodec<RegistryFriendlyByteBuf, State> CODEC = StreamCodec.of(
             (buffer, value) -> {
                 buffer.writeBoolean(value.questsEnabled);
                 buffer.writeBoolean(value.gachasEnabled);
+                buffer.writeBoolean(value.breedingEnabled);
             },
-            buffer -> new State(buffer.readBoolean(), buffer.readBoolean()));
+            buffer -> new State(buffer.readBoolean(), buffer.readBoolean(), buffer.readBoolean()));
 
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
@@ -89,5 +91,6 @@ public final class ZianHubNetwork {
     public static void requestHub() { PacketDistributor.sendToServer(new Navigate((byte) 0)); }
 
     public static void requestQuests() { PacketDistributor.sendToServer(new Navigate((byte) 1)); }
+    public static void requestBreeding() { PacketDistributor.sendToServer(new Navigate((byte) 3)); }
     public static void requestGachas() { PacketDistributor.sendToServer(new Navigate((byte) 2)); }
 }

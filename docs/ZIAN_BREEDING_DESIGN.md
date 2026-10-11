@@ -1,134 +1,103 @@
-# Zian Breeding: paid, party-based breeding without egg items
+# Zian Breeding — implementación candidata beta.10
 
-Status: design + pure JVM domain state machine only. NOT playable yet.
-Target: Minecraft 1.21.1, NeoForge, Cobblemon 1.8.1, Youer validation required.
+Minecraft 1.21.1 · NeoForge 21.1.x · Cobblemon 1.8.1 · Java 21.
+La rama conserva todas las funciones de beta.9. La crianza viene desactivada
+(`enabled=false`) hasta completar la validación del operador en Youer.
 
-## Player experience
+## Uso
 
-Command: `/zianutilities crianza` opens a server-authoritative GUI.
+`/ZianUtilities crianza` o el botón «Abrir crianza Pokémon» del panel principal.
+El contenedor pertenece al servidor: sus iconos no se pueden extraer, mover con
+shift, intercambiar con la barra rápida ni usar como inventario. Selecciona dos
+padres del equipo y confirma el inicio gratuito. El resultado no se revela antes
+de entregarse. El contador se actualiza cada segundo.
 
-1. Show only Pokemon in the requesting player's **party**.
-2. Pick two distinct compatible parents (female/male; allow Ditto exceptions according to the rules).
-3. Show inherited traits and exact configurable AVECOINS item fee, plus time remaining.
-4. On explicit confirmation, charge exactly once and create a persistent pending request.
-5. Parents remain in the player's party, but the system must define whether they can participate in other requests while active (recommend one active breeding per parent).
-6. When the server-side countdown ends, generate one preselected child and deliver directly to the requesting player's Cobblemon PC.
-7. If PC is full, remain READY with the same child ID; **never create a new child** on retry.
-8. No egg ItemStack, no pastures, no incubator blocks. The original Cobbreeding/Incubator mods are not required at runtime.
+Base: 24 horas. Mínimo: 2 horas desde el inicio original, incluso al comprar
+aceleraciones. El tiempo transcurre también desconectado o con el servidor
+apagado, según las fechas persistidas; un reloj atrasado no retrocede por debajo
+del último punto de control. Un salto del reloj hacia delante sí puede completar
+la crianza: depende del reloj del servidor, no se promete un reloj monotónico
+entre apagados.
 
-## Scope and inheritance
+Los padres permanecen en el equipo/PC, sin consumir sus objetos. Sus UUID quedan
+reservados globalmente para otra crianza hasta completar o cancelar la actual.
+Se comprueba de nuevo la pertenencia al iniciar y entregar. No se impide que
+otros mods intercambien un padre: si deja de pertenecer al dueño, se retiene la
+entrega hasta recuperar los padres o cancelar.
 
-Use Cobbreeding's MIT-licensed breeding logic as a reference, adapted to Cobblemon 1.8.1 data.
-Preserve copyright/license notices for any copied/adapted source. Audit assets separately.
-Rules must include egg groups, Ditto, undiscovered/unbreedable species, form/offspring exceptions,
-gender, nature, IVs, abilities, balls, egg moves, shiny odds and restricted generations.
-The eligibility check MUST run again on the server when confirming GUI selection.
-A GUI preview is not a security boundary. Validate that parents are still in party,
-their identities have not changed and the player still owns them.
+Una ranura normal y dos VIP por defecto. Una entrega pendiente, PC lleno o una
+operación incierta siguen ocupando ranura. Perder VIP no cancela operaciones;
+solo impide nuevos inicios por encima del límite actual.
 
-## Integration boundary
+## Genética
 
-- Core: pure JVM request and transitions (in `core/.../breeding/`).
-- NeoForge: GUI, commands, party lookup, compatibility, Cobblemon PC and event hooks.
-- Economy: adapter to AVECOINS 2.3; production integration is **not yet present**
-  in Zian Utilities. The existing `docs/reference/avecoins/` is reference-only.
-- Persistence: SavedData/NBT for ordinary state plus durable WAL for money and PC mutation.
-  Consider extracting journal/store from Zian GTS into generic contracts, not copying
-  its trading-specific enums. No new WAL adapter has been integrated in this slice.
+Adaptación de Cobbreeding 2.4.0, MIT de Ludichat/Fuzuki; licencia completa incluida
+en el JAR y procedencia en `THIRD_PARTY_LICENSES.md`. No incluye sus assets ni
+requiere instalar Cobbreeding, pastos, incubadoras o huevos.
 
-## Safety contract
+Mantiene grupos huevo, sexos, Ditto, no descubiertos/neutered, crías y excepciones
+de formas, IV, objetos recios/Lazo Destino, Piedra Eterna, naturaleza, habilidad,
+bola, movimientos huevo, shiny y características heredables. Ditto × Ditto
+aleatorio y habilidades forzadas están desactivados. Mirror Herb no modifica
+los padres. La probabilidad alpha base es configurable (5% inicial), con una
+comparación exacta de probabilidad; no se hereda alpha obligatoriamente.
+La compatibilidad con Size Variation es opcional y aún necesita prueba con ese
+mod instalado. Datapacks que eliminen especies/formas pueden bloquear la
+operación de forma explícita.
 
-Every breeding request persists a stable operation ID, parent identities, owner,
-fee/currency, creation/ready timestamps and an immutable child UUID / outcome.
-The selected child properties must be fixed durably BEFORE delivery attempt.
-State written before external mutation: PREPARED -> BEFORE_PAYMENT -> PAYMENT_CONFIRMED
--> WAITING -> READY -> BEFORE_DELIVERY -> DELIVERY_CONFIRMED -> COMPLETED.
-On UNCONFIRMED/UNCERTAIN payment or delivery: RECOVERY_REQUIRED and fail closed.
-Only retry delivery after a proven REJECTED (not applied). Never re-charge blindly.
-A bare `pc.add` followed by deleting an egg is insufficient: PC and world
-storage are not one atomic transaction. On recovery search Cobblemon storage by
-the stable child identity, with a carefully designed persistence boundary; do
-not interpret absence in stale/unsaved storage as proof of no prior delivery.
-Save ordering and idempotency claims require real hard-kill testing.
+El hijo se sortea al inicio, antes de cualquier entrega, y se guarda con UUID,
+propiedades y atributos concretos. No vuelve a sortearse. Se filtran las posibles
+crías según Generation Control y se revisa otra vez la generación al entregar.
+Si se deshabilita su generación, queda bloqueado sin perder el hijo.
 
-## Configuration proposed (not yet implemented)
+## Persistencia y recuperación
 
-- `enabled` (default false until fully tested)
-- `currencyId` (validated AVECOINS managed item ID)
-- `price` (> 0)
-- `durationSeconds` (> 0)
-- `maxActivePerPlayer`, `maxActivePerParent`
-- `cooldownSeconds`, `blockedSpecies`, `allowDitto`
-- `respectGenerationControl` (true)
-- `shinyOddsMultiplier` (validated bounds)
+Registro encadenado SHA-256, exclusivo para un escritor, en:
+`<mundo>/data/zianutilities/breeding_v1/journal.wal`.
+Cada registro fuerza el archivo a disco antes de la mutación externa. En Linux
+se fuerza también el directorio del archivo. No usa SavedData como registro
+crítico, no trunca registros dañados y no intenta reconstruir resultados.
+La garantía depende de que el sistema de archivos/hardware respete fsync;
+no constituye una transacción atómica entre AVECOINS, PC y el registro.
 
-Timers use persisted absolute timestamps; no fabricated offline progress and no
-duplicate completion on startup. PC-full/offline conditions retain the pending
-child in an explicit durable state. Support admin inspection/reconciliation.
-Default permissions require authorization for GUI, submit and admin recovery.
+Estados: ACTIVE, ACCELERATING, DELIVERING, DELIVERED, BLOCKED, UNCERTAIN,
+CANCELLED. El estado listo se deriva del tiempo, sin duplicar plazos.
 
-## Verification gates before enabling gameplay
+- Antes del cobro se registra moneda, cantidad, tarifa, reducción y nonce.
+- AVECOINS no ofrece claves idempotentes: un cobro interrumpido pasa a revisión;
+  nunca se vuelve a debitar automáticamente.
+- Antes de insertar el hijo se registra DELIVERING. Se solicita guardar el PC
+  y se lee de nuevo el almacenamiento persistido, no la caché en memoria.
+- Se verifica UUID, especie/forma, IV, naturaleza, habilidad, sexo, bola,
+  shiny, alpha y tamaño antes de marcar DELIVERED.
+- Un propietario desconectado espera hasta conectarse. PC lleno queda BLOCKED
+  y se reclama desde la interfaz o `claim` al liberar espacio.
+- Tras un reinicio, DELIVERING solo se cierra si el almacenamiento prueba la
+  entrega. Ausencia o incongruencia implican UNCERTAIN; no se insertará otro hijo.
+- Cancelar libera padres/ranura, sin reembolsar aceleraciones; no se permite
+  cancelar una mutación incierta. No hay devolución automática de dinero.
 
-1. Core unit tests and NeoForge build green.
-2. Confirm AVECOINS 2.3 cost with real wallet, low funds and uncertain save.
-3. Cobblemon 1.8.1 party/PC: full/offline/reconnect, parents changed, Ditto,
-   cross-species compatibility and generated species with generation restriction.
-4. Kill the server after each journal stage, charge, child creation, PC insertion,
-   PC persistence and completion. Verify no double charge or child duplication.
-5. Youer 1.21.1 normal restart (including scheduled 6h stop/start) and hard kill.
-6. Verify absence of external Incubator/Cobbreeding JARs at runtime and
-   inspect third-party copyright notices for reused source.
+## Comandos y permisos
 
-Do NOT expose the command as a working feature until these gates pass.
+- `/ZianUtilities crianza status`
+- `/ZianUtilities crianza start <ranura 1–6> <ranura 1–6>`
+- `/ZianUtilities crianza claim <id>` y `cancel <id>` (autocompletado propio).
+- `/ZianUtilities crianza accelerate <id> <moneda> <unidades>`: orden explícita
+  de compra; la GUI añade una confirmación con coste y reducción visibles.
+- `/ZianUtilities breeding-admin reload`
+- `/ZianUtilities breeding-admin inspect <id>`
+- `/ZianUtilities breeding-admin resolve-debit <id> <charged true/false> <evidencia>`
+- `/ZianUtilities breeding-admin resolve-delivery <id> <delivered true/false> <evidencia>`
 
+`resolve-*` es una reconciliación administrativa, no un cobro/reembolso. La
+identidad del operador y evidencia quedan registradas. Para reabrir una entrega
+se exige dueño conectado y ausencia del UUID en PC/equipo vivo y guardado; aun
+así el operador debe revisar intercambios externos y copias antes de autorizar.
 
-## Decision update 2026-10-09: free breeding and optional speedups
+Permisos LuckPerms: `zianutilities.breeding.use`, `.slots.vip`, `.slots.1` …
+`.slots.8`, `.admin`. Sin proveedor, uso público y administración solo OP.
+Un deny explícito se respeta; fallo del proveedor deniega acceso. Se toma la
+mayor capacidad concedida y se limita al máximo configurado.
 
-This section **supersedes** the initial mandatory fee/payment stage described above.
-The earlier `BreedingOperation.kt` paid-state prototype has NOT yet been refactored;
-it must be reconciled with this new policy before production implementation.
-
-- Starting a breeding request is FREE, lasting **24 hours** by default.
-- AVECOINS is used **only for optional time reduction**.
-- Proposed balancing values: each coin cuts **1 hour**, each Netherite Ticket cuts
-  **3 hours 40 minutes**, so six tickets reduce 24h to **2h**.
-- No per-operation quantity cap for coins or tickets; however, the duration can
-  never fall below **2 hours** measured from the original start.
-- Never consume an item that would not change the effective finish time.
-- Verify selected currency names against AVECOINS managed-currency IDs before
-  exposing options; these rates are **configurable defaults**, not a fixed economy.
-- Acceleration may be purchased while breeding is active. The server must
-  recompute the absolute completion deadline from the original start + total
-  accepted reductions, rather than resetting a fresh timer. Reject new purchases
-  when breeding is already READY/COMPLETED/RECOVERY_REQUIRED.
-- Every acceleration purchase needs a stable unique transaction ID, a journal
-  entry before the wallet debit, durable cumulative coin/ticket counts, and
-  APPLIED/REJECTED/UNCERTAIN outcomes. No blind retries of ambiguous debits.
-- Charge/refund races and a wallet mutation that precedes journal confirmation
-  need hard-kill testing before this feature is activated.
-- A default player has **one active breeding slot**; VIP has **two** via a
-  server-side permission/capacity resolver backed by LuckPerms-compatible
-  permission nodes. Suggested nodes:
-  `zianutilities.breeding.use`, `zianutilities.breeding.slots.2`,
-  `zianutilities.breeding.admin`. Deny beyond the greatest authorized
-  capacity, enforce on every submission, and resolve downgrade semantics
-  (recommended: do not cancel existing operations, but block new ones).
-- The policy helper `BreedingAccelerationPolicy` and its unit tests now codify
-  the proposed numeric rules without item count caps. It is not yet wired to commands/GUI/economy.
-- No Cobbreeding/Incubator runtime dependency, no physical eggs, and child
-  identity is fixed before attempting PC delivery.
-
-## Currency-tier proposal (not implemented)
-
-The player also requested a schedule based on AVECOINS denominations. Suggested
-rates to review with the real AVECOINS IDs: Copper Coin = 60 minutes, Diamond
-Coin = 120 minutes, Netherite Ticket = 220 minutes. The current domain helper
-only models a generic coin and ticket, **not** all three tiers. A production
-adapter must identify and debit the exact managed currency/item and reject
-purchases that would have no effect. The countdown cannot end before the
-2-hour minimum from the original operation start. These amounts are design
-proposals, not verified economic exchange rates.
-
-## Balancing revision: low-value coins (2026-10-09)
-
-Previous example rates of 60 minutes per Copper Coin and 120 minutes per Diamond Coin were rejected as too generous. No canonical item-denomination list or values have yet been verified from the AVECOINS runtime registry. Proposed **configurable**, unverified tiers for review: Copper Coin 2 min, Iron Coin 5 min, Gold Coin 10 min, Diamond Coin 20 min, Netherite Coin 35 min, Copper Ticket 45 min, Diamond Ticket 90 min, Netherite Ticket 220 min. Do not register names or assume availability until identified using AVECOINS MANAGED_RESULTS. The existing pure helper has generic coin/ticket parameters and does not implement these tier values. Keep unlimited item counts, a strict two-hour minimum from original start, and refuse any purchase with zero effective reduction.
+La candidata requiere el mismo JAR en cliente y servidor: el panel usa el
+protocolo `zian-hub-3`. No se ha instalado ni activado en Rassvet.

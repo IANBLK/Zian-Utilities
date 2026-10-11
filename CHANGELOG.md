@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-beta.10 — candidata de crianza
+
+- Añade crianza desde el equipo, gratuita, con base de 24 h y mínimo de 2 h configurable desde ese piso.
+- Añade aceleraciones opcionales con denominaciones reales de AVECOINS, confirmación, tarifa y cantidad persistidas.
+- Integra genética adaptada de Cobbreeding 2.4.0 MIT; no requiere su JAR ni registra huevos/incubadoras.
+- Reserva padres e hijo por UUID, respeta generaciones y confirma el PC guardado antes de completar.
+- Incluye registro durable, bloqueo de cobros/entregas inciertos, reconciliación administrativa y permisos LuckPerms.
+- Añade botón al panel, conservando misiones, gachas, equipo y encantamientos de beta.9. Requiere el mismo JAR en ambos lados.
+- Desactivada por defecto hasta las pruebas de cliente/Youer; no desplegada en producción.
+
 ## 0.1.0-beta.9
 
 - Rename the command root to /ZianUtilities, including every existing subcommand. The old /zian root is removed.

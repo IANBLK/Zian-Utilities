@@ -19,6 +19,10 @@ Zian Utilities es un mod para **Minecraft 1.21.1**, **NeoForge 21.1.x** y **Cobb
 
 No hacen falta parámetros especiales en el startup. La interfaz principal se abre con `/ZianUtilities`. Los administradores pueden consultar las generaciones activas con `/ZianUtilities generation active` y habilitar otra con `/ZianUtilities generation enable gen1` (sustituye `gen1` según corresponda). Para revisar una tirada bloqueada usa `/ZianUtilities gacha review <jugador>`; si verificaste que el premio ya fue entregado, cierra esa operación con `/ZianUtilities gacha confirm-delivered <jugador> <operationId>`.
 
+## Crianza — candidata beta.10
+
+Esta rama añade crianza gratuita de 24 h, aceleraciones opcionales mediante AVECOINS y entrega persistente al PC, sin huevos ni incubadoras. Acceso: `/ZianUtilities crianza` y el panel principal. Está desactivada inicialmente hasta probar la candidata en Youer. Consulta [uso y recuperación](docs/ZIAN_BREEDING_DESIGN.md) y [configuración](docs/ZIAN_BREEDING_CURRENCY_CONFIG.md). Conserva todas las funciones de beta.9 y requiere actualizar el JAR en ambos lados.
+
 ## Estado de la beta
 
 La candidata **0.1.0-beta.9** muestra la información completa de los objetos del gacha al pasar el mouse por su icono o nombre. Conserva Dark Reaper, los cuatro arcos, el equipo Prismático y las correcciones de recuperación de beta.6. Consulta [el equipo y sus comandos de prueba](docs/EQUIPMENT-BETA-7.md) y [las decisiones y comandos de recuperación](docs/BETA6_RECOVERY.md). Actualiza el mismo JAR en el servidor y los clientes.

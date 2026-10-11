@@ -57,6 +57,10 @@ public final class ZianHubScreen extends Screen {
             secondY() + cardHeight() - 29, w - 20, 19,
             Component.literal("Abrir gachas"), ZianHubNetwork::requestGachas));
         gachas.active = state.gachasEnabled();
+        StyledButton breeding = addRenderableWidget(new StyledButton(width / 2 - 100,
+            Math.max(secondY() + cardHeight() + 4, height - 25), 200, 19,
+            Component.literal("Abrir crianza Pokémon"), ZianHubNetwork::requestBreeding));
+        breeding.active = state.breedingEnabled();
     }
 
     @Override

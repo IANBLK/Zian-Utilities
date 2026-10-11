@@ -45,6 +45,7 @@ public final class ZianUtilitiesMod {
         // Do not load the class containing client item-rendering code on a dedicated server.
         if (FMLEnvironment.dist == Dist.CLIENT) ZianEquipmentClient.register(modBus);
         PlaneMining.install();
+        com.zianblk.zianutilities.neoforge.breeding.BreedingRuntime.install();
         modBus.addListener(GlobalQuestNetwork::register);
         modBus.addListener(ProgressionQuestNetwork::register);
         modBus.addListener(ZianHubNetwork::register);
