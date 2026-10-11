@@ -352,7 +352,7 @@ public final class BreedingNetwork {
                   s.first == null ? null : party.get(s.first),
                   s.second == null ? null : party.get(s.second));
           if (!why.isEmpty()) throw new IllegalStateException(why);
-          if (BreedingRuntime.mine(p).stream().filter(BreedingJob::occupiesSlot).count()
+          if (BreedingRuntime.store.pendingMine(p.getUUID()).size()
               >= BreedingPermissions.slots(p, BreedingRuntime.config))
             throw new IllegalStateException("Todas tus ranuras están ocupadas");
           s.pending = new Pending("start", UUID.randomUUID(), null, null, 0, 0, 0);
@@ -454,12 +454,12 @@ public final class BreedingNetwork {
     if (s.first != null && party.get(s.first) == null) {
       s.first = null;
       s.pending = null;
-      s.message = "El primer Pok�mon sali� del equipo; vuelve a elegirlo";
+      s.message = "El primer Pokémon salió del equipo; vuelve a elegirlo";
     }
     if (s.second != null && party.get(s.second) == null) {
       s.second = null;
       s.pending = null;
-      s.message = "El segundo Pok�mon sali� del equipo; vuelve a elegirlo";
+      s.message = "El segundo Pokémon salió del equipo; vuelve a elegirlo";
     }
     var parents = new ArrayList<Parent>();
     var order =
@@ -496,8 +496,7 @@ public final class BreedingNetwork {
               why));
     }
     var jobs =
-        BreedingRuntime.mine(p).stream()
-            .filter(BreedingJob::occupiesSlot)
+        BreedingRuntime.store.pendingMine(p.getUUID()).stream()
             .map(j -> new Job(j.id().toString(), j.status().name(), j.readyAt(), j.reason()))
             .toList();
     if (s.job != null && jobs.stream().noneMatch(j -> j.id.equals(s.job.toString()))) {

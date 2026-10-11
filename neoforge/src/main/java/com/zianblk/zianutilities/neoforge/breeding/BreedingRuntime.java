@@ -53,10 +53,10 @@ public final class BreedingRuntime {
           new BreedingStore(
               s.getWorldPath(LevelResource.ROOT)
                   .resolve("data/zianutilities/breeding_v1/journal.wal"));
-      for (var j : store.jobs.values())
+      for (var j : store.pending())
         if (j.status() == BreedingJob.Status.DELIVERING) recovering.add(j.id());
         else if (j.status() == BreedingJob.Status.ACCELERATING)
-          store.jobs.put(j.id(), j.phase(BreedingJob.Status.UNCERTAIN, "PAYMENT", store.now()));
+          store.put(j.phase(BreedingJob.Status.UNCERTAIN, "PAYMENT", store.now()));
       lastCheckpoint = store.now();
       LOG.info(
           "Breeding ready: enabled={} jobs={}; free start, optional wallet acceleration",
@@ -103,9 +103,7 @@ public final class BreedingRuntime {
   }
 
   static List<BreedingJob> mine(ServerPlayer p) {
-    return store == null
-        ? List.of()
-        : store.jobs.values().stream().filter(j -> j.owner().equals(p.getUUID())).toList();
+    return store == null ? List.of() : store.mine(p.getUUID());
   }
 
   static BreedingJob owned(ServerPlayer p, UUID id) {
@@ -126,17 +124,9 @@ public final class BreedingRuntime {
   static BreedingJob start(ServerPlayer p, UUID one, UUID two, UUID confirmation) throws Exception {
     check(p);
     if (store.jobs.containsKey(confirmation)) return owned(p, confirmation);
-    if (mine(p).stream().filter(BreedingJob::occupiesSlot).count()
-        >= BreedingPermissions.slots(p, config))
+    if (store.pendingMine(p.getUUID()).size() >= BreedingPermissions.slots(p, config))
       throw new IllegalStateException("Todas tus ranuras están ocupadas");
-    if (store.jobs.values().stream()
-        .filter(BreedingJob::occupiesSlot)
-        .anyMatch(
-            j ->
-                j.first().equals(one)
-                    || j.second().equals(one)
-                    || j.first().equals(two)
-                    || j.second().equals(two)))
+    if (store.parentBusy(one) || store.parentBusy(two))
       throw new IllegalStateException("Un padre ya tiene una crianza activa");
     var party = Cobblemon.INSTANCE.getStorage().getParty(p);
     var first = party.get(one);
@@ -230,8 +220,8 @@ public final class BreedingRuntime {
     try {
       store.put(pending.payment(outcome, store.now()));
     } catch (Exception error) {
-      store.jobs.put(
-          id, pending.phase(BreedingJob.Status.UNCERTAIN, "PAYMENT_CONFIRMATION", store.now()));
+      store.rememberUncertain(
+          pending.phase(BreedingJob.Status.UNCERTAIN, "PAYMENT_CONFIRMATION", store.now()));
       throw error;
     }
     if (outcome != BreedingJob.Payment.APPLIED)
@@ -349,12 +339,12 @@ public final class BreedingRuntime {
     if (++ticks % 20 != 0 || !enabled()) return;
     long now = store.now();
     try {
-      if (now - lastCheckpoint >= 60000) {
+      if (store.hasPending() && now - lastCheckpoint >= 60000) {
         store.checkpoint();
         lastCheckpoint = now;
       }
       int budget = 2;
-      for (var j : new ArrayList<>(store.jobs.values())) {
+      for (var j : store.ticking()) {
         var p = server.getPlayerList().getPlayer(j.owner());
         if (p == null) continue;
         if (j.status() == BreedingJob.Status.DELIVERING) {

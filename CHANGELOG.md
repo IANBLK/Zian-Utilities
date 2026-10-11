@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-beta.16 — candidata de almacenamiento
+
+- Índices por jugador, padre y compra; solo las crianzas pendientes se procesan en cada tick.
+- Las crianzas cerradas se leen desde posiciones verificadas del WAL, reduciendo objetos completos en memoria.
+- Compactación offline opcional con archivo gzip del original y verificación de hijos, pagos y reloj. No hay migración automática.
+- Interfaz responsive de crianza, texto centrado bajo la cría y textos UTF-8 corregidos. Protocolo breeding-ui-2 conservado.
+- 157 pruebas aprobadas y dos arranques dedicados aislados con recuperación tras reinicio. Escalas GUI 2/3/4 pendientes de prueba visual.
+
 ## 0.1.0-beta.12 — compatibilidad de crianza
 
 - Resuelve Lazo Destino y Bola Luminosa por su ID de registro; sus tipos concretos cambiaron en Cobblemon 1.8.2 y rompían los JAR anteriores.

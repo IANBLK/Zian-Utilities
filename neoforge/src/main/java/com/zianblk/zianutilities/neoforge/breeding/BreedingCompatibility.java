@@ -14,10 +14,7 @@ final class BreedingCompatibility {
       return "Este Pokémon no puede criar (esterilizado)";
     if (p.getForm().getEggGroups().contains(EggGroup.UNDISCOVERED))
       return "Grupo No descubierto: no puede criar";
-    if (BreedingRuntime.store.jobs.values().stream()
-        .filter(j -> j.occupiesSlot())
-        .anyMatch(j -> j.first().equals(p.getUuid()) || j.second().equals(p.getUuid())))
-      return "Ya participa en una crianza activa";
+    if (BreedingRuntime.store.parentBusy(p.getUuid())) return "Ya participa en una crianza activa";
     return "";
   }
 

@@ -7,11 +7,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /** Same palette/cards/buttons as the quest and gacha panels; no inventory or fabricated items. */
-public final class BreedingScreen extends Screen {
+public final class BreedingScreen
+    extends com.zianblk.zianutilities.neoforge.client.ResponsiveScreen {
   private static final int GOLD = 0xFFF0C75E,
       WHITE = 0xFFF4F7FA,
       MUTED = 0xFF9FAAB5,
@@ -73,6 +73,7 @@ public final class BreedingScreen extends Screen {
 
   @Override
   protected void init() {
+    fitViewport(440, 330);
     int x = left(), w = contentWidth();
     button(
         10,
@@ -249,7 +250,7 @@ public final class BreedingScreen extends Screen {
   public void renderBackground(GuiGraphics g, int mx, int my, float partial) {}
 
   @Override
-  public void render(GuiGraphics g, int mx, int my, float partial) {
+  protected void renderCanvas(GuiGraphics g, int mx, int my, float partial) {
     g.fill(0, 0, width, height, 0xE00D1117);
     g.fill(0, 0, width, 4, GOLD);
     g.drawCenteredString(font, title, width / 2, 12, GOLD);
@@ -295,7 +296,7 @@ public final class BreedingScreen extends Screen {
         if (state.parents().isEmpty()) wrap(g, "Tu equipo está vacío", x, 90, w, MUTED, 2);
       } else {
         int y = 65 + 2 * cardHeight() + 18;
-        wrap(
+        wrapCentered(
             g,
             !state.message().isEmpty()
                 ? state.message()
@@ -365,7 +366,7 @@ public final class BreedingScreen extends Screen {
             height < 300 ? 1 : 2);
       }
     }
-    super.render(g, mx, my, partial);
+    renderWidgets(g, mx, my, partial);
     if (!hovered.isEmpty()) {
       var p = state.parents().stream().filter(a -> a.id().equals(hovered)).findFirst().orElse(null);
       if (p != null) {
@@ -387,7 +388,7 @@ public final class BreedingScreen extends Screen {
                     p.held().isEmpty() ? Component.literal("Ninguno") : p.held().getHoverName()));
         lines.add(
             Component.literal(p.reason().isEmpty() ? "Disponible para seleccionar" : p.reason()));
-        g.renderComponentTooltip(font, lines, mx, my);
+        queueTooltip(lines);
       }
     }
     if (childHovered && !state.offspring().isEmpty()) {
@@ -409,7 +410,7 @@ public final class BreedingScreen extends Screen {
       lines.add(Component.literal("Sexo, naturaleza, habilidad y shiny se determinan al iniciar."));
       if (state.offspring().size() > 1)
         lines.add(Component.literal("Haz clic para ver otra especie o forma posible."));
-      g.renderComponentTooltip(font, lines, mx, my);
+      queueTooltip(lines);
     }
   }
 
@@ -417,6 +418,12 @@ public final class BreedingScreen extends Screen {
     var lines = font.split(Component.literal(text), w);
     for (int i = 0; i < Math.min(rows, lines.size()); i++)
       g.drawString(font, lines.get(i), x, y + i * 11, color, false);
+  }
+
+  private void wrapCentered(GuiGraphics g, String text, int x, int y, int w, int color, int rows) {
+    var lines = font.split(Component.literal(text), w);
+    for (int i = 0; i < Math.min(rows, lines.size()); i++)
+      g.drawCenteredString(font, lines.get(i), width / 2, y + i * 11, color);
   }
 
   private String fit(String text, int pixels) {
