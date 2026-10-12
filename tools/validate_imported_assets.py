@@ -5,9 +5,10 @@ root=Path(__file__).resolve().parents[1]
 jar=Path(sys.argv[1]) if len(sys.argv)>1 else root/'neoforge/build/libs/Zian-Utilities-0.1.0-beta.21-NeoForge-1.21.1.jar'
 def rotate(v,r):
  x,y,z=v;a,b,c=[math.radians(t) for t in r]
- y,z=y*math.cos(a)-z*math.sin(a),y*math.sin(a)+z*math.cos(a)
+ x,y=x*math.cos(c)-y*math.sin(c),x*math.sin(c)+y*math.cos(c)
  x,z=x*math.cos(b)+z*math.sin(b),-x*math.sin(b)+z*math.cos(b)
- return [x*math.cos(c)-y*math.sin(c),x*math.sin(c)+y*math.cos(c),z]
+ y,z=y*math.cos(a)-z*math.sin(a),y*math.sin(a)+z*math.cos(a)
+ return [x,y,z]
 with zipfile.ZipFile(jar) as archive:
  files=set(archive.namelist());base='assets/zianutilities/'
  sources=json.loads(archive.read('assets/minecraft/atlases/blocks.json'))['sources']

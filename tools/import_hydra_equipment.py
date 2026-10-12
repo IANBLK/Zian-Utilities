@@ -10,9 +10,9 @@ def js(rel,value):put(rel,json.dumps(value,ensure_ascii=False,separators=(',',':
 def rotate(v,p,r):
  x,y,z=[v[i]-p[i] for i in range(3)]
  a,b,c=[math.radians(float(t)) for t in r]
- y,z=y*math.cos(a)-z*math.sin(a),y*math.sin(a)+z*math.cos(a)
- x,z=x*math.cos(b)+z*math.sin(b),-x*math.sin(b)+z*math.cos(b)
  x,y=x*math.cos(c)-y*math.sin(c),x*math.sin(c)+y*math.cos(c)
+ x,z=x*math.cos(b)+z*math.sin(b),-x*math.sin(b)+z*math.cos(b)
+ y,z=y*math.cos(a)-z*math.sin(a),y*math.sin(a)+z*math.cos(a)
  return [x+p[0],y+p[1],z+p[2]]
 def transform(v,chain,normal=False):
  for p,r in reversed(chain):v=rotate(v,[0,0,0] if normal else p,r)
@@ -34,7 +34,9 @@ def convert(model,name):
     e=cubes[node]
     if not e.get('visibility',True) or not e.get('export',True):continue
     if e.get('type','cube')!='cube':raise ValueError('Unsupported armor element')
-    inflate=e.get('inflate',0);lo=[min(e['from'][i],e['to'][i])-inflate for i in range(3)];hi=[max(e['from'][i],e['to'][i])+inflate for i in range(3)]
+    inflate=e.get('inflate',0);stretch=e.get('stretch',[1,1,1]);center=[(e['from'][i]+e['to'][i])/2 for i in range(3)];half=[((e['to'][i]-e['from'][i])/2+inflate)*stretch[i] for i in range(3)];lo=[center[i]-half[i] for i in range(3)];hi=[center[i]+half[i] for i in range(3)]
+    for i in range(3):
+     if lo[i]==hi[i]:hi[i]+=.001
     x0,y0,z0=lo;x1,y1,z1=hi
     points={'north':[(x1,y1,z0),(x0,y1,z0),(x0,y0,z0),(x1,y0,z0)],'south':[(x0,y1,z1),(x1,y1,z1),(x1,y0,z1),(x0,y0,z1)],'east':[(x1,y1,z1),(x1,y1,z0),(x1,y0,z0),(x1,y0,z1)],'west':[(x0,y1,z0),(x0,y1,z1),(x0,y0,z1),(x0,y0,z0)],'up':[(x0,y1,z0),(x1,y1,z0),(x1,y1,z1),(x0,y1,z1)],'down':[(x0,y0,z1),(x1,y0,z1),(x1,y0,z0),(x0,y0,z0)]}
     ec=chain+[(e.get('origin',[0,0,0]),e.get('rotation',[0,0,0]))]
@@ -42,8 +44,9 @@ def convert(model,name):
      if f.get('texture') is None:continue
      assert f['texture']==0
      u0,v0,u1,v1=f['uv'];uv=[[u0/tw,v0/th],[u1/tw,v0/th],[u1/tw,v1/th],[u0/tw,v1/th]]
-     turns=int(f.get('rotation',0))//90;uv=uv[turns:]+uv[:turns]
-     world=[transform(list(v),ec) for v in points[direction]];normal=transform(NORMALS[direction],ec,True)
+     turns=int(f.get('rotation',0))//90;uv=uv[-turns:]+uv[:-turns] if turns else uv
+     world=[transform(list(v),ec) for v in points[direction]]
+     a=[world[1][i]-world[0][i] for i in range(3)];b=[world[2][i]-world[0][i] for i in range(3)];normal=[a[2]*b[1]-a[1]*b[2],a[0]*b[2]-a[2]*b[0],a[1]*b[0]-a[0]*b[1]];length=math.sqrt(sum(v*v for v in normal));normal=[v/length for v in normal]
      vertices=[[round(world[i][j]-pivot[j],7) for j in range(3)]+uv[i] for i in range(4)]
      faces.append({'vertices':vertices,'world':[world[i]+uv[i] for i in range(4)],'normal':normal})
  for root in model['outliner']:
