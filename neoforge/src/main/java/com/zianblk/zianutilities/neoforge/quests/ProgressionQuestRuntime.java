@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.quests;
+import com.zianblk.zianutilities.core.storage.StorageFiles;
 
 import com.zianblk.zianutilities.core.generation.Generation;
 import com.zianblk.zianutilities.core.rewards.ClaimStatus;
@@ -20,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -240,19 +241,19 @@ public final class ProgressionQuestRuntime {
     private static void recoverOldWeeks(UUID player) throws IOException {
         if (recoveredPlayers.contains(player)) return;
         Path directory = root.resolve("weekly");
-        if (!Files.isDirectory(directory)) {
+        if (!StorageFiles.isDirectory(directory)) {
             recoveredPlayers.add(player);
             return;
         }
         long current = weekStart(System.currentTimeMillis());
-        try (var periods = Files.list(directory)) {
-            for (Path period : periods.filter(Files::isDirectory).toList()) {
+        try (var periods = StorageFiles.list(directory)) {
+            for (Path period : periods.filter(StorageFiles::isDirectory).toList()) {
                 long start;
                 try { start = Long.parseLong(period.getFileName().toString()); }
                 catch (NumberFormatException ignored) { continue; }
                 if (start >= current || start != weekStart(start)) continue;
                 Path path = weeklyPath(start, player);
-                if (Files.exists(path)) settleWeekly(player, start, read(path));
+                if (StorageFiles.exists(path)) settleWeekly(player, start, read(path));
             }
         }
         recoveredPlayers.add(player);
@@ -326,7 +327,7 @@ public final class ProgressionQuestRuntime {
 
     private static Properties weeklyOffer(long start) throws IOException {
         Path path = root.resolve("weekly").resolve(Long.toString(start)).resolve("offer.properties");
-        if (Files.exists(path)) return read(path);
+        if (StorageFiles.exists(path)) return read(path);
         Properties source = config();
         Properties offer = new Properties();
         for (String objective : List.of("capture", "battle")) {
@@ -366,7 +367,7 @@ public final class ProgressionQuestRuntime {
 
     private static Properties config() throws IOException {
         Path path = root.resolve("config.properties");
-        if (Files.exists(path)) {
+        if (StorageFiles.exists(path)) {
             Properties p = read(path);
             validateConfig(p);
             return p;
@@ -417,23 +418,23 @@ public final class ProgressionQuestRuntime {
 
     private static Properties read(Path path) throws IOException {
         Properties p = new Properties();
-        if (Files.exists(path)) try (var reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) { p.load(reader); }
+        if (StorageFiles.exists(path)) try (var reader = StorageFiles.newBufferedReader(path, StandardCharsets.UTF_8)) { p.load(reader); }
         return p;
     }
 
     private static void write(Path path, Properties p) throws IOException {
-        Files.createDirectories(path.getParent());
-        Path temporary = Files.createTempFile(path.getParent(), "progression-quest-", ".tmp");
+        StorageFiles.createDirectories(path.getParent());
+        Path temporary = StorageFiles.createTempFile(path.getParent(), "progression-quest-", ".tmp");
         try {
-            try (var writer = Files.newBufferedWriter(temporary, StandardCharsets.UTF_8)) {
+            try (var writer = StorageFiles.newBufferedWriter(temporary, StandardCharsets.UTF_8)) {
                 p.store(writer, "Zian Utilities progression quests");
             }
-            try (FileChannel channel = FileChannel.open(temporary, StandardOpenOption.WRITE)) {
+            try (FileChannel channel = StorageFiles.channel(temporary, StandardOpenOption.WRITE)) {
                 channel.force(true);
             }
-            Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            StorageFiles.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } finally {
-            Files.deleteIfExists(temporary);
+            StorageFiles.deleteIfExists(temporary);
         }
     }
 

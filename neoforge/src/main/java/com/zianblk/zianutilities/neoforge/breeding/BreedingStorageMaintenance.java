@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.breeding;
+import com.zianblk.zianutilities.core.storage.StorageFiles;
 
 import com.google.gson.*;
 import com.zianblk.zianutilities.core.breeding.BreedingJournal;
@@ -26,7 +27,7 @@ public final class BreedingStorageMaintenance {
   }
 
   static Result compact(Path source, Fault fault) throws IOException {
-    if (!Files.isRegularFile(source) || Files.isSymbolicLink(source))
+    if (!StorageFiles.isRegularFile(source) || StorageFiles.isSymbolicLink(source))
       throw new IOException("Expected an existing regular journal");
     source = source.toAbsolutePath().normalize();
     Path directory = source.getParent();
@@ -35,13 +36,13 @@ public final class BreedingStorageMaintenance {
     Path archive = directory.resolve("journal.archive-" + token + ".wal.gz");
     Path marker = source.resolveSibling(source.getFileName() + ".maintenance");
     boolean ownsMarker = false;
-    long before = Files.size(source), after;
+    long before = StorageFiles.size(source), after;
     int count;
     try (var original = new BreedingStore(source)) {
       if (!original.compactionCompatible())
         throw new IOException(
             "Unknown persisted fields; original journal must be preserved without compacting");
-      Files.writeString(
+      StorageFiles.writeString(
           marker,
           "Offline compaction; archive="
               + archive.getFileName()
@@ -49,7 +50,7 @@ public final class BreedingStorageMaintenance {
               + temporary.getFileName(),
           StandardOpenOption.CREATE_NEW);
       ownsMarker = true;
-      try (var markerChannel = FileChannel.open(marker, StandardOpenOption.WRITE)) {
+      try (var markerChannel = StorageFiles.channel(marker, StandardOpenOption.WRITE)) {
         markerChannel.force(true);
       }
       forceDirectory(directory);
@@ -79,7 +80,7 @@ public final class BreedingStorageMaintenance {
             || !original.purchaseIndex().equals(verified.purchaseIndex()))
           throw new IOException("Compaction does not preserve original jobs, clock or receipt IDs");
       }
-      after = Files.size(temporary);
+      after = StorageFiles.size(temporary);
       // Preserve the complete old transitions before replacing the active journal.
       original.archiveCompressed(archive);
       forceDirectory(directory);
@@ -87,14 +88,14 @@ public final class BreedingStorageMaintenance {
       fault.at(Point.BEFORE_REPLACE);
       // The maintenance marker blocks new-version writers while Windows requires closing the WAL.
       original.close();
-      Files.move(
+      StorageFiles.move(
           temporary, source, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
       forceDirectory(directory);
       fault.at(Point.AFTER_REPLACE);
     } finally {
-      Files.deleteIfExists(temporary);
+      StorageFiles.deleteIfExists(temporary);
       if (ownsMarker) {
-        Files.deleteIfExists(marker);
+        StorageFiles.deleteIfExists(marker);
         forceDirectory(directory);
       }
     }
@@ -103,7 +104,7 @@ public final class BreedingStorageMaintenance {
 
   private static void forceDirectory(Path path) throws IOException {
     if (!System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows"))
-      try (var directory = FileChannel.open(path, StandardOpenOption.READ)) {
+      try (var directory = StorageFiles.channel(path, StandardOpenOption.READ)) {
         directory.force(true);
       }
   }
@@ -114,7 +115,7 @@ public final class BreedingStorageMaintenance {
           "Usage: inspect|compact-offline <existing journal.wal>; stop server and disable restart"
               + " before compacting");
     var path = Path.of(args[1]);
-    if (!Files.isRegularFile(path)) throw new IOException("Journal does not exist");
+    if (!StorageFiles.isRegularFile(path)) throw new IOException("Journal does not exist");
     if (args[0].equals("compact-offline")) {
       var result = compact(path);
       var json = new JsonObject();
@@ -127,7 +128,7 @@ public final class BreedingStorageMaintenance {
       try (var store = new BreedingStore(path)) {
         System.out.println(
             "bytes="
-                + Files.size(path)
+                + StorageFiles.size(path)
                 + " jobs="
                 + store.jobs.size()
                 + " pending="

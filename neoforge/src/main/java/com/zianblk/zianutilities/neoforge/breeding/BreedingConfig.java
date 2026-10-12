@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.breeding;
+import com.zianblk.zianutilities.core.storage.StorageFiles;
 
 import com.google.gson.*;
 import java.nio.file.*;
@@ -26,11 +27,11 @@ public final class BreedingConfig {
 
   public static BreedingConfig load(Path path) throws Exception {
     var gson = new GsonBuilder().setPrettyPrinting().create();
-    if (!Files.exists(path)) {
-      Files.createDirectories(path.getParent());
-      Files.writeString(path, gson.toJson(new BreedingConfig()));
+    if (!StorageFiles.exists(path)) {
+      StorageFiles.createDirectories(path.getParent());
+      StorageFiles.writeString(path, gson.toJson(new BreedingConfig()));
     }
-    String text = Files.readString(path);
+    String text = StorageFiles.readString(path);
     try (var reader = new com.google.gson.stream.JsonReader(new java.io.StringReader(text))) {
       reader.setLenient(false);
       uniqueKeys(reader);

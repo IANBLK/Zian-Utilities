@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.core.breeding;
+import com.zianblk.zianutilities.core.storage.StorageFiles;
 
 import java.io.*;
 import java.nio.*;
@@ -62,23 +63,23 @@ public final class BreedingJournal implements AutoCloseable {
   public static BreedingJournal openIndexed(
       Path path, java.util.function.BiConsumer<Frame, String> replay, Fault fault)
       throws IOException {
-    Files.createDirectories(path.toAbsolutePath().getParent());
+    StorageFiles.createDirectories(path.toAbsolutePath().getParent());
     Path maintenance = path.resolveSibling(path.getFileName() + ".maintenance");
-    if (Files.exists(maintenance))
+    if (StorageFiles.exists(maintenance))
       throw new IOException("Breeding storage maintenance requires review before opening");
     var channel =
-        FileChannel.open(
+        StorageFiles.channel(
             path, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
     var journal = new BreedingJournal(channel, fault);
     try {
       journal.exclusive = channel.tryLock();
       if (journal.exclusive == null) throw new IOException("Breeding journal already open");
-      if (Files.exists(maintenance))
+      if (StorageFiles.exists(maintenance))
         throw new IOException("Breeding storage maintenance in progress");
       channel.force(true);
       if (!System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows")) {
         try (var directory =
-            FileChannel.open(path.toAbsolutePath().getParent(), StandardOpenOption.READ)) {
+            StorageFiles.channel(path.toAbsolutePath().getParent(), StandardOpenOption.READ)) {
           directory.force(true);
         }
       }
@@ -182,7 +183,7 @@ public final class BreedingJournal implements AutoCloseable {
   public synchronized void archive(Path target) throws IOException {
     if (locked) throw new IOException("Breeding journal locked");
     try (var output =
-        FileChannel.open(target, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+        StorageFiles.channel(target, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
       var buffer = ByteBuffer.allocate(65536);
       long offset = 0;
       while (offset < channel.size()) {
@@ -207,7 +208,7 @@ public final class BreedingJournal implements AutoCloseable {
       var buffer = ByteBuffer.allocate(65536);
       try (var output =
           new java.util.zip.GZIPOutputStream(
-              Files.newOutputStream(target, StandardOpenOption.CREATE_NEW))) {
+              StorageFiles.newOutputStream(target, StandardOpenOption.CREATE_NEW))) {
         while (offset < size) {
           buffer.clear();
           int read = channel.read(buffer, offset);
@@ -217,13 +218,13 @@ public final class BreedingJournal implements AutoCloseable {
           output.write(buffer.array(), 0, read);
         }
       }
-      try (var output = FileChannel.open(target, StandardOpenOption.WRITE)) {
+      try (var output = StorageFiles.channel(target, StandardOpenOption.WRITE)) {
         output.force(true);
       }
       var archiveDigest = MessageDigest.getInstance("SHA-256");
       long restored = 0;
       byte[] bytes = new byte[65536];
-      try (var input = new java.util.zip.GZIPInputStream(Files.newInputStream(target))) {
+      try (var input = new java.util.zip.GZIPInputStream(StorageFiles.newInputStream(target))) {
         int read;
         while ((read = input.read(bytes)) != -1) {
           restored += read;

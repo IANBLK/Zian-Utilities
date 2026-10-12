@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.gacha;
+import com.zianblk.zianutilities.core.storage.StorageFiles;
 
 import com.zianblk.zianutilities.core.economy.EconomyMutationResult;
 import com.zianblk.zianutilities.core.economy.EconomyOperation;
@@ -18,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
+
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -63,21 +64,21 @@ public final class GachaRuntime {
     }
 
     private static CompoundTag read(Path path) throws IOException {
-        if (!Files.exists(path)) return new CompoundTag();
+        if (!StorageFiles.exists(path)) return new CompoundTag();
         return NbtIo.readCompressed(path, NbtAccounter.create(MAX_JOURNAL_BYTES));
     }
 
     private static void write(Path path, CompoundTag data) throws IOException {
-        Files.createDirectories(path.getParent());
-        Path temp = Files.createTempFile(path.getParent(), "gacha-", ".tmp");
+        StorageFiles.createDirectories(path.getParent());
+        Path temp = StorageFiles.createTempFile(path.getParent(), "gacha-", ".tmp");
         try {
             NbtIo.writeCompressed(data, temp);
-            try (FileChannel channel = FileChannel.open(temp, StandardOpenOption.WRITE)) {
+            try (FileChannel channel = StorageFiles.channel(temp, StandardOpenOption.WRITE)) {
                 channel.force(true);
             }
-            Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            StorageFiles.move(temp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } finally {
-            Files.deleteIfExists(temp);
+            StorageFiles.deleteIfExists(temp);
         }
     }
 

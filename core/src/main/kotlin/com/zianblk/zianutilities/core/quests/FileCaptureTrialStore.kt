@@ -3,7 +3,7 @@ package com.zianblk.zianutilities.core.quests
 import com.zianblk.zianutilities.core.generation.Generation
 import java.nio.channels.FileChannel
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
+import com.zianblk.zianutilities.core.storage.StorageFiles as Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
@@ -54,7 +54,7 @@ class FileCaptureTrialStore(private val directory: Path) : CaptureTrialStore {
             Files.newBufferedWriter(temp, StandardCharsets.UTF_8).use {
                 properties.store(it, "Zian Utilities capture trial")
             }
-            FileChannel.open(temp, StandardOpenOption.WRITE).use { it.force(true) }
+            Files.channel(temp, StandardOpenOption.WRITE).use { it.force(true) }
             Files.move(
                 temp, pathFor(trial.playerId),
                 StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING,

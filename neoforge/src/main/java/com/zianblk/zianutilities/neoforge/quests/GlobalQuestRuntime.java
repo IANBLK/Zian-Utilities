@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.quests;
+import com.zianblk.zianutilities.core.storage.StorageFiles;
 
 import com.zianblk.zianutilities.core.generation.Generation;
 import com.zianblk.zianutilities.core.quests.FileGlobalQuestProgressStore;
@@ -27,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -221,8 +222,8 @@ public final class GlobalQuestRuntime {
     private static Properties readConfig() throws IOException {
         Path path = root.resolve("config.properties");
         Properties p = new Properties();
-        if (Files.exists(path)) {
-            try (var reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) { p.load(reader); }
+        if (StorageFiles.exists(path)) {
+            try (var reader = StorageFiles.newBufferedReader(path, StandardCharsets.UTF_8)) { p.load(reader); }
             boolean changed = false;
             if (!"2".equals(p.getProperty("species.poolRevision"))) {
                 upgradeLegacyPools(p);
@@ -259,9 +260,9 @@ public final class GlobalQuestRuntime {
     }
 
     private static GlobalQuestOffer readOffer(Path path) throws IOException {
-        if (!Files.exists(path)) return null;
+        if (!StorageFiles.exists(path)) return null;
         Properties p = new Properties();
-        try (var reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) { p.load(reader); }
+        try (var reader = StorageFiles.newBufferedReader(path, StandardCharsets.UTF_8)) { p.load(reader); }
         if (!"1".equals(p.getProperty("schema"))) throw new IOException("unsupported global quest offer schema");
         return new GlobalQuestOffer(Long.parseLong(p.getProperty("windowStart")),
             p.getProperty("targetSpecies").isBlank() ? null : p.getProperty("targetSpecies"),
@@ -285,14 +286,14 @@ public final class GlobalQuestRuntime {
     }
 
     private static void write(Path path, Properties p) throws IOException {
-        Files.createDirectories(path.getParent());
-        Path temp = Files.createTempFile(path.getParent(), "global-quest-", ".tmp");
+        StorageFiles.createDirectories(path.getParent());
+        Path temp = StorageFiles.createTempFile(path.getParent(), "global-quest-", ".tmp");
         try {
-            try (var writer = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) { p.store(writer, "Zian Utilities global quest"); }
-            try (var channel = FileChannel.open(temp, StandardOpenOption.WRITE)) { channel.force(true); }
-            Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            try (var writer = StorageFiles.newBufferedWriter(temp, StandardCharsets.UTF_8)) { p.store(writer, "Zian Utilities global quest"); }
+            try (var channel = StorageFiles.channel(temp, StandardOpenOption.WRITE)) { channel.force(true); }
+            StorageFiles.move(temp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } finally {
-            Files.deleteIfExists(temp);
+            StorageFiles.deleteIfExists(temp);
         }
     }
 }

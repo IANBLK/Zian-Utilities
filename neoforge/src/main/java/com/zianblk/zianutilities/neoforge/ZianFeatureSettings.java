@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge;
+import com.zianblk.zianutilities.core.storage.StorageFiles;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -6,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
+
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Properties;
@@ -39,9 +40,9 @@ public final class ZianFeatureSettings {
     }
 
     static Settings load(Path path) throws IOException {
-        if (!Files.exists(path)) writeDefaults(path);
+        if (!StorageFiles.exists(path)) writeDefaults(path);
         Properties properties = new Properties();
-        try (InputStream input = Files.newInputStream(path)) {
+        try (InputStream input = StorageFiles.newInputStream(path)) {
             properties.load(input);
         }
         return new Settings(
@@ -59,20 +60,20 @@ public final class ZianFeatureSettings {
     }
 
     private static void writeDefaults(Path path) throws IOException {
-        Files.createDirectories(path.getParent());
+        StorageFiles.createDirectories(path.getParent());
         Properties properties = new Properties();
         properties.setProperty("quests.enabled", "true");
         properties.setProperty("quests.rewards.enabled", "true");
         properties.setProperty("gachas.enabled", "true");
         properties.setProperty("gachas.payments.enabled", "true");
-        Path temp = Files.createTempFile(path.getParent(), "zianutilities-features-", ".tmp");
+        Path temp = StorageFiles.createTempFile(path.getParent(), "zianutilities-features-", ".tmp");
         try {
-            try (OutputStream output = Files.newOutputStream(temp)) {
+            try (OutputStream output = StorageFiles.newOutputStream(temp)) {
                 properties.store(output, "Zian Utilities features; restart the server after editing");
             }
-            Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE);
+            StorageFiles.move(temp, path, StandardCopyOption.ATOMIC_MOVE);
         } finally {
-            Files.deleteIfExists(temp);
+            StorageFiles.deleteIfExists(temp);
         }
     }
 }

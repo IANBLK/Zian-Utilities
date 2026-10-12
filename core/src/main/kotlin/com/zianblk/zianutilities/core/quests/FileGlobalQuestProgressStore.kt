@@ -2,7 +2,7 @@ package com.zianblk.zianutilities.core.quests
 
 import java.nio.channels.FileChannel
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
+import com.zianblk.zianutilities.core.storage.StorageFiles as Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
@@ -78,7 +78,7 @@ class FileGlobalQuestProgressStore(
         val temp = Files.createTempFile(path.parent, "global-quest-", ".tmp")
         try {
             Files.newBufferedWriter(temp, StandardCharsets.UTF_8).use { p.store(it, "Zian Utilities global quest") }
-            FileChannel.open(temp, StandardOpenOption.WRITE).use { it.force(true) }
+            Files.channel(temp, StandardOpenOption.WRITE).use { it.force(true) }
             Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
         } finally {
             Files.deleteIfExists(temp)

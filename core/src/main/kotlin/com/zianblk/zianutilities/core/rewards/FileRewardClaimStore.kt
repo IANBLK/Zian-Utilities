@@ -1,7 +1,7 @@
 package com.zianblk.zianutilities.core.rewards
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
+import com.zianblk.zianutilities.core.storage.StorageFiles as Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
@@ -92,7 +92,7 @@ class FileRewardClaimStore(private val directory: Path) : RewardClaimStore {
             Files.newBufferedWriter(temp, StandardCharsets.UTF_8).use {
                 properties.store(it, "Zian Utilities reward claim")
             }
-            FileChannel.open(temp, StandardOpenOption.WRITE).use { it.force(true) }
+            Files.channel(temp, StandardOpenOption.WRITE).use { it.force(true) }
             Files.move(
                 temp, pathFor(record.claim.claimId),
                 StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING,

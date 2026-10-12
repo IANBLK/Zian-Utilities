@@ -86,6 +86,11 @@ def run(pass_number):
     print(f"Standalone server pass {pass_number} completed")
 
 if __name__ == "__main__":
+    if os.environ.get("ZIAN_STORAGE_SQLITE_SMOKE")=="true" and GAME.exists():
+        import uuid
+        expected=(ROOT/"neoforge/build/breeding-smoke").resolve()
+        if GAME.resolve()!=expected or not expected.is_relative_to((ROOT/"neoforge/build").resolve()):raise RuntimeError("Unexpected SQL fixture path")
+        GAME.rename(ROOT/"neoforge/build"/("breeding-smoke-previous-"+str(uuid.uuid4())))
     EVIDENCE.mkdir(parents=True, exist_ok=True)
     (GAME / "config").mkdir(parents=True, exist_ok=True)
     (GAME / "config/zianutilities-breeding.json").write_text(json.dumps({"enabled": True, "baseMinutes": 1440, "minimumMinutes": 120, "defaultSlots": 1, "vipSlots": 2, "maxSlots": 8, "alphaChance": 0.05, "currencyReductionsMinutes": {}}), encoding="utf-8")
@@ -94,5 +99,11 @@ if __name__ == "__main__":
     if os.environ.get("ZIANUTILITIES_SMOKE_AVECOINS_JAR"):
         (GAME / "mods").mkdir(exist_ok=True)
         shutil.copyfile(os.environ["ZIANUTILITIES_SMOKE_AVECOINS_JAR"],GAME / "mods/avecoins-2.4.jar")
+    if os.environ.get("ZIAN_STORAGE_SQLITE_SMOKE") == "true":
+        world=GAME/"world"
+        world.mkdir(parents=True,exist_ok=True)
+        java=Path(os.environ["JAVA_HOME"])/"bin"/("java.exe" if os.name=="nt" else "java")
+        classpath=os.pathsep.join([str(ROOT/"core/build/classes/java/main"),str(ROOT/"core/build/resources/main")])
+        subprocess.run([str(java),"-cp",classpath,"com.zianblk.zianutilities.core.storage.StorageMaintenance","migrate-offline",str(world)],check=True)
     run(1)
     run(2)
