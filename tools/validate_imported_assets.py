@@ -39,6 +39,13 @@ with zipfile.ZipFile(jar) as archive:
  for name in [n for n in files if n.startswith(base+'equipment/') and n.endswith('.json')]:
   mesh=json.loads(archive.read(name));texture=mesh['texture'].replace('zianutilities:',base)
   assert texture in files
+  for bone in mesh['bones']:
+   for face in bone['faces']:
+    if 'wornVertices' in face:
+     assert len(face['wornVertices'])==4
+     for worn,original in zip(face['wornVertices'],face['vertices']):
+      assert len(worn)==5 and all(math.isfinite(x) for x in worn)
+      assert worn[3:]==original[3:],'Worn clearance must preserve UV coordinates'
   for slot in ['HEAD','CHEST','LEGS','FEET']:
    vertices=[v for b in mesh['bones'] if b['slot']==slot for f in b['faces'] for v in f['world']]
    lo=[min(v[i] for v in vertices) for i in range(3)];hi=[max(v[i] for v in vertices) for i in range(3)];center=[(lo[i]+hi[i])/2 for i in range(3)]

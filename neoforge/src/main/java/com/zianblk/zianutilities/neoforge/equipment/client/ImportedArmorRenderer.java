@@ -23,7 +23,7 @@ import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsE
 @EventBusSubscriber(modid="zianutilities",value=Dist.CLIENT,bus=EventBusSubscriber.Bus.MOD)
 public final class ImportedArmorRenderer {
  private static final Map<String,Mesh> CACHE=new HashMap<>();
- private record Face(float[][] local,float[][] world,float[] normal){}
+ private record Face(float[][] local,float[][] worn,float[][] world,float[] normal){}
  private record Bone(EquipmentSlot slot,String part,List<Face> faces){}
  private record Mesh(ResourceLocation texture,List<Bone> bones){}
  @SubscribeEvent public static void reload(RegisterClientReloadListenersEvent event){event.registerReloadListener((ResourceManagerReloadListener)manager->CACHE.clear());}
@@ -40,7 +40,7 @@ public final class ImportedArmorRenderer {
  private static Mesh mesh(String set){return CACHE.computeIfAbsent(set,key->{
   try(var reader=Minecraft.getInstance().getResourceManager().openAsReader(ResourceLocation.fromNamespaceAndPath("zianutilities","equipment/"+key+".json"))){
    var root=JsonParser.parseReader(reader).getAsJsonObject();if(root.get("schema").getAsInt()!=1)throw new IllegalArgumentException("Mesh schema");var bones=new ArrayList<Bone>();
-   for(var raw:root.getAsJsonArray("bones")){var b=raw.getAsJsonObject();var faces=new ArrayList<Face>();for(var entry:b.getAsJsonArray("faces")){var f=entry.getAsJsonObject();var n=f.getAsJsonArray("normal");faces.add(new Face(vertices(f.getAsJsonArray("vertices")),vertices(f.getAsJsonArray("world")),new float[]{n.get(0).getAsFloat(),n.get(1).getAsFloat(),n.get(2).getAsFloat()}));}bones.add(new Bone(EquipmentSlot.valueOf(b.get("slot").getAsString()),b.get("part").getAsString(),List.copyOf(faces)));}
+   for(var raw:root.getAsJsonArray("bones")){var b=raw.getAsJsonObject();var faces=new ArrayList<Face>();for(var entry:b.getAsJsonArray("faces")){var f=entry.getAsJsonObject();var n=f.getAsJsonArray("normal");var local=vertices(f.getAsJsonArray("vertices"));var worn=f.has("wornVertices")?vertices(f.getAsJsonArray("wornVertices")):local;faces.add(new Face(local,worn,vertices(f.getAsJsonArray("world")),new float[]{n.get(0).getAsFloat(),n.get(1).getAsFloat(),n.get(2).getAsFloat()}));}bones.add(new Bone(EquipmentSlot.valueOf(b.get("slot").getAsString()),b.get("part").getAsString(),List.copyOf(faces)));}
    return new Mesh(ResourceLocation.parse(root.get("texture").getAsString()),List.copyOf(bones));
   }catch(Exception error){throw new IllegalStateException("Invalid imported armor mesh: "+key,error);}
  });}
@@ -52,7 +52,7 @@ public final class ImportedArmorRenderer {
   @Override public void renderToBuffer(PoseStack pose,VertexConsumer buffer,int light,int overlay,int color){
    pose.pushPose();try{
     if(young){float scale=slot==EquipmentSlot.HEAD?.75f:.5f;pose.scale(scale,scale,scale);pose.translate(0,slot==EquipmentSlot.HEAD?1:1.5,0);}
-    for(var bone:mesh(set).bones())if(bone.slot()==slot){var part=part(bone.part());if(!part.visible)continue;pose.pushPose();try{part.translateAndRotate(pose);for(var face:bone.faces())draw(pose,buffer,face.local(),face.normal(),light,overlay,color,16);}finally{pose.popPose();}}
+    for(var bone:mesh(set).bones())if(bone.slot()==slot){var part=part(bone.part());if(!part.visible)continue;pose.pushPose();try{part.translateAndRotate(pose);for(var face:bone.faces())draw(pose,buffer,face.worn(),face.normal(),light,overlay,color,16);}finally{pose.popPose();}}
    }finally{pose.popPose();}
   }
  }

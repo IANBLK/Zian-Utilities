@@ -38,6 +38,9 @@ def convert(model,name):
     for i in range(3):
      if lo[i]==hi[i]:hi[i]+=.001
     x0,y0,z0=lo;x1,y1,z1=hi
+    # Source shells are thinner than extruded player skin layers. Keep the
+    # original mesh for inventory previews, enlarge only worn base shells.
+    clearance=max(0,.75-inflate) if e.get('box_uv',False) and inflate>0 and all(e['to'][i]>e['from'][i] for i in range(3)) else 0
     points={'north':[(x1,y1,z0),(x0,y1,z0),(x0,y0,z0),(x1,y0,z0)],'south':[(x0,y1,z1),(x1,y1,z1),(x1,y0,z1),(x0,y0,z1)],'east':[(x1,y1,z1),(x1,y1,z0),(x1,y0,z0),(x1,y0,z1)],'west':[(x0,y1,z0),(x0,y1,z1),(x0,y0,z1),(x0,y0,z0)],'up':[(x0,y1,z0),(x1,y1,z0),(x1,y1,z1),(x0,y1,z1)],'down':[(x0,y0,z1),(x1,y0,z1),(x1,y0,z0),(x0,y0,z0)]}
     ec=chain+[(e.get('origin',[0,0,0]),e.get('rotation',[0,0,0]))]
     for direction,f in e.get('faces',{}).items():
@@ -48,7 +51,11 @@ def convert(model,name):
      world=[transform(list(v),ec) for v in points[direction]]
      a=[world[1][i]-world[0][i] for i in range(3)];b=[world[2][i]-world[0][i] for i in range(3)];normal=[a[2]*b[1]-a[1]*b[2],a[0]*b[2]-a[2]*b[0],a[1]*b[0]-a[0]*b[1]];length=math.sqrt(sum(v*v for v in normal));normal=[v/length for v in normal]
      vertices=[[round(world[i][j]-pivot[j],7) for j in range(3)]+uv[i] for i in range(4)]
-     faces.append({'vertices':vertices,'world':[world[i]+uv[i] for i in range(4)],'normal':normal})
+     face={'vertices':vertices,'world':[world[i]+uv[i] for i in range(4)],'normal':normal}
+     if clearance:
+      worn=[transform([v[i]+(clearance if v[i]>center[i] else -clearance) for i in range(3)],ec) for v in points[direction]]
+      face['wornVertices']=[[round(worn[i][j]-pivot[j],7) for j in range(3)]+uv[i] for i in range(4)]
+     faces.append(face)
  for root in model['outliner']:
   g=groups[root['uuid']];key=g['name']
   if key not in MAPPING:raise ValueError('Unmapped armor root '+key)
