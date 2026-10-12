@@ -11,7 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 /** Entry point for player-facing Zian Utilities features. */
-public final class ZianHubScreen extends Screen {
+public final class ZianHubScreen extends com.zianblk.zianutilities.neoforge.client.ResponsiveScreen {
     private static final int GOLD = 0xFFF0C75E;
     private static final int WHITE = 0xFFF4F7FA;
     private static final int MUTED = 0xFF9FAAB5;
@@ -47,7 +47,7 @@ public final class ZianHubScreen extends Screen {
     private int secondY() { return compact() ? firstY() + cardHeight() + 8 : firstY(); }
 
     @Override
-    protected void init() {
+    protected void init() {fitViewport(600,360);
         int w = cardWidth();
         questsButton = addRenderableWidget(new StyledButton(firstX() + 10,
             firstY() + cardHeight() - 29, w - 20, 19,
@@ -69,7 +69,7 @@ public final class ZianHubScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderCanvas(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, width, height, 0xE00D1117);
         graphics.fill(0, 0, width, 4, GOLD);
         graphics.drawCenteredString(font, title, width / 2, 12, GOLD);
@@ -79,7 +79,7 @@ public final class ZianHubScreen extends Screen {
         drawCard(graphics, secondX(), secondY(), cardWidth(), cardHeight(), 0xFF6F7C88);
         drawQuestContent(graphics);
         drawGachaContent(graphics);
-        super.render(graphics, mouseX, mouseY, partialTick);
+        renderWidgets(graphics, mouseX, mouseY, partialTick);
     }
 
     private void drawQuestContent(GuiGraphics graphics) {

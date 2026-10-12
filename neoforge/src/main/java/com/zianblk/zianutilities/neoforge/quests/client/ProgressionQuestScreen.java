@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Locale;
 
 /** Read-only presentation of server-owned weekly and campaign state. */
-public final class ProgressionQuestScreen extends Screen {
+public final class ProgressionQuestScreen extends com.zianblk.zianutilities.neoforge.client.ResponsiveScreen {
     private static final int GOLD = 0xFFF0C75E;
     private static final int WHITE = 0xFFF4F7FA;
     private static final int MUTED = 0xFF9FAAB5;
@@ -47,7 +47,7 @@ public final class ProgressionQuestScreen extends Screen {
         });
     }
 
-    @Override protected void init() {
+    @Override protected void init() {fitViewport(600,360);
         int x = width / 2;
         addRenderableWidget(new StyledButton(10, 9, 70, 20, "Inicio", ZianHubNetwork::requestHub));
         addRenderableWidget(new StyledButton(x - 170, 35, 110, 20, "Cada 3 horas", ZianHubNetwork::requestQuests));
@@ -111,13 +111,13 @@ public final class ProgressionQuestScreen extends Screen {
         // The screen provides its own overlay; NeoForge's menu blur would darken it twice.
     }
 
-    @Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    @Override protected void renderCanvas(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, width, height, 0xE00D1117);
         graphics.fill(0, 0, width, 4, GOLD);
         graphics.drawCenteredString(font, title, width / 2, 12, GOLD);
         if (state.tab() == 0) drawWeekly(graphics);
         else drawCampaign(graphics);
-        super.render(graphics, mouseX, mouseY, partialTick);
+        renderWidgets(graphics, mouseX, mouseY, partialTick);
     }
 
     private void drawWeekly(GuiGraphics graphics) {

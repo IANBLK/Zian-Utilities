@@ -23,7 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 /** Client-only view. No progress or payment is decided here. */
-public final class GlobalQuestScreen extends Screen {
+public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.client.ResponsiveScreen {
     private static final int GOLD = 0xFFF0C75E;
     private static final int WHITE = 0xFFF4F7FA;
     private static final int MUTED = 0xFF9FAAB5;
@@ -55,7 +55,7 @@ public final class GlobalQuestScreen extends Screen {
     }
 
     @Override
-    protected void init() {
+    protected void init() {fitViewport(600,360);
         int x = width / 2;
         int controlsY = controlsY();
         addRenderableWidget(new StyledButton(10, 9, 55, 18, Component.literal("Inicio"),
@@ -104,7 +104,7 @@ public final class GlobalQuestScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderCanvas(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, width, height, 0xE00D1117);
         graphics.fill(0, 0, width, 4, GOLD);
         graphics.drawCenteredString(font, title, width / 2, 12, GOLD);
@@ -129,7 +129,7 @@ public final class GlobalQuestScreen extends Screen {
             : "Acepta para empezar; las acciones anteriores no cuentan";
         graphics.drawCenteredString(font, Component.literal(note), width / 2,
             Math.min(height - 16, controlsY() + 25), MUTED);
-        super.render(graphics, mouseX, mouseY, partialTick);
+        renderWidgets(graphics, mouseX, mouseY, partialTick);
     }
 
     private void drawCaptureCard(GuiGraphics graphics, int x, int y, int w, int h, float partialTick) {

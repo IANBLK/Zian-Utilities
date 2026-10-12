@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Client preview and admin editor. All mutation and random selection happens on the server. */
-public final class GachaScreen extends Screen {
+public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client.ResponsiveScreen {
     private static final int GOLD = 0xFFF0C75E;
     private static final int WHITE = 0xFFF4F7FA;
     private static final int MUTED = 0xFF9FAAB5;
@@ -110,7 +110,7 @@ public final class GachaScreen extends Screen {
     private int contentWidth() { return Math.min(width - 20, 470); }
 
     @Override
-    protected void init() {
+    protected void init() {fitViewport(600,360);
         addRenderableWidget(new StyledButton(10, 9, 55, 18, "Inicio", ZianHubNetwork::requestHub));
         if (state.admin()) addRenderableWidget(new StyledButton(width - 81, 9, 71, 18,
             editing ? "Jugador" : "Editar", () -> { editing = !editing; confirming = false; reopen(); }));
@@ -220,7 +220,7 @@ public final class GachaScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderCanvas(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         hoveredItem = ItemStack.EMPTY;
         // The reel is a modal view. Drawing the normal screen first lets its widgets
         // bleed through the card at smaller GUI scales because item rendering changes depth.
@@ -237,10 +237,10 @@ public final class GachaScreen extends Screen {
             : pool.name() + (state.admin() && !pool.enabled() ? " (sin publicar)" : "")), width / 2, 45, WHITE);
         if (editing) renderAdmin(graphics, x, w, pool, mouseX, mouseY);
         else renderPlayer(graphics, x, w, pool, mouseX, mouseY);
-        super.render(graphics, mouseX, mouseY, partialTick);
+        renderWidgets(graphics, mouseX, mouseY, partialTick);
         // Use the complete synchronized stack and Minecraft's standard tooltip pipeline.
         // Render last so widgets and item depth changes cannot cover the tooltip.
-        if (!hoveredItem.isEmpty()) graphics.renderTooltip(font, hoveredItem, mouseX, mouseY);
+        if (!hoveredItem.isEmpty()) queueItemTooltip(hoveredItem);
     }
 
     private void renderReel(GuiGraphics graphics) {
@@ -279,9 +279,9 @@ public final class GachaScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean canvasMouseClicked(double mouseX, double mouseY, int button) {
         if (awaitingRoll || reel != null) return true;
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.canvasMouseClicked(mouseX, mouseY, button);
     }
 
     private void renderPlayer(GuiGraphics graphics, int x, int w, GachaNetwork.PoolView pool,
