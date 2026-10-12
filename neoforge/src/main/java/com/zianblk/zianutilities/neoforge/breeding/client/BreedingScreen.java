@@ -38,6 +38,8 @@ public final class BreedingScreen
             old.state = state;
             old.received = System.nanoTime();
             old.jobIndex = Math.max(0, Math.min(old.jobIndex, state.jobs().size() - 1));
+            for (int i = 0; i < state.jobs().size(); i++)
+              if (state.jobs().get(i).id().equals(state.job())) old.jobIndex = i;
             old.rebuildWidgets();
           }
         });
@@ -50,6 +52,8 @@ public final class BreedingScreen
   private int contentWidth() {
     return Math.min(width - 20, 420);
   }
+
+  private int panelTop() { return Math.max(65, (height - 270) / 2); }
 
   private void act(int kind, String target, boolean maximum) {
     BreedingNetwork.action(state, kind, target, maximum);
@@ -73,7 +77,7 @@ public final class BreedingScreen
 
   @Override
   protected void init() {
-    fitViewport(440, 330);
+    fitViewport(440, 380);
     int x = left(), w = contentWidth();
     button(
         10,
@@ -87,8 +91,16 @@ public final class BreedingScreen
         true);
     button(width - 65, 9, 55, "Cerrar", this::onClose, true);
     if (!state.pending().isEmpty()) {
-      button(x + w / 2 - 111, height - 29, 105, "Confirmar", () -> act(9, "", false), true);
-      button(x + w / 2 + 6, height - 29, 105, "Volver", () -> act(10, "", false), true);
+      int y = panelTop();
+      if (state.pending().equals("start")) {
+        var father = addRenderableWidget(new ParentSlot(x + 12, y + 55, (w - 36) / 2, 64, 1));
+        var mother = addRenderableWidget(new ParentSlot(x + w / 2 + 6, y + 55, (w - 36) / 2, 64, 2));
+        father.active = false;
+        mother.active = false;
+        addRenderableWidget(new OffspringButton(x + (w - 250) / 2, y + 125, 250, 80));
+      }
+      button(x + 12, y + 242, (w - 36) / 2, "Confirmar", () -> act(9, "", false), true);
+      button(x + w / 2 + 6, y + 242, (w - 36) / 2, "Volver", () -> act(10, "", false), true);
       return;
     }
     int tabWidth = Math.min(170, (w - 12) / 2);
@@ -169,39 +181,36 @@ public final class BreedingScreen
           () -> act(3, "", false),
           state.compatible() && state.used() < state.capacity());
     } else if (!state.jobs().isEmpty()) {
-      button(x, 66, 35, "<", () -> selectJob(-1), state.jobs().size() > 1);
-      button(x + w - 35, 66, 35, ">", () -> selectJob(1), state.jobs().size() > 1);
+      int top = panelTop();
+      button(x + 12, top + 10, 28, "<", () -> selectJob(-1), state.jobs().size() > 1);
+      button(x + w - 40, top + 10, 28, ">", () -> selectJob(1), state.jobs().size() > 1);
       var j = job();
       if (j == null) {
         act(4, state.jobs().get(Math.min(jobIndex, state.jobs().size() - 1)).id(), false);
         return;
       }
-      int y = Math.max(120, height - 105);
+      int y = top + 160;
       var currency = currency();
       if (currency != null) {
         button(
-            x,
+            x + 12,
             y,
-            w,
-            "Moneda: "
-                + friendly(currency.id())
-                + " · "
-                + currency.minutes()
-                + " min/u · saldo "
-                + (currency.balance() < 0 ? "?" : currency.balance()),
+            w - 24,
+            "Acelerar con "
+                + friendly(currency.id()),
             this::nextCurrency,
             true);
       }
-      boolean canBuy = j.status().equals("ACTIVE") && j.readyAt() > now() && currency != null;
-      button(x, y + 24, w / 2 - 3, "Acelerar 1 unidad", () -> act(6, "", false), canBuy);
-      button(x + w / 2 + 3, y + 24, w / 2 - 3, "Hasta el mínimo", () -> act(6, "", true), canBuy);
+      boolean canBuy = j.status().equals("ACTIVE") && j.readyAt() > now() && currency != null && currency.balance() != 0;
+      button(x + 12, y + 26, (w - 36) / 2, "Acelerar 1 unidad", () -> act(6, "", false), canBuy);
+      button(x + w / 2 + 6, y + 26, (w - 36) / 2, "Hasta el mínimo", () -> act(6, "", true), canBuy);
       boolean claim =
           (j.status().equals("ACTIVE") || j.status().equals("BLOCKED")) && j.readyAt() <= now();
-      button(x, height - 29, w / 2 - 3, "Entregar al PC", () -> act(7, "", false), claim);
+      button(x + 12, top + 242, (w - 36) / 2, "Entregar al PC", () -> act(7, "", false), claim);
       button(
-          x + w / 2 + 3,
-          height - 29,
-          w / 2 - 3,
+          x + w / 2 + 6,
+          top + 242,
+          (w - 36) / 2,
           "Cancelar crianza",
           () -> act(8, "", false),
           j.status().equals("ACTIVE") || j.status().equals("BLOCKED"));
@@ -257,9 +266,10 @@ public final class BreedingScreen
     hovered = "";
     childHovered = false;
     int x = left(), w = contentWidth();
-    if (jobs && state.pending().isEmpty()) card(g, x, 64, w, height - 98, GOLD);
+    if (jobs && state.pending().isEmpty()) card(g, x, panelTop(), w, 270, GOLD);
     if (!state.pending().isEmpty()) {
-      card(g, x, 65, w, height - 105, GOLD);
+      int top = panelTop();
+      card(g, x, top, w, 270, GOLD);
       g.drawCenteredString(
           font,
           Component.literal(
@@ -269,9 +279,13 @@ public final class BreedingScreen
                 default -> "Confirmar aceleración";
               }),
           width / 2,
-          79,
+          top + 14,
           GOLD);
-      wrap(g, state.confirmation(), x + 12, 100, w - 24, WHITE, 3);
+      wrapCentered(g, state.confirmation(), x + 12, top + 34, w - 24, WHITE, state.pending().equals("start") ? 1 : 5);
+      if (!state.pending().equals("start")) {
+        pokemonIcon(g, new net.minecraft.world.item.ItemStack(state.pending().equals("cancel")
+            ? net.minecraft.world.item.Items.BARRIER : net.minecraft.world.item.Items.CLOCK), width / 2 - 22, top + 105, 44);
+      }
       wrap(
           g,
           state.pending().equals("accelerate")
@@ -281,10 +295,10 @@ public final class BreedingScreen
                   ? "Los padres quedarán libres. No se devuelven monedas de aceleraciones."
                   : "Los padres seguirán contigo. La cría se entregará al PC al finalizar.",
           x + 12,
-          Math.max(132, height - 96),
+          top + 214,
           w - 24,
           MUTED,
-          3);
+          2);
     } else if (!jobs) {
       if (picker != 0) {
         g.drawCenteredString(
@@ -319,18 +333,19 @@ public final class BreedingScreen
           g,
           "Todavía no tienes crianzas pendientes. Elige dos padres para iniciar una.",
           x + 12,
-          84,
+          panelTop() + 40,
           w - 24,
           MUTED,
           3);
     else {
       var j = job();
       if (j != null) {
+        int top = panelTop();
         g.drawCenteredString(
             font,
-            Component.literal("Crianza " + (jobIndex + 1) + " · " + j.id().substring(0, 8)),
+            Component.literal("Crianza " + (jobIndex + 1) + " de " + state.jobs().size()),
             width / 2,
-            70,
+            top + 15,
             WHITE);
         String label =
             switch (j.status()) {
@@ -342,10 +357,12 @@ public final class BreedingScreen
             };
         g.drawCenteredString(
             font,
-            Component.literal(label + " · " + remaining(j.readyAt() - now())),
+            Component.literal(label),
             width / 2,
-            93,
+            top + 42,
             j.status().equals("UNCERTAIN") ? RED : GOLD);
+        pokemonIcon(g, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.EGG), width / 2 - 22, top + 60, 44);
+        g.drawCenteredString(font, remaining(j.readyAt() - now()), width / 2, top + 110, WHITE);
         String why =
             switch (j.reason()) {
               case "PC_FULL" -> "Tu PC está lleno: libera espacio y reclama aquí";
@@ -359,11 +376,18 @@ public final class BreedingScreen
         wrap(
             g,
             state.message().isEmpty() ? why : state.message(),
-            x,
-            108,
-            w,
+            x + 12,
+            top + 126,
+            w - 24,
             MUTED,
-            height < 300 ? 1 : 2);
+            2);
+        g.fill(x + 12, top + 152, x + w - 12, top + 153, 0xFF3B4148);
+        var money = currency();
+        if (money != null) g.drawCenteredString(font, money.minutes() + " min por unidad · saldo "
+            + (money.balance() < 0 ? "?" : money.balance()), width / 2, top + 205, WHITE);
+        wrapCentered(g, currency() == null ? "No hay monedas de aceleración configuradas"
+            : currency().balance() == 0 ? "Sin saldo para acelerar · puedes esperar sin costo"
+            : "Acelerar reduce la espera hasta el mínimo permitido", x + 12, top + 215, w - 24, MUTED, 2);
       }
     }
     renderWidgets(g, mx, my, partial);
@@ -711,9 +735,12 @@ public final class BreedingScreen
       int border = isHovered && active ? GOLD : active ? 0xFF526575 : 0xFF3B4148;
       g.fill(getX(), getY(), getX() + width, getY() + height, active ? 0xFF20262D : 0xFF161A20);
       g.renderOutline(getX(), getY(), width, height, border);
+      var font = Minecraft.getInstance().font;
+      String label = getMessage().getString();
+      if (font.width(label) > width - 12) label = font.plainSubstrByWidth(label, Math.max(1, width - 20)) + "…";
       g.drawCenteredString(
           Minecraft.getInstance().font,
-          getMessage(),
+          label,
           getX() + width / 2,
           getY() + (height - 8) / 2,
           active ? WHITE : 0xFF7C838B);
