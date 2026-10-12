@@ -87,10 +87,11 @@ def fit_weapon_gui(model):
  scale=12/max(high[0]-low[0],high[1]-low[1])
  model.setdefault('display',{})['gui']={'rotation':[-180,0,135],'translation':[-(low[i]+high[i])*scale/2 if i<2 else 0 for i in range(3)],'scale':[scale]*3}
  return model
-with zipfile.ZipFile(SOURCES/'Reforged armors free.zip') as z:
- for material in ['leather','chainmail','copper','golden','iron','diamond','netherite']:
-  name='reforged_'+material
-  report.append(convert(json.loads(z.read(f'mythicarmors/models/{name}_armor.bbmodel')),name))
+# Reforged models retired. Registry aliases remain for lossless save migration.
+for material in ['leather','chainmail','copper','golden','iron','diamond','netherite']:
+ for kind in ['helmet','chestplate','leggings','boots']:
+  name='reforged_'+material+'_'+kind;vanilla='netherite' if material=='netherite' else 'diamond'
+  js(f'models/item/{name}.json',{'parent':f'minecraft:item/{vanilla}_{kind}'})
 with zipfile.ZipFile(SOURCES/'Dark lightning free.zip') as z:
  prefix='ItemsAdder/contents/dark_lightning/resourcepack/assets/dark_lightning/'
  for entry in z.namelist():

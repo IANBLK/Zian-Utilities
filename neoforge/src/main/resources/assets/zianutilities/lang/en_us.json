@@ -106,5 +106,11 @@
   "item.zianutilities.storm_katana": "Katana del Cielo Roto",
   "item.zianutilities.storm_katana.lore": "Un legado antiguo que aguarda la mano de su próximo guardián.",
   "item.zianutilities.dark_lightning_book": "Grimorio del Trueno Oscuro",
-  "item.zianutilities.dark_lightning_book.lore": "Sus páginas custodian ecos de una tormenta olvidada. Reliquia decorativa."
+  "item.zianutilities.dark_lightning_book.lore": "Sus páginas custodian ecos de una tormenta olvidada. Reliquia decorativa.",
+  "equipment.zianutilities.prismatic.lore": "Forged in crystal light; every glimmer holds the strength of dawn.",
+  "equipment.zianutilities.dark_reaper.lore": "Twilight steel, tempered for those who walk among shadows.",
+  "item.zianutilities.regular_bow.lore": "Noble wood and a steady hand. A classic with balanced power.",
+  "item.zianutilities.curve_bow.lore": "Its curved limbs focus tension into a lightly enhanced shot.",
+  "item.zianutilities.harp_bow.lore": "Its strings sing to the wind with intermediate power.",
+  "item.zianutilities.long_bow.lore": "A long-tempered bow, the most powerful in this collection."
 }

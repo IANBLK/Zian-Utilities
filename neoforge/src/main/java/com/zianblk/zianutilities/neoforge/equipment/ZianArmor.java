@@ -47,7 +47,7 @@ public final class ZianArmor {
         registerSet("dark_reaper");
         for (String name : BOW_NAMES) {
             Supplier<ZianBowItem> bow = ITEMS.register(name,
-                () -> new ZianBowItem(toolProperties().durability(2032)));
+                () -> new ZianBowItem(decorate(toolProperties().durability(2032),name),switch(name){case "regular_bow"->0.0;case "curve_bow"->0.25;case "harp_bow"->0.5;case "long_bow"->0.75;default->throw new IllegalArgumentException(name);}));
             BOWS.add(bow);
             EQUIPMENT.add(bow);
         }
@@ -82,17 +82,17 @@ public final class ZianArmor {
         for (ArmorItem.Type type : List.of(ArmorItem.Type.HELMET, ArmorItem.Type.CHESTPLATE,
             ArmorItem.Type.LEGGINGS, ArmorItem.Type.BOOTS)) {
             EQUIPMENT.add(ITEMS.register(name + "_" + type.getName(), () -> new ArmorItem(material, type,
-                new Item.Properties().fireResistant().durability(type.getDurability(37)))));
+                decorate(new Item.Properties().fireResistant().durability(type.getDurability(37)),name+"_"+type.getName()))));
         }
-        EQUIPMENT.add(ITEMS.register(name + "_sword", ZianArmor::sword));
+        EQUIPMENT.add(ITEMS.register(name + "_sword", () -> new SwordItem(ENHANCED_NETHERITE,decorate(toolProperties().attributes(SwordItem.createAttributes(ENHANCED_NETHERITE,3,-2.4f)),name+"_sword"))));
         EQUIPMENT.add(ITEMS.register(name + "_axe", () -> new AxeItem(ENHANCED_NETHERITE,
-            toolProperties().attributes(AxeItem.createAttributes(ENHANCED_NETHERITE, 5.0F, -3.0F)))));
+            decorate(toolProperties().attributes(AxeItem.createAttributes(ENHANCED_NETHERITE, 5.0F, -3.0F)),name+"_axe"))));
         EQUIPMENT.add(ITEMS.register(name + "_pickaxe", () -> new PickaxeItem(ENHANCED_NETHERITE,
-            toolProperties().attributes(PickaxeItem.createAttributes(ENHANCED_NETHERITE, 1.0F, -2.8F)))));
+            decorate(toolProperties().attributes(PickaxeItem.createAttributes(ENHANCED_NETHERITE, 1.0F, -2.8F)),name+"_pickaxe"))));
         EQUIPMENT.add(ITEMS.register(name + "_shovel", () -> new ShovelItem(ENHANCED_NETHERITE,
-            toolProperties().attributes(ShovelItem.createAttributes(ENHANCED_NETHERITE, 1.5F, -3.0F)))));
+            decorate(toolProperties().attributes(ShovelItem.createAttributes(ENHANCED_NETHERITE, 1.5F, -3.0F)),name+"_shovel"))));
         EQUIPMENT.add(ITEMS.register(name + "_hoe", () -> new HoeItem(ENHANCED_NETHERITE,
-            toolProperties().attributes(HoeItem.createAttributes(ENHANCED_NETHERITE, -4.0F, 0.0F)))));
+            decorate(toolProperties().attributes(HoeItem.createAttributes(ENHANCED_NETHERITE, -4.0F, 0.0F)),name+"_hoe"))));
 
     }
 
@@ -107,6 +107,14 @@ public final class ZianArmor {
 
     private static Item.Properties toolProperties() {
         return new Item.Properties().fireResistant();
+    }
+
+    private static Item.Properties decorate(Item.Properties properties,String id) {
+        int color=id.startsWith("prismatic")?0x83E6EA:id.startsWith("dark_reaper")?0xB080DD:id.equals("curve_bow")?0x89CDA5:id.equals("regular_bow")?0xDFC38F:id.equals("long_bow")?0xE79595:0xB8A2EC;
+        String lore=id.startsWith("prismatic")?"equipment.zianutilities.prismatic.lore":id.startsWith("dark_reaper")?"equipment.zianutilities.dark_reaper.lore":"item.zianutilities."+id+".lore";
+        var divider=Component.literal("━━━━━━━━ ✦ ━━━━━━━━").withStyle(s->s.withColor(color));
+        return properties.component(net.minecraft.core.component.DataComponents.ITEM_NAME,Component.translatable("item.zianutilities."+id).withStyle(s->s.withColor(color).withBold(true)))
+            .component(net.minecraft.core.component.DataComponents.LORE,new net.minecraft.world.item.component.ItemLore(List.of(divider,Component.translatable(lore).withStyle(net.minecraft.ChatFormatting.GRAY,net.minecraft.ChatFormatting.ITALIC),divider)));
     }
 
     public static void register(IEventBus bus) {

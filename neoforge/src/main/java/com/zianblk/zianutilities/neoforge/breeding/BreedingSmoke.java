@@ -463,6 +463,7 @@ final class BreedingSmoke {
   }
 
   private static void verifyGachaCatalog(ServerPlayer player)throws Exception {
+    com.zianblk.zianutilities.neoforge.riding.RidingSmoke.verify(player);
     var registry=player.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT);
     var protection=registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.PROTECTION);var unbreaking=registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.UNBREAKING);var efficiency=registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.EFFICIENCY);var sharpness=registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.SHARPNESS);
     int armorCount=0,weaponCount=0;
@@ -471,6 +472,16 @@ final class BreedingSmoke {
       if(stack.getItem() instanceof net.minecraft.world.item.ArmorItem armor){
         var base=(entry.getKey().startsWith("dark_lightning")||entry.getKey().startsWith("reforged_netherite")?net.minecraft.world.item.ArmorMaterials.NETHERITE:net.minecraft.world.item.ArmorMaterials.DIAMOND).value();int bonus=entry.getKey().startsWith("reforged_netherite")?1:0;
         require(armor.getDefense()==base.getDefense(armor.getType())+bonus && stack.supportsEnchantment(protection) && stack.supportsEnchantment(unbreaking),"Imported armor stats/enchantment mismatch: "+entry.getKey());armorCount++;
+        if(entry.getKey().startsWith("reforged_")){
+          stack.enchant(protection,3);stack.setDamageValue(7);
+          stack.set(net.minecraft.core.component.DataComponents.REPAIR_COST,5);
+          stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,net.minecraft.network.chat.Component.literal("Legacy test armor"));
+          var migrated=com.zianblk.zianutilities.neoforge.equipment.RetiredReforged.convert(stack);
+          var target=net.minecraft.resources.ResourceLocation.withDefaultNamespace((entry.getKey().startsWith("reforged_netherite_")?"netherite_":"diamond_")+armor.getType().getName());
+          require(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(migrated.getItem()).equals(target),"Retired armor target mismatch");
+          require(migrated.getCount()==stack.getCount() && migrated.getDamageValue()==7 && migrated.get(net.minecraft.core.component.DataComponents.REPAIR_COST)==5 && migrated.get(net.minecraft.core.component.DataComponents.ENCHANTMENTS).equals(stack.get(net.minecraft.core.component.DataComponents.ENCHANTMENTS)) && migrated.getHoverName().equals(stack.getHoverName()),"Retired armor lost components");
+          require(com.zianblk.zianutilities.neoforge.equipment.RetiredReforged.convert(migrated)==migrated,"Retired armor conversion must be idempotent");
+        }
       }else if(stack.getItem() instanceof net.minecraft.world.item.TieredItem tiered){
         require(stack.supportsEnchantment(unbreaking),"Imported weapon durability enchantment missing");
         if(stack.getItem() instanceof net.minecraft.world.item.SwordItem)require(stack.supportsEnchantment(sharpness),"Imported sword enchantment missing");
@@ -478,7 +489,18 @@ final class BreedingSmoke {
       }
     }
     require(armorCount==32 && weaponCount==9,"Imported equipment count mismatch");
-    org.slf4j.LoggerFactory.getLogger("ImportedGearSmoke").info("Imported gear passed: 32 real armor pieces, 9 tiered weapons, enchantments and obsidian harvest");
+    org.slf4j.LoggerFactory.getLogger("ImportedGearSmoke").info("Imported gear passed: 28 retired armor aliases migrate losslessly, 4 active armor pieces, 9 tiered weapons, enchantments and obsidian harvest");
+    var bowEnchantments=java.util.List.of(net.minecraft.world.item.enchantment.Enchantments.POWER,net.minecraft.world.item.enchantment.Enchantments.PUNCH,net.minecraft.world.item.enchantment.Enchantments.FLAME,net.minecraft.world.item.enchantment.Enchantments.INFINITY,net.minecraft.world.item.enchantment.Enchantments.UNBREAKING,net.minecraft.world.item.enchantment.Enchantments.MENDING,net.minecraft.world.item.enchantment.Enchantments.VANISHING_CURSE);
+    var expectedBonus=java.util.Map.of("curve_bow",.25,"regular_bow",0.,"long_bow",.75,"harp_bow",.5);
+    for(var bow:com.zianblk.zianutilities.neoforge.equipment.ZianArmor.bows()){
+      var stack=new ItemStack(bow);var id=net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(bow).getPath();
+      for(var key:bowEnchantments)require(stack.supportsEnchantment(registry.getOrThrow(key)),"Bow enchantment rejected: "+id+" "+key);
+      var arrow=new net.minecraft.world.entity.projectile.Arrow(net.minecraft.world.entity.EntityType.ARROW,player.serverLevel());double initial=arrow.getBaseDamage();
+      require(bow.customArrow(arrow,new ItemStack(net.minecraft.world.item.Items.ARROW),stack)==arrow && Math.abs(arrow.getBaseDamage()-initial-expectedBonus.get(id))<.000001,"Bow damage balance mismatch");
+      require(stack.has(net.minecraft.core.component.DataComponents.LORE) && stack.getHoverName().getStyle().isBold(),"Bow decoration missing");
+    }
+    require(!net.minecraft.world.item.enchantment.Enchantment.areCompatible(registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.INFINITY),registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.MENDING)),"Infinity/Mending conflict must remain vanilla");
+    org.slf4j.LoggerFactory.getLogger("ImportedGearSmoke").info("Four bows passed: seven supported enchantments, vanilla Infinity/Mending exclusion, distinct arrow damage and styled lore");
 
     var before=com.zianblk.zianutilities.neoforge.gacha.GachaRuntime.view(player);
     if(before.pools().isEmpty())com.zianblk.zianutilities.neoforge.gacha.GachaRuntime.create(player);

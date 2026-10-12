@@ -28,23 +28,24 @@ public final class ZianHubScreen extends com.zianblk.zianutilities.neoforge.clie
         minecraft.execute(() -> minecraft.setScreen(new ZianHubScreen(state)));
     }
 
-    private boolean compact() { return width < 500; }
+
 
     private int cardWidth() {
-        return compact() ? Math.min(width - 24, 330) : Math.min((width - 40) / 2, 232);
+        return Math.min((width - 64) / 3, 184);
     }
 
-    private int cardHeight() { return compact() ? 78 : 138; }
+    private int cardHeight() { return 168; }
 
     private int firstX() {
-        return compact() ? (width - cardWidth()) / 2 : width / 2 - cardWidth() - 5;
+        return (width - 3 * cardWidth() - 24) / 2;
     }
 
-    private int firstY() { return compact() ? 49 : Math.max(55, height / 2 - 76); }
+    private int firstY() { return Math.max(58, height / 2 - cardHeight() / 2); }
 
-    private int secondX() { return compact() ? firstX() : firstX() + cardWidth() + 10; }
+    private int secondX() { return firstX() + cardWidth() + 12; }
 
-    private int secondY() { return compact() ? firstY() + cardHeight() + 8 : firstY(); }
+    private int secondY() { return firstY(); }
+    private int thirdX() { return secondX() + cardWidth() + 12; }
 
     @Override
     protected void init() {fitViewport(600,360);
@@ -57,10 +58,11 @@ public final class ZianHubScreen extends com.zianblk.zianutilities.neoforge.clie
             secondY() + cardHeight() - 29, w - 20, 19,
             Component.literal("Abrir gachas"), ZianHubNetwork::requestGachas));
         gachas.active = state.gachasEnabled();
-        StyledButton breeding = addRenderableWidget(new StyledButton(width / 2 - 100,
-            Math.max(secondY() + cardHeight() + 4, height - 25), 200, 19,
-            Component.literal("Abrir crianza Pokémon"), ZianHubNetwork::requestBreeding));
+        StyledButton breeding = addRenderableWidget(new StyledButton(thirdX() + 10,
+            firstY() + cardHeight() - 29, w - 20, 19,
+            Component.literal("Abrir crianza"), ZianHubNetwork::requestBreeding));
         breeding.active = state.breedingEnabled();
+        addRenderableWidget(new StyledButton(width-68,12,56,19,Component.literal("Cerrar"),this::onClose));
     }
 
     @Override
@@ -76,9 +78,12 @@ public final class ZianHubScreen extends com.zianblk.zianutilities.neoforge.clie
         graphics.drawCenteredString(font, Component.literal("Elige una sección"), width / 2, 28, MUTED);
 
         drawCard(graphics, firstX(), firstY(), cardWidth(), cardHeight(), GOLD);
-        drawCard(graphics, secondX(), secondY(), cardWidth(), cardHeight(), 0xFF6F7C88);
+        drawCard(graphics, secondX(), secondY(), cardWidth(), cardHeight(), 0xFFB590E8);
+        drawCard(graphics, thirdX(), firstY(), cardWidth(), cardHeight(), 0xFF7DCEAD);
         drawQuestContent(graphics);
         drawGachaContent(graphics);
+        drawBreedingContent(graphics);
+        graphics.drawCenteredString(font,Component.literal("Tu aventura, tus recompensas, tu equipo"),width/2,Math.min(height-24,firstY()+cardHeight()+18),MUTED);
         renderWidgets(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -87,12 +92,8 @@ public final class ZianHubScreen extends com.zianblk.zianutilities.neoforge.clie
         int y = firstY();
         graphics.renderItem(new ItemStack(Items.BOOK), x + 11, y + 11);
         graphics.drawString(font, Component.literal("Misiones"), x + 35, y + 13, WHITE, false);
-        graphics.drawString(font, Component.literal(state.questsEnabled()
-            ? "Captura y batallas salvajes" : "Sin misión activa"), x + 11, y + 35, MUTED, false);
-        if (!compact()) {
-            graphics.drawString(font, Component.literal("Objetivos globales, avance personal"),
-                x + 11, y + 52, MUTED, false);
-        }
+        graphics.drawWordWrap(font,Component.literal("Captura Pokémon y supera desafíos.\n\nObjetivos globales con avance personal."),x+11,y+40,cardWidth()-22,MUTED);
+        status(graphics,x,y,state.questsEnabled());
     }
 
     private void drawGachaContent(GuiGraphics graphics) {
@@ -100,15 +101,18 @@ public final class ZianHubScreen extends com.zianblk.zianutilities.neoforge.clie
         int y = secondY();
         graphics.renderItem(new ItemStack(Items.AMETHYST_SHARD), x + 11, y + 11);
         graphics.drawString(font, Component.literal("Gachas"), x + 35, y + 13, WHITE, false);
-        graphics.drawString(font, Component.literal(state.gachasEnabled()
-            ? "Premios personalizados con tickets" : "Próximamente"),
-            x + 11, y + 35, MUTED, false);
-        if (!compact()) {
-            graphics.drawString(font, Component.literal(state.gachasEnabled()
-                ? "Probabilidades visibles antes de girar" : "Sin compras ni recompensas aún"),
-                x + 11, y + 52, MUTED, false);
-        }
+        graphics.drawWordWrap(font,Component.literal("Descubre recompensas con tickets.\n\nConsulta premios y probabilidades antes de girar."),x+11,y+40,cardWidth()-22,MUTED);
+        status(graphics,x,y,state.gachasEnabled());
     }
+
+    private void drawBreedingContent(GuiGraphics graphics){
+        int x=thirdX(),y=firstY();
+        graphics.renderItem(new ItemStack(Items.EGG),x+11,y+11);
+        graphics.drawString(font,Component.literal("Crianza"),x+35,y+13,WHITE,false);
+        graphics.drawWordWrap(font,Component.literal("Elige padres de tu equipo.\n\nConsulta la posible cría y gestiona tus crianzas."),x+11,y+40,cardWidth()-22,MUTED);
+        status(graphics,x,y,state.breedingEnabled());
+    }
+    private void status(GuiGraphics graphics,int x,int y,boolean enabled){graphics.drawString(font,Component.literal(enabled?"Disponible":"No disponible"),x+11,y+cardHeight()-48,enabled?0xFF88D5AD:MUTED,false);}
 
     private static void drawCard(GuiGraphics graphics, int x, int y, int w, int h, int accent) {
         graphics.fill(x, y, x + w, y + h, 0xFF59616B);

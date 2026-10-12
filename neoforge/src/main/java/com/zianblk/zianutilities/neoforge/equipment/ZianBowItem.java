@@ -6,9 +6,13 @@ import net.minecraft.world.item.ItemStack;
 
 /** Keeps vanilla ammunition, enchantments and firing behavior with enhanced arrow damage. */
 public final class ZianBowItem extends BowItem {
-    public ZianBowItem(Properties properties) {
+    private final double damageBonus;
+    public ZianBowItem(Properties properties,double damageBonus) {
         super(properties);
+        if(!Double.isFinite(damageBonus)||damageBonus<0||damageBonus>1)throw new IllegalArgumentException("Invalid bow damage bonus");
+        this.damageBonus=damageBonus;
     }
+    public double damageBonus(){return damageBonus;}
 
     @Override
     public int getEnchantmentValue() {
@@ -17,7 +21,7 @@ public final class ZianBowItem extends BowItem {
 
     @Override
     public AbstractArrow customArrow(AbstractArrow arrow, ItemStack projectileStack, ItemStack weaponStack) {
-        arrow.setBaseDamage(arrow.getBaseDamage() + 1.0D);
+        arrow.setBaseDamage(arrow.getBaseDamage() + damageBonus);
         return arrow;
     }
 }

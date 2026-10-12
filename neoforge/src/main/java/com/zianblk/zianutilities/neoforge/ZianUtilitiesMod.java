@@ -46,6 +46,8 @@ public final class ZianUtilitiesMod {
         if (FMLEnvironment.dist == Dist.CLIENT) ZianEquipmentClient.register(modBus);
         PlaneMining.install();
         com.zianblk.zianutilities.neoforge.breeding.BreedingRuntime.install();
+        com.zianblk.zianutilities.neoforge.riding.RidingCommands.install();
+        modBus.addListener(com.zianblk.zianutilities.neoforge.riding.RidingNetwork::register);
         modBus.addListener(GlobalQuestNetwork::register);
         modBus.addListener(ProgressionQuestNetwork::register);
         modBus.addListener(ZianHubNetwork::register);

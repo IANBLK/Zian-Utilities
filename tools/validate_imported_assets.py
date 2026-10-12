@@ -53,4 +53,4 @@ with zipfile.ZipFile(jar) as archive:
    assert diameter>0
    # Sphere normalization bounds every rotation, not only the current GUI angle.
    assert max(math.sqrt(sum(((v[i]-center[i])*.8/diameter)**2 for i in range(3))) for v in vertices)<=.400001
-print('PASS: 42 packaged models, all PNG atlas references, 3 weapon GUI bounds and 28 rotation-safe armor icon bounds')
+print('PASS: 42 active/compatibility models, packaged PNG atlas references and imported weapon GUI bounds')
