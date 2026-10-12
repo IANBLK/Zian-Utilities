@@ -302,7 +302,7 @@ public final class BreedingNetwork {
       p.closeContainer();
       send(p, s, true);
     } catch (Exception e) {
-      p.sendSystemMessage(Component.literal(e.getMessage()));
+      p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal(e.getMessage())));
     }
   }
 
@@ -443,9 +443,9 @@ public final class BreedingNetwork {
         try {
           send(p, s, false);
         } catch (Exception ignored) {
-          p.sendSystemMessage(Component.literal(s.message));
+          p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal(s.message)));
         }
-      } else p.sendSystemMessage(Component.literal("Abre nuevamente Crianza"));
+      } else p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("Abre nuevamente Crianza")));
     }
   }
 

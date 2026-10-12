@@ -53,8 +53,8 @@ public final class GlobalQuestListener {
                 if (result == GlobalQuestEventResult.COMPLETE) {
                     GlobalQuestProgress progress = GlobalQuestRuntime.service(server).inspect(player.getUUID(), offer);
                     ClaimStatus claim = GlobalQuestRuntime.pay(progress, "capture");
-                    player.sendSystemMessage(Component.literal("Objetivo de captura completado. Premio: "
-                        + (claim == null ? "desactivado" : claim)));
+                    player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("Objetivo de captura completado. Premio: "
+                        + (claim == null ? "desactivado" : claim))));
                     refresh(player);
                 }
             } catch (Exception error) {
@@ -86,10 +86,10 @@ public final class GlobalQuestListener {
                         GlobalQuestProgress progress = GlobalQuestRuntime.service(server).inspect(player.getUUID(), offer);
                         ClaimStatus claim = result == GlobalQuestEventResult.COMPLETE
                             ? GlobalQuestRuntime.pay(progress, "battle") : null;
-                        player.sendSystemMessage(Component.literal("Batallas salvajes ganadas: "
+                        player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("Batallas salvajes ganadas: "
                             + progress.getBattleIds().size() + "/5"
                             + (result == GlobalQuestEventResult.COMPLETE ? "; premio: "
-                            + (claim == null ? "desactivado" : claim) : "")));
+                            + (claim == null ? "desactivado" : claim) : ""))));
                         refresh(player);
                     }
                 } catch (Exception error) {

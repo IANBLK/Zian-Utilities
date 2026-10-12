@@ -2,6 +2,8 @@
   "replace": false,
   "values": [
     "zianutilities:prismatic_axe",
-    "zianutilities:dark_reaper_axe"
+    "zianutilities:dark_reaper_axe",
+    "zianutilities:dark_lightning_axe",
+    "zianutilities:frost_axe"
   ]
 }

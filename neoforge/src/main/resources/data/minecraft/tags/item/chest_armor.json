@@ -2,6 +2,14 @@
   "replace": false,
   "values": [
     "zianutilities:prismatic_chestplate",
-    "zianutilities:dark_reaper_chestplate"
+    "zianutilities:dark_reaper_chestplate",
+    "zianutilities:reforged_leather_chestplate",
+    "zianutilities:reforged_chainmail_chestplate",
+    "zianutilities:reforged_copper_chestplate",
+    "zianutilities:reforged_golden_chestplate",
+    "zianutilities:reforged_iron_chestplate",
+    "zianutilities:reforged_diamond_chestplate",
+    "zianutilities:reforged_netherite_chestplate",
+    "zianutilities:dark_lightning_chestplate"
   ]
 }

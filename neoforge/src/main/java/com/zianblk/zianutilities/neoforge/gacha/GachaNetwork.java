@@ -24,7 +24,7 @@ public final class GachaNetwork {
     private GachaNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("gacha-ui-2");
+        var registrar = event.registrar("gacha-ui-3");
         registrar.playToClient(State.TYPE, State.CODEC, GachaNetwork::onState);
         registrar.playToClient(RollResult.TYPE, RollResult.CODEC, GachaNetwork::onRollResult);
         registrar.playToServer(Action.TYPE, Action.CODEC, GachaNetwork::onAction);
@@ -42,7 +42,7 @@ public final class GachaNetwork {
             GachaRuntime.View view = GachaRuntime.view(player);
             List<PoolView> pools = view.pools().stream().map(pool ->
                 new PoolView(pool.id(), pool.name(), pool.ticket(), pool.cost(), pool.enabled(),
-                    pool.prizes().stream().map(p -> new PrizeView(p.item(), p.weight())).toList())).toList();
+                    pool.prizes().stream().map(p -> new PrizeView(p.item(), p.weight())).toList(),pool.icon(),pool.description())).toList();
             List<PendingView> pending = view.pending().stream()
                 .filter(p -> p.phase().equals("READY"))
                 .map(p -> new PendingView(p.id().toString(), p.poolName(), p.item())).toList();
@@ -50,7 +50,7 @@ public final class GachaNetwork {
                 new State(open, view.admin(), view.paymentEnabled(), pools, pending));
         } catch (Exception error) {
             LOG.error("[ZIAN-GACHA] action=sync playerUuid={} result=error", player.getUUID(), error);
-            player.sendSystemMessage(Component.literal("No se pudo cargar Gachas; revisa la consola."));
+            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("No se pudo cargar Gachas; revisa la consola.")));
         }
     }
 
@@ -69,7 +69,7 @@ public final class GachaNetwork {
             switch (action.kind()) {
                 case 0 -> { }
                 case 1 -> GachaRuntime.create(player);
-                case 2, 3, 4, 5, 6, 7, 8 -> GachaRuntime.edit(
+                case 2, 3, 4, 5, 6, 7, 8, 12, 13 -> GachaRuntime.edit(
                     player, action.poolId(), action.kind(), action.index(), action.text());
                 case 9 -> {
                     ItemStack prize = GachaRuntime.roll(player, action.poolId());
@@ -95,8 +95,8 @@ public final class GachaNetwork {
                 LOG.warn("[ZIAN-GACHA] action={} playerUuid={} result=error",
                     action.kind(), player.getUUID(), error);
             }
-            player.sendSystemMessage(Component.literal(error instanceof IllegalStateException
-                ? error.getMessage() : "No se pudo guardar la operación de gacha; revisa la consola."));
+            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal(error instanceof IllegalStateException
+                ? error.getMessage() : "No se pudo guardar la operación de gacha; revisa la consola.")));
             send(player, false);
             if (action.kind() == 9 && hasClient(player))
                 PacketDistributor.sendToPlayer(player, new RollResult(action.poolId(), ItemStack.EMPTY));
@@ -105,7 +105,7 @@ public final class GachaNetwork {
 
     public record PrizeView(ItemStack item, int weight) {}
     public record PoolView(int id, String name, String ticket, int cost, boolean enabled,
-                           List<PrizeView> prizes) {}
+                           List<PrizeView> prizes,ItemStack icon,String description) {public PoolView(int id,String name,String ticket,int cost,boolean enabled,List<PrizeView> prizes){this(id,name,ticket,cost,enabled,prizes,ItemStack.EMPTY,"");}}
     public record PendingView(String id, String pool, ItemStack item) {}
 
     /** A visual receipt only. The server has already charged and persisted the chosen prize. */
@@ -137,6 +137,8 @@ public final class GachaNetwork {
                     buffer.writeUtf(pool.ticket, 64);
                     buffer.writeVarInt(pool.cost);
                     buffer.writeBoolean(pool.enabled);
+                    ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer,pool.icon);
+                    buffer.writeUtf(pool.description,160);
                     buffer.writeVarInt(pool.prizes.size());
                     for (PrizeView prize : pool.prizes) {
                         ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, prize.item);
@@ -162,13 +164,15 @@ public final class GachaNetwork {
                     String ticket = buffer.readUtf(64);
                     int cost = buffer.readVarInt();
                     boolean enabled = buffer.readBoolean();
+                    ItemStack icon=ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer);
+                    String description=buffer.readUtf(160);
                     int prizeCount = bounded(buffer.readVarInt(), 12);
                     List<PrizeView> prizes = new ArrayList<>();
                     for (int j = 0; j < prizeCount; j++) {
                         prizes.add(new PrizeView(ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer),
                             buffer.readVarInt()));
                     }
-                    pools.add(new PoolView(id, name, ticket, cost, enabled, prizes));
+                    pools.add(new PoolView(id, name, ticket, cost, enabled, prizes,icon,description));
                 }
                 int pendingCount = bounded(buffer.readVarInt(), 50);
                 List<PendingView> pending = new ArrayList<>();
@@ -192,10 +196,10 @@ public final class GachaNetwork {
                 buffer.writeByte(value.kind);
                 buffer.writeVarInt(value.poolId);
                 buffer.writeVarInt(value.index);
-                buffer.writeUtf(value.text, 64);
+                buffer.writeUtf(value.text, 160);
             },
             buffer -> new Action(buffer.readByte(), buffer.readVarInt(),
-                buffer.readVarInt(), buffer.readUtf(64)));
+                buffer.readVarInt(), buffer.readUtf(160)));
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 

@@ -29,9 +29,11 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
     private int poolId;
     private int prizePage;
     private int pendingPage;
+    private boolean catalog=true;
     private boolean editing;
     private boolean confirming;
     private EditBox nameBox;
+    private EditBox descriptionBox;
     private boolean awaitingRoll;
     private Reel reel;
     private ItemStack hoveredItem = ItemStack.EMPTY;
@@ -58,6 +60,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
             } else {
                 GachaScreen next = new GachaScreen(state, old.poolId, old.prizePage,
                     old.pendingPage, old.editing, false);
+                next.catalog=old.catalog;
                 next.awaitingRoll = old.awaitingRoll;
                 next.reel = old.reel;
                 minecraft.setScreen(next);
@@ -101,6 +104,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
 
     private void reopen() {
         GachaScreen next = new GachaScreen(state, poolId, prizePage, pendingPage, editing, confirming);
+        next.catalog=catalog;
         next.awaitingRoll = awaitingRoll;
         next.reel = reel;
         Minecraft.getInstance().setScreen(next);
@@ -110,16 +114,43 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
     private int contentWidth() { return Math.min(width - 20, 470); }
 
     @Override
-    protected void init() {fitViewport(600,360);
+    protected void init() {fitViewport(600,440);
         addRenderableWidget(new StyledButton(10, 9, 55, 18, "Inicio", ZianHubNetwork::requestHub));
         if (state.admin()) addRenderableWidget(new StyledButton(width - 81, 9, 71, 18,
-            editing ? "Jugador" : "Editar", () -> { editing = !editing; confirming = false; reopen(); }));
+            editing ? "Jugador" : "Editar", () -> { catalog=false;editing = !editing; confirming = false; reopen(); }));
+        addRenderableWidget(new StyledButton(72,9,76,18,"Catálogo",()->{catalog=true;editing=false;confirming=false;reopen();}));
+        if(catalog){initCatalog();return;}
         int x = left(), w = contentWidth();
         addRenderableWidget(new StyledButton(x, 40, 40, 19, "<", () -> movePool(-1)));
         addRenderableWidget(new StyledButton(x + w - 40, 40, 40, 19, ">", () -> movePool(1)));
         GachaNetwork.PoolView pool = pool();
         if (editing) initAdmin(x, w, pool);
         else initPlayer(x, w, pool);
+    }
+
+    private void initCatalog(){
+        int cardWidth=224,gap=12,left=(width-cardWidth*2-gap)/2;
+        for(int i=0;i<state.pools().size();i++){
+            var pool=state.pools().get(i);
+            addRenderableWidget(new GachaTile(left+(i%2)*(cardWidth+gap),64+(i/2)*82,cardWidth,72,pool));
+        }
+        if(!state.pending().isEmpty())addRenderableWidget(new StyledButton(width/2-110,height-34,220,20,"Premios pendientes · "+state.pending().size(),()->{catalog=false;editing=false;reopen();}));
+    }
+    private final class GachaTile extends AbstractButton {
+        private final GachaNetwork.PoolView pool;
+        GachaTile(int x,int y,int w,int h,GachaNetwork.PoolView pool){super(x,y,w,h,Component.literal(pool.name()));this.pool=pool;}
+        @Override public void onPress(){poolId=pool.id();prizePage=0;catalog=false;editing=false;confirming=false;reopen();}
+        @Override protected void updateWidgetNarration(NarrationElementOutput output){defaultButtonNarrationText(output);}
+        @Override protected void renderWidget(GuiGraphics g,int mx,int my,float dt){
+            int x=getX(),y=getY();card(g,x,y,width,height);if(isHoveredOrFocused())g.renderOutline(x,y,width,height,GOLD);
+            ItemStack icon=pool.icon();if(icon.isEmpty()){var id=ResourceLocation.tryParse(pool.ticket());if(id!=null)icon=new ItemStack(BuiltInRegistries.ITEM.get(id));}if(icon.isEmpty()&&!pool.prizes().isEmpty())icon=pool.prizes().getFirst().item();
+            g.pose().pushPose();try{g.pose().translate(x+12,y+16,0);g.pose().scale(2,2,1);g.renderItem(icon,0,0);}finally{g.pose().popPose();}
+            g.drawString(font,font.plainSubstrByWidth(pool.name(),width-62),x+54,y+11,GOLD);
+            String description=pool.description().isBlank()?"Descubre los tesoros de esta gacha":pool.description();
+            var lines=font.split(Component.literal(description),width-62);for(int i=0;i<Math.min(2,lines.size());i++)g.drawString(font,lines.get(i),x+54,y+26+i*font.lineHeight,MUTED);
+            g.drawString(font,font.plainSubstrByWidth(pool.enabled()?pool.cost()+" × "+ticketName(pool.ticket()):"En preparación",width-16),x+8,y+height-15,pool.enabled()?GREEN:MUTED);
+            if(isHoveredOrFocused())queueTooltip(List.of(Component.literal(pool.name()),Component.literal(description),Component.literal("Haz clic para ver sus premios")));
+        }
     }
 
     private void movePool(int delta) {
@@ -171,7 +202,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
 
     private void initAdmin(int x, int w, GachaNetwork.PoolView pool) {
         addRenderableWidget(new StyledButton(x + w - 174, 40, 130, 19,
-            "Crear gacha nuevo", () -> GachaNetwork.request(1, 0, 0, "")));
+            "Crear gacha", () -> GachaNetwork.request(1, 0, 0, "")));
         if (pool == null) return;
         addRenderableWidget(new StyledButton(x + 8, 72, 100, 18,
             "Eliminar gacha", () -> Minecraft.getInstance().setScreen(new ConfirmScreen(confirmed -> {
@@ -206,6 +237,10 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
             addRenderableWidget(new StyledButton(x + w - 48, y, 40, 18, "Quitar", () ->
                 GachaNetwork.request(7, pool.id(), index, "")));
         }
+        addRenderableWidget(new StyledButton(x+8,316,126,18,"Icono en mano",()->GachaNetwork.request(12,pool.id(),0,"")));
+        descriptionBox=new EditBox(font,x+142,316,w-228,18,Component.literal("Descripción"));
+        descriptionBox.setMaxLength(160);descriptionBox.setValue(pool.description());descriptionBox.setHint(Component.literal("Texto del catálogo"));addRenderableWidget(descriptionBox);
+        addRenderableWidget(new StyledButton(x+w-80,316,72,18,"Guardar texto",()->GachaNetwork.request(13,pool.id(),0,descriptionBox.getValue())));
         addRenderableWidget(new StyledButton(x + 8, 260, 42, 18, "◀", () -> {
             prizePage = Math.max(0, prizePage - 1); reopen();
         })).active = prizePage > 0;
@@ -231,6 +266,11 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
         graphics.fill(0, 0, width, height, 0xE00D1117);
         graphics.fill(0, 0, width, 4, GOLD);
         graphics.drawCenteredString(font, title, width / 2, 12, GOLD);
+        if(catalog){
+            graphics.drawCenteredString(font,"✦ Elige una gacha y descubre sus premios ✦",width/2,40,MUTED);
+            if(state.pools().isEmpty())graphics.drawCenteredString(font,"Pronto habrá nuevos tesoros disponibles",width/2,90,MUTED);
+            renderWidgets(graphics,mouseX,mouseY,partialTick);return;
+        }
         int x = left(), w = contentWidth();
         GachaNetwork.PoolView pool = pool();
         graphics.drawCenteredString(font, Component.literal(pool == null ? "No hay gachas disponibles"
@@ -352,7 +392,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
                 x + Math.max(110, w - 193), y + 3, GOLD, false);
         }
         graphics.drawCenteredString(font, Component.literal(
-            "Editar un gacha publicado lo devuelve a borrador"), width / 2, 292, MUTED);
+            "Cambiar premios deja la gacha en borrador · Icono y texto se guardan aparte"), width / 2, 292, MUTED);
     }
 
     private void prizeHover(ItemStack item, int x, int y, int right, int mouseX, int mouseY) {

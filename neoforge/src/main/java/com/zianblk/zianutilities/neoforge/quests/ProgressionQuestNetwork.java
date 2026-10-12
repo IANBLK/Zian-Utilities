@@ -48,7 +48,7 @@ public final class ProgressionQuestNetwork {
         } catch (Exception error) {
             LOGGER.error("[ZIAN-PROGRESSION-QUEST] action=visual_sync playerUuid={} result=error",
                 player.getUUID(), error);
-            player.sendSystemMessage(Component.literal("No se pudieron cargar las misiones semanales; revisa la consola."));
+            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("No se pudieron cargar las misiones semanales; revisa la consola.")));
         }
     }
 
@@ -76,7 +76,7 @@ public final class ProgressionQuestNetwork {
         } catch (Exception error) {
             LOGGER.error("[ZIAN-PROGRESSION-QUEST] action={} playerUuid={} result=error",
                 action.kind(), player.getUUID(), error);
-            player.sendSystemMessage(Component.literal("No se pudo actualizar la misión; revisa la consola."));
+            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("No se pudo actualizar la misión; revisa la consola.")));
         }
     }
 

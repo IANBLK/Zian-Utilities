@@ -52,6 +52,7 @@ public final class ZianArmor {
             EQUIPMENT.add(bow);
         }
 
+        ImportedEquipment.register(MATERIALS,ITEMS,EQUIPMENT);
         TABS.register("equipment", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup.zianutilities.equipment"))
             .icon(() -> new ItemStack(EQUIPMENT.getFirst().get()))

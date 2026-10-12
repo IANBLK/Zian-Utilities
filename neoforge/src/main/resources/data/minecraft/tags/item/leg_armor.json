@@ -2,6 +2,14 @@
   "replace": false,
   "values": [
     "zianutilities:prismatic_leggings",
-    "zianutilities:dark_reaper_leggings"
+    "zianutilities:dark_reaper_leggings",
+    "zianutilities:reforged_leather_leggings",
+    "zianutilities:reforged_chainmail_leggings",
+    "zianutilities:reforged_copper_leggings",
+    "zianutilities:reforged_golden_leggings",
+    "zianutilities:reforged_iron_leggings",
+    "zianutilities:reforged_diamond_leggings",
+    "zianutilities:reforged_netherite_leggings",
+    "zianutilities:dark_lightning_leggings"
   ]
 }

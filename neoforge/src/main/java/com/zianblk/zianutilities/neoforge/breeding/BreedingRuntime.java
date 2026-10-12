@@ -316,8 +316,8 @@ public final class BreedingRuntime {
     recovering.remove(j.id());
     try {
       Cobblemon.INSTANCE.getPlayerDataManager().getPokedexData(p.getUUID()).obtain(found);
-      p.sendSystemMessage(
-          Component.literal("§aCrianza completada: tu Pokémon está guardado en el PC."));
+      p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(
+          Component.literal("§aCrianza completada: tu Pokémon está guardado en el PC.")));
     } catch (Exception notificationFailure) {
       LOG.warn(
           "Child delivered; optional Pokedex/chat notification failed job={}",

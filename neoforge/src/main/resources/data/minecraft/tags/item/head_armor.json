@@ -2,6 +2,14 @@
   "replace": false,
   "values": [
     "zianutilities:prismatic_helmet",
-    "zianutilities:dark_reaper_helmet"
+    "zianutilities:dark_reaper_helmet",
+    "zianutilities:reforged_leather_helmet",
+    "zianutilities:reforged_chainmail_helmet",
+    "zianutilities:reforged_copper_helmet",
+    "zianutilities:reforged_golden_helmet",
+    "zianutilities:reforged_iron_helmet",
+    "zianutilities:reforged_diamond_helmet",
+    "zianutilities:reforged_netherite_helmet",
+    "zianutilities:dark_lightning_helmet"
   ]
 }

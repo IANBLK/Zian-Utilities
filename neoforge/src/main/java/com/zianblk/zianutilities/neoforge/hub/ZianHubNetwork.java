@@ -33,8 +33,8 @@ public final class ZianHubNetwork {
 
     public static void open(ServerPlayer player) {
         if (!hasClient(player)) {
-            player.sendSystemMessage(Component.literal(
-                "Instala la misma versión de Zian Utilities en tu cliente."));
+            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal(
+                "Instala la misma versión de Zian Utilities en tu cliente.")));
             return;
         }
         PacketDistributor.sendToPlayer(player, new State(GlobalQuestRuntime.moduleEnabled(),

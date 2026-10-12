@@ -47,8 +47,9 @@ public final class GachaRuntime {
     public record Prize(ItemStack item, int weight) {
         public Prize { item = item.copy(); }
     }
-    public record Pool(int id, String name, String ticket, int cost, boolean enabled, List<Prize> prizes) {
-        public Pool { prizes = List.copyOf(prizes); }
+    public record Pool(int id, String name, String ticket, int cost, boolean enabled, List<Prize> prizes, ItemStack icon, String description) {
+        public Pool(int id,String name,String ticket,int cost,boolean enabled,List<Prize> prizes){this(id,name,ticket,cost,enabled,prizes,ItemStack.EMPTY,"");}
+        public Pool { prizes = List.copyOf(prizes);icon=icon.copyWithCount(1);if(description.length()>160)throw new IllegalArgumentException("Descripción demasiado larga"); }
     }
     public record Pending(UUID id, ItemStack item, String poolName, String phase) {
         public Pending { item = item.copy(); }
@@ -106,7 +107,7 @@ public final class GachaRuntime {
             if (!item.isEmpty() && weight > 0) prizes.add(new Prize(item, weight));
         }
         return new Pool(tag.getInt("id"), tag.getString("name"), tag.getString("ticket"),
-            tag.getInt("cost"), tag.getBoolean("enabled"), prizes);
+            tag.getInt("cost"), tag.getBoolean("enabled"), prizes,stack(player,tag.getCompound("icon")),tag.getString("description"));
     }
 
     private static CompoundTag encodePool(ServerPlayer player, Pool pool) {
@@ -116,6 +117,8 @@ public final class GachaRuntime {
         tag.putString("ticket", pool.ticket());
         tag.putInt("cost", pool.cost());
         tag.putBoolean("enabled", pool.enabled());
+        if(!pool.icon().isEmpty())tag.put("icon",stackTag(player,pool.icon()));
+        tag.putString("description",pool.description());
         ListTag prizes = new ListTag();
         for (Prize prize : pool.prizes()) {
             CompoundTag entry = new CompoundTag();
@@ -216,6 +219,7 @@ public final class GachaRuntime {
         String ticket = old.ticket();
         int cost = old.cost();
         boolean enabled = old.enabled();
+        ItemStack icon=old.icon();String description=old.description();
         List<Prize> prizes = new ArrayList<>(old.prizes());
         switch (action) {
             case 2 -> {
@@ -248,11 +252,17 @@ public final class GachaRuntime {
                     throw new IllegalStateException("Añade al menos un premio y configura el ticket");
                 enabled = !enabled;
             }
+            case 12 -> {
+                ItemStack held=player.getMainHandItem();
+                if(held.isEmpty()||stackTag(player,held).toString().length()>4096)throw new IllegalStateException("Sostén el icono que quieras usar (máximo 4 KB)");
+                icon=held.copyWithCount(1);
+            }
+            case 13 -> {if(text.length()>160||text.codePoints().anyMatch(Character::isISOControl))throw new IllegalStateException("Descripción inválida (máximo 160 caracteres)");description=text.trim();}
             default -> throw new IllegalStateException("Acción inválida");
         }
         // Changes to a published pool take effect only after explicitly republishing it.
-        if (action != 8) enabled = false;
-        pools.set(pos, new Pool(id, name, ticket, cost, enabled, prizes));
+        if (action != 8 && action != 12 && action != 13) enabled = false;
+        pools.set(pos, new Pool(id, name, ticket, cost, enabled, prizes,icon,description));
         savePools(player, pools);
         LOG.info("[ZIAN-AUDIT] action=gacha_edit admin={} pool={} kind={}", player.getUUID(), id, action);
     }
@@ -422,13 +432,13 @@ public final class GachaRuntime {
             if (!op.getUUID("id").equals(id) || !op.getString("phase").equals("READY")) continue;
             ItemStack prize = stack(player, op.getCompound("prize"));
             if (!fits(player, prize)) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                    "Ganaste " + prize.getHoverName().getString() + ". Libera espacio y reclámalo en Gachas."));
+                player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(net.minecraft.network.chat.Component.literal(
+                    "Ganaste " + prize.getHoverName().getString() + ". Libera espacio y reclámalo en Gachas.")));
                 return;
             }
             claim(player, id);
-            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                "Ganaste " + prize.getHoverName().getString() + "."));
+            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(net.minecraft.network.chat.Component.literal(
+                "Ganaste " + prize.getHoverName().getString() + ".")));
             return;
         }
     }

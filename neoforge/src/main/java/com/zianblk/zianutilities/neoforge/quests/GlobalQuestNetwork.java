@@ -48,7 +48,7 @@ public final class GlobalQuestNetwork {
                 offer.getBattleCurrency(), offer.getBattleAmount()));
         } catch (Exception error) {
             LOGGER.error("[ZIAN-GLOBAL-QUEST] action=visual_sync playerUuid={} result=error", player.getUUID(), error);
-            player.sendSystemMessage(Component.literal("No se pudo cargar la misión; revisa la consola."));
+            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("No se pudo cargar la misión; revisa la consola.")));
         }
     }
 
@@ -68,13 +68,13 @@ public final class GlobalQuestNetwork {
                 var service = GlobalQuestRuntime.service(player.getServer());
                 if (service.inspect(player.getUUID(), offer) == null) {
                     service.accept(player.getUUID(), offer);
-                    player.sendSystemMessage(Component.literal("Aceptaste los dos objetivos de este bloque."));
+                    player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("Aceptaste los dos objetivos de este bloque.")));
                 }
             }
             send(player, false);
         } catch (Exception error) {
             LOGGER.error("[ZIAN-GLOBAL-QUEST] action=visual_accept playerUuid={} result=error", player.getUUID(), error);
-            player.sendSystemMessage(Component.literal("No se pudo guardar la aceptación; revisa la consola."));
+            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("No se pudo guardar la aceptación; revisa la consola.")));
         }
     }
 

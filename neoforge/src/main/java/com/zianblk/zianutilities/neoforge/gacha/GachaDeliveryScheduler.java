@@ -37,7 +37,7 @@ final class GachaDeliveryScheduler {
                 LoggerFactory.getLogger("ZianUtilities/Gacha").error(
                     "[ZIAN-GACHA] action=scheduled_delivery playerUuid={} operation={} result=review_required",
                     delivery.player(), delivery.operation(), error);
-                player.sendSystemMessage(Component.literal("No se pudo confirmar la entrega; revisa Gachas o consulta al administrador."));
+                player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("No se pudo confirmar la entrega; revisa Gachas o consulta al administrador.")));
             }
             GachaNetwork.send(player, false);
         }

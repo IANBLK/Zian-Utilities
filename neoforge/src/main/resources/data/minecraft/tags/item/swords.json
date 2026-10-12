@@ -2,6 +2,12 @@
   "replace": false,
   "values": [
     "zianutilities:prismatic_sword",
-    "zianutilities:dark_reaper_sword"
+    "zianutilities:dark_reaper_sword",
+    "zianutilities:dark_lightning_sword",
+    "zianutilities:cosmic_sword",
+    "zianutilities:molten_mace",
+    "zianutilities:poison_dagger",
+    "zianutilities:reapers_scythe",
+    "zianutilities:storm_katana"
   ]
 }

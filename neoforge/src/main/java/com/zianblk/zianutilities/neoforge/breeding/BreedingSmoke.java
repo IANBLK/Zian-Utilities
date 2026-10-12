@@ -102,6 +102,7 @@ final class BreedingSmoke {
               public void sendSystemMessage(Component message) {}
             };
         BreedingRuntime.server.getPlayerList().op(profile);
+        verifyGachaCatalog(player);
         var mother =
             pokemon(
                 "bulbasaur gender=female nature=adamant hp_iv=31 attack_iv=31 defence_iv=31"
@@ -459,5 +460,49 @@ final class BreedingSmoke {
       LoggerFactory.getLogger("ZianUtilities/Breeding")
           .error("Breeding native smoke FAILED", failure);
     }
+  }
+
+  private static void verifyGachaCatalog(ServerPlayer player)throws Exception {
+    var registry=player.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT);
+    var protection=registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.PROTECTION);var unbreaking=registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.UNBREAKING);var efficiency=registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.EFFICIENCY);var sharpness=registry.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.SHARPNESS);
+    int armorCount=0,weaponCount=0;
+    for(var entry:com.zianblk.zianutilities.neoforge.equipment.ImportedEquipment.ITEMS.entrySet()){
+      var stack=new ItemStack(entry.getValue().get());
+      if(stack.getItem() instanceof net.minecraft.world.item.ArmorItem armor){
+        var base=(entry.getKey().startsWith("dark_lightning")||entry.getKey().startsWith("reforged_netherite")?net.minecraft.world.item.ArmorMaterials.NETHERITE:net.minecraft.world.item.ArmorMaterials.DIAMOND).value();int bonus=entry.getKey().startsWith("reforged_netherite")?1:0;
+        require(armor.getDefense()==base.getDefense(armor.getType())+bonus && stack.supportsEnchantment(protection) && stack.supportsEnchantment(unbreaking),"Imported armor stats/enchantment mismatch: "+entry.getKey());armorCount++;
+      }else if(stack.getItem() instanceof net.minecraft.world.item.TieredItem tiered){
+        require(stack.supportsEnchantment(unbreaking),"Imported weapon durability enchantment missing");
+        if(stack.getItem() instanceof net.minecraft.world.item.SwordItem)require(stack.supportsEnchantment(sharpness),"Imported sword enchantment missing");
+        if(stack.getItem() instanceof net.minecraft.world.item.PickaxeItem)require(stack.supportsEnchantment(efficiency) && stack.isCorrectToolForDrops(net.minecraft.world.level.block.Blocks.OBSIDIAN.defaultBlockState()),"Imported pickaxe must harvest obsidian");weaponCount++;
+      }
+    }
+    require(armorCount==32 && weaponCount==9,"Imported equipment count mismatch");
+    org.slf4j.LoggerFactory.getLogger("ImportedGearSmoke").info("Imported gear passed: 32 real armor pieces, 9 tiered weapons, enchantments and obsidian harvest");
+
+    var before=com.zianblk.zianutilities.neoforge.gacha.GachaRuntime.view(player);
+    if(before.pools().isEmpty())com.zianblk.zianutilities.neoforge.gacha.GachaRuntime.create(player);
+    var pool=com.zianblk.zianutilities.neoforge.gacha.GachaRuntime.view(player).pools().getFirst();
+    player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,new ItemStack(net.minecraft.world.item.Items.APPLE,3));
+    if(pool.prizes().isEmpty())com.zianblk.zianutilities.neoforge.gacha.GachaRuntime.edit(player,pool.id(),(byte)5,0,"");
+    pool=com.zianblk.zianutilities.neoforge.gacha.GachaRuntime.view(player).pools().getFirst();
+    if(!pool.enabled())com.zianblk.zianutilities.neoforge.gacha.GachaRuntime.edit(player,pool.id(),(byte)8,0,"");
+    com.zianblk.zianutilities.neoforge.gacha.GachaRuntime.edit(player,pool.id(),(byte)12,0,"");
+    com.zianblk.zianutilities.neoforge.gacha.GachaRuntime.edit(player,pool.id(),(byte)13,0,"Tesoros del alba para entrenadores");
+    pool=com.zianblk.zianutilities.neoforge.gacha.GachaRuntime.view(player).pools().getFirst();
+    require(pool.enabled() && pool.icon().is(net.minecraft.world.item.Items.APPLE) && pool.icon().getCount()==1 && pool.description().equals("Tesoros del alba para entrenadores") && player.getMainHandItem().getCount()==3,"Catalog decoration disabled pool, consumed item or lost metadata");
+    com.zianblk.zianutilities.neoforge.gacha.GachaRuntime.edit(player,pool.id(),(byte)2,0,"Tesoro del Alba");
+    pool=com.zianblk.zianutilities.neoforge.gacha.GachaRuntime.view(player).pools().getFirst();
+    require(pool.icon().is(net.minecraft.world.item.Items.APPLE) && !pool.description().isBlank() && !pool.prizes().isEmpty(),"Editing name erased catalog metadata or prizes");
+    var buffer=new net.minecraft.network.RegistryFriendlyByteBuf(io.netty.buffer.Unpooled.buffer(),player.registryAccess());
+    try{
+      var view=new com.zianblk.zianutilities.neoforge.gacha.GachaNetwork.PoolView(pool.id(),pool.name(),pool.ticket(),pool.cost(),pool.enabled(),java.util.List.of(new com.zianblk.zianutilities.neoforge.gacha.GachaNetwork.PrizeView(pool.prizes().getFirst().item(),1)),pool.icon(),pool.description());
+      var state=new com.zianblk.zianutilities.neoforge.gacha.GachaNetwork.State(true,true,false,java.util.List.of(view),java.util.List.of());
+      com.zianblk.zianutilities.neoforge.gacha.GachaNetwork.State.CODEC.encode(buffer,state);
+      var decoded=com.zianblk.zianutilities.neoforge.gacha.GachaNetwork.State.CODEC.decode(buffer);
+      require(decoded.pools().getFirst().icon().is(net.minecraft.world.item.Items.APPLE) && decoded.pools().getFirst().description().equals(pool.description()),"Catalog codec lost icon or text");
+    }finally{buffer.release();}
+    player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,ItemStack.EMPTY);
+    org.slf4j.LoggerFactory.getLogger("GachaSmoke").info("Native Gacha catalog passed: icon+description durable and codec verified; prizes and held items preserved");
   }
 }

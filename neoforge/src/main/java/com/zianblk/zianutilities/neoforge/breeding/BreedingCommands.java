@@ -53,13 +53,13 @@ public final class BreedingCommands {
                           var p = c.getSource().getPlayerOrException();
                           BreedingRuntime.check(p);
                           for (var j : BreedingRuntime.mine(p))
-                            p.sendSystemMessage(
+                            p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(
                                 Component.literal(
                                     j.id()
                                         + " · "
                                         + j.status()
                                         + " · "
-                                        + BreedingRuntime.remaining(j)));
+                                        + BreedingRuntime.remaining(j))));
                         })));
     root.then(
         Commands.literal("start")
@@ -91,8 +91,8 @@ public final class BreedingCommands {
                                                   one.getUuid(),
                                                   two.getUuid(),
                                                   UUID.randomUUID());
-                                          p.sendSystemMessage(
-                                              Component.literal("Crianza reservada: " + j.id()));
+                                          p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(
+                                              Component.literal("Crianza reservada: " + j.id())));
                                         })))));
     for (String action : List.of("claim", "cancel"))
       root.then(

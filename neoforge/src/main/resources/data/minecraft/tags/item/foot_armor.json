@@ -2,6 +2,14 @@
   "replace": false,
   "values": [
     "zianutilities:prismatic_boots",
-    "zianutilities:dark_reaper_boots"
+    "zianutilities:dark_reaper_boots",
+    "zianutilities:reforged_leather_boots",
+    "zianutilities:reforged_chainmail_boots",
+    "zianutilities:reforged_copper_boots",
+    "zianutilities:reforged_golden_boots",
+    "zianutilities:reforged_iron_boots",
+    "zianutilities:reforged_diamond_boots",
+    "zianutilities:reforged_netherite_boots",
+    "zianutilities:dark_lightning_boots"
   ]
 }
