@@ -61,9 +61,9 @@ public final class ImportedArmorRenderer {
   @Override public void renderByItem(ItemStack stack,ItemDisplayContext context,PoseStack pose,MultiBufferSource buffers,int light,int overlay){
    if(!(stack.getItem() instanceof ImportedEquipment.NamedArmor armor))return;var mesh=mesh(armor.set);var slot=armor.getEquipmentSlot();float[] low={Float.POSITIVE_INFINITY,Float.POSITIVE_INFINITY,Float.POSITIVE_INFINITY},high={Float.NEGATIVE_INFINITY,Float.NEGATIVE_INFINITY,Float.NEGATIVE_INFINITY};
    for(var bone:mesh.bones())if(bone.slot()==slot)for(var face:bone.faces())for(var v:face.world())for(int i=0;i<3;i++){low[i]=Math.min(low[i],v[i]);high[i]=Math.max(high[i],v[i]);}
-   float span=Math.max(high[0]-low[0],Math.max(high[1]-low[1],high[2]-low[2]));if(!Float.isFinite(span)||span<=0)return;
+   float diameter=0;for(var bone:mesh.bones())if(bone.slot()==slot)for(var face:bone.faces())for(var v:face.world()){float radiusSquared=0;for(int i=0;i<3;i++){float distance=v[i]-(low[i]+high[i])/2;radiusSquared+=distance*distance;}diameter=Math.max(diameter,2*(float)Math.sqrt(radiusSquared));}if(!Float.isFinite(diameter)||diameter<=0)return;
    var buffer=net.minecraft.client.renderer.entity.ItemRenderer.getFoilBufferDirect(buffers,RenderType.entityCutoutNoCull(mesh.texture()),true,stack.hasFoil());
-   pose.pushPose();try{pose.translate(.5,.5,.5);float scale=.88f/span;pose.scale(-scale,-scale,scale);pose.translate(-(low[0]+high[0])/2,-(low[1]+high[1])/2,-(low[2]+high[2])/2);for(var bone:mesh.bones())if(bone.slot()==slot)for(var face:bone.faces())draw(pose,buffer,face.world(),face.normal(),light,overlay,0xFFFFFFFF,1);}finally{pose.popPose();}
+   pose.pushPose();try{pose.translate(.5,.5,.5);float scale=.8f/diameter;pose.scale(-scale,-scale,scale);pose.translate(-(low[0]+high[0])/2,-(low[1]+high[1])/2,-(low[2]+high[2])/2);for(var bone:mesh.bones())if(bone.slot()==slot)for(var face:bone.faces())draw(pose,buffer,face.world(),face.normal(),light,overlay,0xFFFFFFFF,1);}finally{pose.popPose();}
   }
  }
 }

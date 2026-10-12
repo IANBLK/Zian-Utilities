@@ -32,6 +32,9 @@ jobs:
       - name: Build and test
         run: ./gradlew --no-daemon clean build
 
+      - name: Validate packaged imported textures and icon bounds
+        run: python3 tools/validate_imported_assets.py neoforge/build/libs/*-NeoForge-1.21.1.jar
+
       - name: Upload NeoForge artifact
         uses: actions/upload-artifact@v6
         with:

@@ -1,0 +1,6 @@
+{
+  "sources": [
+    {"type": "minecraft:directory", "source": "imported", "prefix": "imported/"},
+    {"type": "minecraft:directory", "source": "models/armor", "prefix": "models/armor/"}
+  ]
+}

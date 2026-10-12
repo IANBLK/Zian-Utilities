@@ -62,6 +62,21 @@ def convert(model,name):
   js(f'models/item/{name}_{kind}.json',{'parent':'minecraft:builtin/entity','textures':{'particle':f'zianutilities:models/armor/{name}_layer_1'},'display':{'gui':{'rotation':[15,-35,0],'scale':[.9,.9,.9]},'ground':{'scale':[.5,.5,.5]}}})
  return {'model':name,'bones':len(bones),'faces':sum(len(b['faces']) for b in bones),'textureSHA256':hashlib.sha256(raw).hexdigest()}
 report=[]
+def fit_weapon_gui(model):
+ points=[]
+ for element in model['elements']:
+  for x in [element['from'][0],element['to'][0]]:
+   for y in [element['from'][1],element['to'][1]]:
+    for z in [element['from'][2],element['to'][2]]:
+     point=[x,y,z];rotation=element.get('rotation')
+     if rotation:
+      angles=[0,0,0];angles['xyz'.index(rotation['axis'])]=rotation['angle']
+      point=rotate(point,rotation['origin'],angles)
+     points.append(rotate([point[i]-8 for i in range(3)],[0,0,0],[-180,0,135]))
+ low=[min(p[i] for p in points) for i in range(3)];high=[max(p[i] for p in points) for i in range(3)]
+ scale=12/max(high[0]-low[0],high[1]-low[1])
+ model.setdefault('display',{})['gui']={'rotation':[-180,0,135],'translation':[-(low[i]+high[i])*scale/2 if i<2 else 0 for i in range(3)],'scale':[scale]*3}
+ return model
 with zipfile.ZipFile(SOURCES/'Reforged armors free.zip') as z:
  for material in ['leather','chainmail','copper','golden','iron','diamond','netherite']:
   name='reforged_'+material
@@ -73,7 +88,7 @@ with zipfile.ZipFile(SOURCES/'Dark lightning free.zip') as z:
  for kind in ['axe','pickaxe','sword']:
   folder='weapons' if kind=='sword' else 'tools';model=json.loads(z.read(prefix+f'models/{folder}/dark_lightning_{kind}.json'))
   text=json.dumps(model).replace('dark_lightning:','zianutilities:imported/dark_lightning/')
-  js(f'models/item/dark_lightning_{kind}.json',json.loads(text))
+  js(f'models/item/dark_lightning_{kind}.json',fit_weapon_gui(json.loads(text)))
  for kind in ['helmet','chestplate','leggings','boots','book']:
   js(f'models/item/dark_lightning_{kind}.json',{'parent':'minecraft:item/generated','textures':{'layer0':f'zianutilities:imported/dark_lightning/items/dark_lightning_{kind}'}})
  for layer in [1,2]:put(f'textures/models/armor/dark_lightning_layer_{layer}.png',z.read(prefix+f'textures/armor/dark_lightning_armor_layer_{layer}.png'))
