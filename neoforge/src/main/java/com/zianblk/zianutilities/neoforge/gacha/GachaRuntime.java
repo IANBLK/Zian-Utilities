@@ -65,14 +65,14 @@ public final class GachaRuntime {
 
     private static CompoundTag read(Path path) throws IOException {
         if (!StorageFiles.exists(path)) return new CompoundTag();
-        return NbtIo.readCompressed(path, NbtAccounter.create(MAX_JOURNAL_BYTES));
+        try(var input=StorageFiles.newInputStream(path)){return NbtIo.readCompressed(input, NbtAccounter.create(MAX_JOURNAL_BYTES));}
     }
 
     private static void write(Path path, CompoundTag data) throws IOException {
         StorageFiles.createDirectories(path.getParent());
         Path temp = StorageFiles.createTempFile(path.getParent(), "gacha-", ".tmp");
         try {
-            NbtIo.writeCompressed(data, temp);
+            try(var output=StorageFiles.newOutputStream(temp)){NbtIo.writeCompressed(data, output);}
             try (FileChannel channel = StorageFiles.channel(temp, StandardOpenOption.WRITE)) {
                 channel.force(true);
             }
