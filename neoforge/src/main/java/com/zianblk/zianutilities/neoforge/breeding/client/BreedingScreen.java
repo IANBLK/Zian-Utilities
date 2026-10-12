@@ -53,7 +53,9 @@ public final class BreedingScreen
     return Math.min(width - 20, 420);
   }
 
-  private int panelTop() { return Math.max(65, (height - 270) / 2); }
+  private int panelHeight() { return jobs && state.pending().isEmpty() ? 306 : 270; }
+
+  private int panelTop() { return Math.max(65, (height - panelHeight()) / 2); }
 
   private void act(int kind, String target, boolean maximum) {
     BreedingNetwork.action(state, kind, target, maximum);
@@ -77,7 +79,7 @@ public final class BreedingScreen
 
   @Override
   protected void init() {
-    fitViewport(440, 380);
+    fitViewport(440, 410);
     int x = left(), w = contentWidth();
     button(
         10,
@@ -202,14 +204,14 @@ public final class BreedingScreen
             true);
       }
       boolean canBuy = j.status().equals("ACTIVE") && j.readyAt() > now() && currency != null && currency.balance() != 0;
-      button(x + 12, y + 26, (w - 36) / 2, "Acelerar 1 unidad", () -> act(6, "", false), canBuy);
-      button(x + w / 2 + 6, y + 26, (w - 36) / 2, "Hasta el mínimo", () -> act(6, "", true), canBuy);
+      button(x + 12, y + 50, (w - 36) / 2, "Acelerar 1 unidad", () -> act(6, "", false), canBuy);
+      button(x + w / 2 + 6, y + 50, (w - 36) / 2, "Hasta el mínimo", () -> act(6, "", true), canBuy);
       boolean claim =
           (j.status().equals("ACTIVE") || j.status().equals("BLOCKED")) && j.readyAt() <= now();
-      button(x + 12, top + 242, (w - 36) / 2, "Entregar al PC", () -> act(7, "", false), claim);
+      button(x + 12, top + 278, (w - 36) / 2, "Entregar al PC", () -> act(7, "", false), claim);
       button(
           x + w / 2 + 6,
-          top + 242,
+          top + 278,
           (w - 36) / 2,
           "Cancelar crianza",
           () -> act(8, "", false),
@@ -266,7 +268,7 @@ public final class BreedingScreen
     hovered = "";
     childHovered = false;
     int x = left(), w = contentWidth();
-    if (jobs && state.pending().isEmpty()) card(g, x, panelTop(), w, 270, GOLD);
+    if (jobs && state.pending().isEmpty()) card(g, x, panelTop(), w, panelHeight(), GOLD);
     if (!state.pending().isEmpty()) {
       int top = panelTop();
       card(g, x, top, w, 270, GOLD);
@@ -384,10 +386,10 @@ public final class BreedingScreen
         g.fill(x + 12, top + 152, x + w - 12, top + 153, 0xFF3B4148);
         var money = currency();
         if (money != null) g.drawCenteredString(font, money.minutes() + " min por unidad · saldo "
-            + (money.balance() < 0 ? "?" : money.balance()), width / 2, top + 205, WHITE);
+            + (money.balance() < 0 ? "?" : money.balance()), width / 2, top + 188, WHITE);
         wrapCentered(g, currency() == null ? "No hay monedas de aceleración configuradas"
             : currency().balance() == 0 ? "Sin saldo para acelerar · puedes esperar sin costo"
-            : "Acelerar reduce la espera hasta el mínimo permitido", x + 12, top + 215, w - 24, MUTED, 2);
+            : "Acelerar reduce la espera hasta el mínimo permitido", x + 12, top + 241, w - 24, MUTED, 2);
       }
     }
     renderWidgets(g, mx, my, partial);
