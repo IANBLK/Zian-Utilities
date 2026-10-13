@@ -12,6 +12,7 @@ java {
 
 repositories {
     mavenCentral()
+    maven("https://www.cursemaven.com")
     maven("https://artefacts.cobblemon.com/releases/")
     maven("https://thedarkcolour.github.io/KotlinForForge/")
     maven("https://maven.neoforged.net/releases/")
@@ -48,20 +49,20 @@ neoForge {
 dependencies {
     implementation(project(":core"))
 
-    compileOnly("com.cobblemon:neoforge:${providers.gradleProperty("cobblemon_version").get()}") {
+    compileOnly("curse.maven:cobblemon-687131:${providers.gradleProperty("cobblemon_file_id").get()}") {
         isTransitive = false
     }
 
     compileOnly("thedarkcolour:kotlinforforge-neoforge:${providers.gradleProperty("kotlin_for_forge_version").get()}")
 
-    runtimeOnly("com.cobblemon:neoforge:${providers.gradleProperty("cobblemon_version").get()}") { isTransitive = false }
+    runtimeOnly("curse.maven:cobblemon-687131:${providers.gradleProperty("cobblemon_file_id").get()}") { isTransitive = false }
     runtimeOnly("thedarkcolour:kotlinforforge-neoforge:${providers.gradleProperty("kotlin_for_forge_version").get()}")
 
 
-    testCompileOnly("com.cobblemon:neoforge:${providers.gradleProperty("cobblemon_version").get()}") {
+    testCompileOnly("curse.maven:cobblemon-687131:${providers.gradleProperty("cobblemon_file_id").get()}") {
         isTransitive = false
     }
-    testRuntimeOnly("com.cobblemon:neoforge:${providers.gradleProperty("cobblemon_version").get()}") {
+    testRuntimeOnly("curse.maven:cobblemon-687131:${providers.gradleProperty("cobblemon_file_id").get()}") {
         isTransitive = false
     }
     testRuntimeOnly("thedarkcolour:kotlinforforge-neoforge:${providers.gradleProperty("kotlin_for_forge_version").get()}")
@@ -100,6 +101,8 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.jar {
+    from(rootProject.file("LICENSE")) { into("META-INF") }
+    from(rootProject.file("THIRD_PARTY_LICENSES.md")) { into("META-INF") }
     exclude("com/zianblk/zianutilities/neoforge/breeding/BreedingSmoke*.class")
     archiveFileName.set("Zian-Utilities-${providers.gradleProperty("mod_version").get()}-NeoForge-1.21.1.jar")
 

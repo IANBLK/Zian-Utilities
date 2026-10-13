@@ -1,15 +1,18 @@
 modLoader="javafml"
 loaderVersion="${loader_version_range}"
-license="${mod_license}"
+license="MIT (original code); separate artwork permissions - see META-INF/THIRD_PARTY_LICENSES.md"
 
 [[mixins]]
 config="zianutilities-riding.mixins.json"
+
+issueTrackerURL="https://github.com/IANBLK/Zian-Utilities/issues"
 
 [[mods]]
 modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 authors="ZIANBLK"
+displayURL="https://github.com/IANBLK/Zian-Utilities"
 description='''
 Cobblemon generation control, party breeding, quests, gachas, themed equipment and a command-only 3x3 mining enchantment for Minecraft 1.21.1.
 '''
@@ -31,6 +34,6 @@ side="BOTH"
 [[dependencies.${mod_id}]]
 modId="cobblemon"
 type="required"
-versionRange="[1.8.1,1.9)"
+versionRange="[1.8.2,1.9)"
 ordering="AFTER"
 side="BOTH"
