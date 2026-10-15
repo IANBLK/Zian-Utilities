@@ -1,0 +1,17 @@
+{
+  "name": "Zian Utilities",
+  "version": "0.1.1",
+  "jar": "Zian-Utilities-0.1.1-NeoForge-1.21.1.jar",
+  "sha256": "fad48f4f7ea4fbf2f22535b282c85c728c26a55c6a0f5d5941be71486caa3fb5",
+  "bytes": 12725755,
+  "tests": {
+    "tests": 75,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "validation": "Uses the already-tested release artifact; this repository sync changes documentation only in addition to the previously validated pending code fixes.",
+  "clientAndServer": true,
+  "minecraft": "1.21.1",
+  "java": 21
+}

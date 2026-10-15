@@ -1,36 +1,46 @@
 # Zian Utilities
 
-Zian Utilities es un mod para **Minecraft 1.21.1**, **NeoForge 21.1.x** y **Cobblemon 1.8.1**. Se instala con el mismo JAR en el servidor y en cada cliente. La integración económica se ha probado con **AVECOINS 2.3 y 2.4** en Youer 1.21.1.
+**0.1.1 · Minecraft 1.21.1 · Cobblemon 1.8.2 · NeoForge 21.1.x · Java 21**
 
-## Funciones
+Control de generaciones, misiones, Gachas, crianza, equipo y ajustes de monturas desde una interfaz dentro del juego. Instala el mismo JAR en cliente y servidor, con Kotlin for Forge 5.10 o una versión compatible de 5.x.
 
-- **Generaciones:** el administrador habilita las generaciones acumulativamente; el control filtra apariciones naturales, pesca y Poké Snack sin retirar Pokémon ya existentes.
-- **Misiones:** dos objetivos compartidos por todo el servidor cada tres horas, con aceptación y progreso individual; misiones semanales de 25 capturas y 50 victorias salvajes; campañas persistentes para capturar especies distintas de cada generación. Las recompensas usan AVECOINS.
-- **Gachas:** el administrador crea y publica grupos de premios con probabilidades visibles y costo en tickets de AVECOINS. Las tiradas se validan en el servidor; los premios que no caben en el inventario quedan pendientes para reclamar.
-- **Equipo:** sets Prismático y Dark Reaper de armadura completa, espada y herramientas, junto con cuatro arcos con animación de tensado. Encantables, con estadísticas mejoradas y sin recetas; aparecen en una pestaña creativa propia.
-- **Encantamiento:** `zianutilities:mineria_3x3` para picos, disponible solo por comando. No aparece en mesa de encantamientos, comercio de aldeanos ni botín.
+## Funciones actuales
 
-## Instalación y configuración
+- **Generaciones:** habilitación acumulativa y control de apariciones naturales, pesca y Poké Snack; conserva los Pokémon ya existentes. La elegibilidad de crianza es independiente de este filtro.
+- **Misiones:** objetivos compartidos con aceptación y progreso individual, misiones semanales y campañas persistentes.
+- **Gachas:** catálogo con nombres, iconos, descripciones y probabilidades visibles; tickets, premios y entregas pendientes se validan en el servidor.
+- **Crianza:** selección de padres, compatibilidad y estimación de la cría, inicio gratuito de 24 horas, aceleración económica opcional y entrega al PC. Trabajos y entregas quedan registrados para recuperación.
+- **Interfaz:** tarjetas de Misiones, Gachas y Crianza, con confirmaciones y distribución adaptadas a distintas escalas.
+- **Monturas voladoras:** límites administrativos de velocidad y estamina máxima. No modifica el permiso `/fly`. Desactivar la política restaura el comportamiento normal de las monturas; no prohíbe volar.
+- **Equipo:** sets Prismático y Dark Reaper con nombres y lore, armas y cuatro arcos con bonificaciones de daño diferentes y encantamientos de durabilidad. Reforged se retiró; las piezas antiguas se convierten en equivalentes vanilla conservando sus componentes. Las armas permanecen.
+- **Minería 3×3:** encantamiento `zianutilities:mineria_3x3` para picos, obtenido por comando, con permisos de rotura, desgaste y drops. No se añade a la mesa de encantamientos ni al loot normal.
 
-1. Instala Java 21, Minecraft 1.21.1, una versión de NeoForge 21.1.x, Cobblemon 1.8.1 y las dependencias que requiera Cobblemon.
-2. Instala el mismo JAR de Zian Utilities en `mods` del servidor y de los clientes; retira versiones anteriores del mod.
-3. Instala AVECOINS 2.3 o 2.4 si usarás los pagos de misiones y las tiradas de gacha. La compatibilidad se comprueba en cada operación económica; versiones futuras no se aceptan automáticamente.
-4. Al iniciar se crea `config/zianutilities-features.properties`. Sus cuatro interruptores (`quests.enabled`, `quests.rewards.enabled`, `gachas.enabled`, `gachas.payments.enabled`) vienen activados. Cámbialos con el servidor detenido y reinicia para aplicarlos.
+## Economía y compatibilidad
 
-No hacen falta parámetros especiales en el startup. La interfaz principal se abre con `/ZianUtilities`. Los administradores pueden consultar las generaciones activas con `/ZianUtilities generation active` y habilitar otra con `/ZianUtilities generation enable gen1` (sustituye `gen1` según corresponda). Para revisar una tirada bloqueada usa `/ZianUtilities gacha review <jugador>`; si verificaste que el premio ya fue entregado, cierra esa operación con `/ZianUtilities gacha confirm-delivered <jugador> <operationId>`.
+AVECOINS es opcional para las funciones económicas; se instala por separado y no se incluye en el JAR. AVECOINS 2.3, 2.4 y 2.5 están inspeccionados. Una versión posterior solo se admite si las tres clases económicas verificadas conservan exactamente sus huellas revisadas y pasan las comprobaciones de métodos y capacidad. Un cambio real de contrato requiere revisión; no se promete compatibilidad automática con cualquier actualización.
 
-## Crianza — candidata beta.12
+La versión 0.1.1 corrige el rechazo de AVECOINS 2.5 por su número de versión, sin cambiar saldos, monedas, recibos ni trabajos de crianza. Consulta [el contrato revisado](docs/AVECOINS25_COMPATIBILITY.md).
 
-La beta.12 conserva la pantalla beta.11 y corrige la compatibilidad de Lazo Destino y Bola Luminosa con Cobblemon 1.8.2. La interfaz muestra la crianza con el estilo de Misiones/Gachas, iconos Pokémon, sexo, estadísticas e incompatibilidades. Añade `/ZianUtilities breeding-admin complete <id>` para pruebas instantáneas y autocompletado de IDs. Esta rama añade crianza gratuita de 24 h, aceleraciones opcionales mediante AVECOINS y entrega persistente al PC, sin huevos ni incubadoras. Acceso: `/ZianUtilities crianza` y el panel principal. Está desactivada inicialmente hasta probar la candidata en Youer. Consulta [uso y recuperación](docs/ZIAN_BREEDING_DESIGN.md) y [configuración](docs/ZIAN_BREEDING_CURRENCY_CONFIG.md). Conserva todas las funciones de beta.9 y requiere actualizar el JAR en ambos lados.
+## Uso y administración
 
-## Estado de la beta
+- `/ZianUtilities`: abre el panel principal.
+- `/ZianUtilities crianza`: abre crianza.
+- `/ZianUtilities generation active`: consulta las generaciones activas.
+- `/ZianUtilities generation enable gen1`: habilita una generación.
+- `/ZianUtilities vuelo ver`: muestra la política de monturas.
+- `/ZianUtilities vuelo velocidad 65`: ajusta la velocidad al 65%.
+- `/ZianUtilities vuelo estamina 60`: limita la estamina máxima al 60%; no representa el porcentaje de gasto.
 
-La candidata **0.1.0-beta.9** muestra la información completa de los objetos del gacha al pasar el mouse por su icono o nombre. Conserva Dark Reaper, los cuatro arcos, el equipo Prismático y las correcciones de recuperación de beta.6. Consulta [el equipo y sus comandos de prueba](docs/EQUIPMENT-BETA-7.md) y [las decisiones y comandos de recuperación](docs/BETA6_RECOVERY.md). Actualiza el mismo JAR en el servidor y los clientes.
+Consulta la [guía de crianza](docs/ZIAN_BREEDING_DESIGN.md), [su configuración económica](docs/ZIAN_BREEDING_CURRENCY_CONFIG.md), [recuperación](docs/BETA6_RECOVERY.md) y [cambios](CHANGELOG.md). Los documentos con nombres alpha/beta describen etapas históricas; esta página y [las notas de 0.1.1](docs/releases/0.1.1/changelog.md) describen la versión actual.
 
-La lógica de la primera beta se probó como alpha.29 en un servidor **Youer 1.21.1** con dos cuentas: persistencia tras reinicio, pagos de misiones, campaña, tiradas de gacha y rechazo por tickets insuficientes. Beta.5 deja solo el set Prismático, corrige la animación del gacha a escala de interfaz ×2 y añade comandos de revisión de entregas interrumpidas. Los objetos de las tres familias antiguas y las cinco espadas elementales ya no están registrados; haz una copia del mundo antes de actualizar si se guardaron esos objetos. La beta.5 pasó compilación y pruebas automatizadas, pero sus cambios visuales y la reconciliación administrativa aún requieren una prueba dentro del juego. Consulta [la evidencia y sus límites](docs/BETA1_VALIDATION.md) y los [créditos del arte incluido](THIRD_PARTY_ASSETS.md).
+## Instalación y datos
 
-Consulta [el registro de cambios](CHANGELOG.md), [las funciones normales y sus interruptores](docs/PRODUCTION_FEATURES_ALPHA24.md) y [los criterios de publicación](docs/RELEASE_CHECKLIST.md). Antes de usar el mod en un mundo importante, conserva una copia de seguridad del mundo.
+Descarga el JAR de [Releases](https://github.com/IANBLK/Zian-Utilities/releases/latest), retira el JAR anterior y usa la misma versión en cliente y servidor. Conserva una copia del mundo y de la configuración antes de actualizar.
+
+Las operaciones económicas inciertas requieren revisión y no se repiten a ciegas. La migración opcional a SQLite y las tareas de mantenimiento son explícitas; actualizar el mod no implica borrar ni migrar automáticamente los datos.
+
+El código y el arte incluido tienen condiciones separadas, indicadas en los avisos de licencia del proyecto y del JAR.
 
 ## Desarrollo
 
-El proyecto tiene un módulo `core` independiente de Minecraft y un módulo `neoforge` para la integración de juego. Las pruebas se ejecutan con `./gradlew clean build` en Java 21 y también se compilan en GitHub Actions.
+Java 21. Compila con `gradlew.bat build` en Windows o `./gradlew build` en Linux. El JAR NeoForge se genera en `neoforge/build/libs/`.

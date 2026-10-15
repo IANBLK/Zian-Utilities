@@ -1,13 +1,12 @@
-# AVECOINS integration plan
+# AVECOINS integration
 
 Supported and operator-tested targets:
 
-`AVECOINS 2.3` and `AVECOINS 2.4`
+`AVECOINS 2.3`, `AVECOINS 2.4` and `AVECOINS 2.5`
 
 AVECOINS 2.4 passes the runtime wallet-layout probe. On the Youer test server,
 the operator confirmed mission credits, gacha ticket debits, prize delivery,
-and persistent progress across restart. A future AVECOINS version is rejected
-until its contract and economic operations are deliberately verified.
+and persistent progress across restart. Later version numbers require byte-identical reviewed wallet class fingerprints and the live reflection checks. Changed wallet classes require inspection; see [the current compatibility policy](AVECOINS25_COMPATIBILITY.md).
 
 Historical reference implementation:
 
