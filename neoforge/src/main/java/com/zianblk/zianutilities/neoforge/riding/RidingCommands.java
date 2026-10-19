@@ -22,7 +22,7 @@ public final class RidingCommands {
   NeoForge.EVENT_BUS.addListener(RidingCommands::register);
  }
  private static void register(RegisterCommandsEvent event){
-  var node=Commands.literal("vuelo").requires(s->s.hasPermission(Commands.LEVEL_GAMEMASTERS))
+  var node=Commands.literal("vuelo").requires(s->com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(s,"admin.riding",true))
    .then(Commands.literal("ver").executes(c->status(c.getSource())))
    .then(Commands.literal("activar").executes(c->update(c.getSource(),true,null,null)))
    .then(Commands.literal("desactivar").executes(c->update(c.getSource(),false,null,null)))

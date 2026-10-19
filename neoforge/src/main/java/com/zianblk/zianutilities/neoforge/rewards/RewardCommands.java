@@ -48,7 +48,7 @@ public final class RewardCommands {
             Commands.literal(ZianUtilitiesMod.COMMAND_ROOT)
                 .requires(source -> true)
                 .then(Commands.literal("reward")
-                    .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                    .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(source,"admin.rewards",true))
                     .then(Commands.literal("status").executes(context -> status(context.getSource())))
                     .then(Commands.literal("balance")
                         .executes(context -> balance(context.getSource())))

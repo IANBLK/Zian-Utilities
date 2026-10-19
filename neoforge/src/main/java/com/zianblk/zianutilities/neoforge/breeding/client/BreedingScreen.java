@@ -25,7 +25,7 @@ public final class BreedingScreen
   private String hovered = "";
 
   private BreedingScreen(BreedingNetwork.State state) {
-    super(Component.literal("Zian Utilities | Crianza"));
+    super(Component.translatableWithFallback("ui.zianutilities.d5dbf7a2c5f1", "Zian Utilities | Crianza"));
     this.state = state;
   }
 
@@ -233,11 +233,8 @@ public final class BreedingScreen
   }
 
   private void nextCurrency() {
-    if (state.currencies().isEmpty()) return;
-    for (int i = 0; i < state.currencies().size(); i++)
-      if (state.currencies().get(i).id().equals(state.currency())) currencyIndex = i;
-    currencyIndex = (currencyIndex + 1) % state.currencies().size();
-    act(5, state.currencies().get(currencyIndex).id(), false);
+    if(state.currencies().isEmpty())return;
+    minecraft.setScreen(new BreedingCurrencyScreen(this,state.currencies(),id->act(5,id,false)));
   }
 
   @Override
@@ -249,6 +246,7 @@ public final class BreedingScreen
   @Override
   public void onClose() {
     act(11, "", false);
+    if(GuiReturn.returnToMenu())return;
     super.onClose();
   }
 
@@ -369,7 +367,8 @@ public final class BreedingScreen
             switch (j.reason()) {
               case "PC_FULL" -> "Tu PC está lleno: libera espacio y reclama aquí";
               case "PARENTS_NOT_OWNED" -> "Debes recuperar los padres en tu equipo o PC";
-              case "SPECIES_OR_GENERATION" -> "La generación de la cría está deshabilitada";
+              case "GENERATION_DISABLED" -> "La política de crianza no permite esta generación";
+              case "SPECIES_UNAVAILABLE", "SPECIES_OR_GENERATION" -> "La especie o su generación no está disponible; la cría sigue reservada";
               default ->
                   j.status().equals("UNCERTAIN")
                       ? "Un administrador debe revisar la operación antes de continuar"
@@ -400,7 +399,7 @@ public final class BreedingScreen
         lines.add(Component.literal(p.name() + " · Nv. " + p.level() + " · " + sex(p.sex())));
         lines.add(Component.translatable("cobblemon.nature." + p.nature()));
         lines.add(
-            Component.literal("Habilidad: ")
+            Component.translatableWithFallback("ui.zianutilities.d15ab4bd0f10", "Habilidad: ")
                 .append(Component.translatable("cobblemon.ability." + p.ability())));
         String[] labels = {"PS", "Ataque", "Defensa", "At. especial", "Def. especial", "Velocidad"};
         for (int i = 0; i < 6; i++)
@@ -409,9 +408,9 @@ public final class BreedingScreen
                   labels[i] + ": " + p.stats().get(i) + " · IV " + p.ivs().get(i) + "/31"));
         lines.add(Component.literal("Grupos huevo: " + p.groups()));
         lines.add(
-            Component.literal("Objeto: ")
+            Component.translatableWithFallback("ui.zianutilities.f74d81c04bb3", "Objeto: ")
                 .append(
-                    p.held().isEmpty() ? Component.literal("Ninguno") : p.held().getHoverName()));
+                    p.held().isEmpty() ? Component.translatableWithFallback("ui.zianutilities.f3c24118253b", "Ninguno") : p.held().getHoverName()));
         lines.add(
             Component.literal(p.reason().isEmpty() ? "Disponible para seleccionar" : p.reason()));
         queueTooltip(lines);
@@ -433,9 +432,9 @@ public final class BreedingScreen
                     + child.ivs().get(i)
                     + "/31"));
       for (String sentence : child.detail().split("\\. ")) lines.add(Component.literal(sentence));
-      lines.add(Component.literal("Sexo, naturaleza, habilidad y shiny se determinan al iniciar."));
+      lines.add(Component.translatableWithFallback("ui.zianutilities.8cc1b8ef0629", "Sexo, naturaleza, habilidad y shiny se determinan al iniciar."));
       if (state.offspring().size() > 1)
-        lines.add(Component.literal("Haz clic para ver otra especie o forma posible."));
+        lines.add(Component.translatableWithFallback("ui.zianutilities.fcd5767d2c74", "Haz clic para ver otra especie o forma posible."));
       queueTooltip(lines);
     }
   }

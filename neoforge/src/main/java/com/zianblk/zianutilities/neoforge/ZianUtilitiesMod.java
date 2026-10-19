@@ -40,10 +40,13 @@ public final class ZianUtilitiesMod {
     public static final String COMMAND_ROOT = "ZianUtilities";
 
     public ZianUtilitiesMod(IEventBus modBus) {
+        if(net.neoforged.fml.loading.FMLEnvironment.dist==net.neoforged.api.distmarker.Dist.CLIENT)ItemPresentation.register();
         ZianArmor.register(modBus);
         // Explicit registration also supports loaders predating automatic bus selection.
         // Do not load the class containing client item-rendering code on a dedicated server.
         if (FMLEnvironment.dist == Dist.CLIENT) ZianEquipmentClient.register(modBus);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent e)->com.zianblk.zianutilities.neoforge.references.References.clear());
+        HybridPublicAccess.register();
         PlaneMining.install();
         com.zianblk.zianutilities.neoforge.breeding.BreedingRuntime.install();
         com.zianblk.zianutilities.neoforge.riding.RidingCommands.install();

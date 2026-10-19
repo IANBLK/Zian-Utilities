@@ -1,21 +1,5 @@
-# Contributing to Zian Utilities
+# Contributing
 
-## Baseline
+Use Java 21 and the Gradle wrapper. Build with `./gradlew build` (`gradlew.bat build` on Windows). Zian Utilities uses a multi-project build; its JAR is under `neoforge/build/libs`. The other mods output to `build/libs`. Required external dependencies are resolved by Gradle. Do not commit build folders, test worlds, local dependencies, credentials or private server data.
 
-- Java 21
-- Minecraft 1.21.1
-- NeoForge 21.1.x
-- Cobblemon 1.8.1 baseline
-- Gradle 9.2.1 in CI
-
-## Architecture rules
-
-- `core` must not import Minecraft, NeoForge or Cobblemon classes.
-- Cobblemon-specific behavior belongs in the NeoForge integration layer.
-- Do not copy production implementation from the archived Generation Spawns repository.
-- Runtime claims must be backed by runtime evidence.
-- Keep experimental observers and bytecode research outside production source sets.
-
-## Commits
-
-Use concise conventional prefixes such as `feat:`, `fix:`, `test:`, `docs:`, `build:`, `ci:` and `research:`.
+Report issues with reproducible steps and sanitized logs. The current supported behavior is described in [the English guide](docs/GUIDE.md), [Spanish overview](docs/GUIA_ES.md) and [README](README.md). Source code and third-party art have separate notices; do not relicense imported assets.

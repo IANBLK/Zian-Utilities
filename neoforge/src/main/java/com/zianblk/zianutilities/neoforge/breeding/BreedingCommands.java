@@ -28,7 +28,9 @@ public final class BreedingCommands {
   }
 
   private static UUID id(com.mojang.brigadier.context.CommandContext<CommandSourceStack> c) {
-    return UUID.fromString(StringArgumentType.getString(c, "id"));
+    UUID owner=c.getSource().getPlayer()==null?null:c.getSource().getPlayer().getUUID();
+    if(c.getInput().contains(" breeding-admin "))owner=null;
+    return com.zianblk.zianutilities.neoforge.references.References.resolve(c.getSource().getServer(),owner,StringArgumentType.getString(c,"id"));
   }
 
   public static void register(RegisterCommandsEvent e) {
@@ -55,7 +57,7 @@ public final class BreedingCommands {
                           for (var j : BreedingRuntime.mine(p))
                             p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(
                                 Component.literal(
-                                    j.id()
+                                    com.zianblk.zianutilities.neoforge.references.References.label(c.getSource().getServer(),j.owner(),j.id())
                                         + " · "
                                         + j.status()
                                         + " · "
@@ -106,7 +108,7 @@ public final class BreedingCommands {
                                   BreedingRuntime.mine(c.getSource().getPlayerOrException())
                                       .stream()
                                       .filter(BreedingJob::occupiesSlot)
-                                      .map(j -> j.id().toString()),
+                                      .map(j -> com.zianblk.zianutilities.neoforge.references.References.label(c.getSource().getServer(),j.owner(),j.id())),
                                   b))
                       .executes(
                           c ->
@@ -165,7 +167,7 @@ public final class BreedingCommands {
                                             j ->
                                                 j.status() == BreedingJob.Status.ACTIVE
                                                     || j.status() == BreedingJob.Status.BLOCKED)
-                                        .map(j -> j.id().toString()),
+                                        .map(j -> com.zianblk.zianutilities.neoforge.references.References.label(c.getSource().getServer(),j.owner(),j.id())),
                                 b))
                     .executes(
                         c ->
@@ -211,7 +213,7 @@ public final class BreedingCommands {
                                       .sendSuccess(
                                           () ->
                                               Component.literal(
-                                                  j.id()
+                                                  com.zianblk.zianutilities.neoforge.references.References.label(c.getSource().getServer(),j.owner(),j.id())
                                                       + " owner="
                                                       + j.owner()
                                                       + " state="
@@ -329,6 +331,7 @@ public final class BreedingCommands {
                 .requires(s -> true)
                 .then(root)
                 .then(admin));
+    if(e.getDispatcher().getRoot().getChild("crianza")==null)e.getDispatcher().register(Commands.literal("crianza").requires(s->s.getPlayer()!=null&&BreedingPermissions.allows(s.getPlayer(),"use",false)).executes(c->{BreedingNetwork.open(c.getSource().getPlayerOrException());return 1;}).redirect(e.getDispatcher().getRoot().getChild(ZianUtilitiesMod.COMMAND_ROOT).getChild("crianza")));
   }
 
   private static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions>
@@ -362,7 +365,7 @@ public final class BreedingCommands {
                                     && (!input.contains(" accelerate ")
                                         || (j.status() == BreedingJob.Status.ACTIVE
                                             && j.readyAt() > BreedingRuntime.store.now()))))
-            .map(j -> j.id().toString()),
+            .map(j -> com.zianblk.zianutilities.neoforge.references.References.label(c.getSource().getServer(),j.owner(),j.id())),
         b);
   }
 

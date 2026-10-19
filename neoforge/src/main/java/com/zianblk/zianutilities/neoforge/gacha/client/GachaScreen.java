@@ -42,7 +42,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
 
     private GachaScreen(GachaNetwork.State state, int poolId, int prizePage, int pendingPage,
                         boolean editing, boolean confirming) {
-        super(Component.literal("Zian Utilities | Gachas"));
+        super(Component.translatableWithFallback("ui.zianutilities.927561ce62eb", "Zian Utilities | Gachas"));
         this.state = state;
         this.poolId = poolId;
         this.prizePage = prizePage;
@@ -149,7 +149,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
             String description=pool.description().isBlank()?"Descubre los tesoros de esta gacha":pool.description();
             var lines=font.split(Component.literal(description),width-62);for(int i=0;i<Math.min(2,lines.size());i++)g.drawString(font,lines.get(i),x+54,y+26+i*font.lineHeight,MUTED);
             g.drawString(font,font.plainSubstrByWidth(pool.enabled()?pool.cost()+" × "+ticketName(pool.ticket()):"En preparación",width-16),x+8,y+height-15,pool.enabled()?GREEN:MUTED);
-            if(isHoveredOrFocused())queueTooltip(List.of(Component.literal(pool.name()),Component.literal(description),Component.literal("Haz clic para ver sus premios")));
+            if(isHoveredOrFocused())queueTooltip(List.of(Component.literal(pool.name()),Component.literal(description),Component.translatableWithFallback("ui.zianutilities.8dbe7c9d421d", "Haz clic para ver sus premios")));
         }
     }
 
@@ -209,8 +209,8 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
                 Minecraft.getInstance().setScreen(this);
                 if (confirmed) GachaNetwork.request(11, pool.id(), 0, pool.name());
             }, Component.literal("¿Eliminar " + pool.name() + "?"),
-                Component.literal("Se borrará este gacha y sus premios configurados.")))));
-        nameBox = new EditBox(font, x + w / 2 - 85, 72, 170, 18, Component.literal("Nombre"));
+                Component.translatableWithFallback("ui.zianutilities.977068341cd9", "Se borrará este gacha y sus premios configurados.")))));
+        nameBox = new EditBox(font, x + w / 2 - 85, 72, 170, 18, Component.translatableWithFallback("ui.zianutilities.e68491e91c7c", "Nombre"));
         nameBox.setMaxLength(32);
         nameBox.setValue(pool.name());
         addRenderableWidget(nameBox);
@@ -238,8 +238,8 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
                 GachaNetwork.request(7, pool.id(), index, "")));
         }
         addRenderableWidget(new StyledButton(x+8,316,126,18,"Icono en mano",()->GachaNetwork.request(12,pool.id(),0,"")));
-        descriptionBox=new EditBox(font,x+142,316,w-228,18,Component.literal("Descripción"));
-        descriptionBox.setMaxLength(160);descriptionBox.setValue(pool.description());descriptionBox.setHint(Component.literal("Texto del catálogo"));addRenderableWidget(descriptionBox);
+        descriptionBox=new EditBox(font,x+142,316,w-228,18,Component.translatableWithFallback("ui.zianutilities.7fda3970598e", "Descripción"));
+        descriptionBox.setMaxLength(160);descriptionBox.setValue(pool.description());descriptionBox.setHint(Component.translatableWithFallback("ui.zianutilities.2355787db78f", "Texto del catálogo"));addRenderableWidget(descriptionBox);
         addRenderableWidget(new StyledButton(x+w-80,316,72,18,"Guardar texto",()->GachaNetwork.request(13,pool.id(),0,descriptionBox.getValue())));
         addRenderableWidget(new StyledButton(x + 8, 260, 42, 18, "◀", () -> {
             prizePage = Math.max(0, prizePage - 1); reopen();
@@ -305,7 +305,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
         ItemStack shown = reel.items().get(position);
         graphics.drawCenteredString(font, shown.getHoverName(), width / 2, y + 92, WHITE);
         graphics.drawCenteredString(font,
-            progress < 1 ? "Girando..." : "¡Premio obtenido!",
+            progress < 1 ? "Girando..." : "Premio reservado",
             width / 2, y + 113, progress < 1 ? MUTED : GREEN);
     }
 
@@ -442,5 +442,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
                 active ? WHITE : 0xFF7C838B);
         }
     }
+
+ @Override public void onClose(){if(!GuiReturn.returnToMenu())super.onClose();}
 }
 

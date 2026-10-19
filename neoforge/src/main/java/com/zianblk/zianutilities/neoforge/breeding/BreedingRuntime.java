@@ -265,7 +265,7 @@ public final class BreedingRuntime {
         PokemonSpecies.getByIdentifier(
             net.minecraft.resources.ResourceLocation.parse(j.child().species()));
     if (species == null || !allowed(species)) {
-      store.put(j.phase(BreedingJob.Status.BLOCKED, "SPECIES_OR_GENERATION", store.now()));
+      store.put(j.phase(BreedingJob.Status.BLOCKED, species == null ? "SPECIES_UNAVAILABLE" : "GENERATION_DISABLED", store.now()));
       return;
     }
     var h = BreedingStorage.open(p);

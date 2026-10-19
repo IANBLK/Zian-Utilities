@@ -33,7 +33,7 @@ public final class CaptureTrialCommands {
                 .requires(source -> true)
                 .then(Commands.literal("quest")
                     .then(Commands.literal("plan")
-                        .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(source,"admin.quests",true))
                         .executes(context -> plan(context.getSource())))
                     .then(Commands.literal("trial")
                         .requires(source -> source.hasPermission(3) && Boolean.getBoolean(TEST_FLAG))

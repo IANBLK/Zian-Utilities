@@ -19,7 +19,7 @@ public final class ZianHubScreen extends com.zianblk.zianutilities.neoforge.clie
     private StyledButton questsButton;
 
     public ZianHubScreen(ZianHubNetwork.State state) {
-        super(Component.literal("Zian Utilities"));
+        super(Component.translatableWithFallback("ui.zianutilities.a70668d5b7db", "Zian Utilities"));
         this.state = state;
     }
 
@@ -52,17 +52,17 @@ public final class ZianHubScreen extends com.zianblk.zianutilities.neoforge.clie
         int w = cardWidth();
         questsButton = addRenderableWidget(new StyledButton(firstX() + 10,
             firstY() + cardHeight() - 29, w - 20, 19,
-            Component.literal("Abrir misiones"), ZianHubNetwork::requestQuests));
+            Component.translatableWithFallback("ui.zianutilities.50e0b3199eee", "Abrir misiones"), ZianHubNetwork::requestQuests));
         questsButton.active = state.questsEnabled();
         StyledButton gachas = addRenderableWidget(new StyledButton(secondX() + 10,
             secondY() + cardHeight() - 29, w - 20, 19,
-            Component.literal("Abrir gachas"), ZianHubNetwork::requestGachas));
+            Component.translatableWithFallback("ui.zianutilities.34def1267b50", "Abrir gachas"), ZianHubNetwork::requestGachas));
         gachas.active = state.gachasEnabled();
         StyledButton breeding = addRenderableWidget(new StyledButton(thirdX() + 10,
             firstY() + cardHeight() - 29, w - 20, 19,
-            Component.literal("Abrir crianza"), ZianHubNetwork::requestBreeding));
+            Component.translatableWithFallback("ui.zianutilities.0f1f8d42fc40", "Abrir crianza"), ZianHubNetwork::requestBreeding));
         breeding.active = state.breedingEnabled();
-        addRenderableWidget(new StyledButton(width-68,12,56,19,Component.literal("Cerrar"),this::onClose));
+        addRenderableWidget(new StyledButton(width-68,12,56,19,Component.translatableWithFallback("ui.zianutilities.4b0816bbd5e9", "Cerrar"),this::onClose));
     }
 
     @Override
@@ -75,7 +75,7 @@ public final class ZianHubScreen extends com.zianblk.zianutilities.neoforge.clie
         graphics.fill(0, 0, width, height, 0xE00D1117);
         graphics.fill(0, 0, width, 4, GOLD);
         graphics.drawCenteredString(font, title, width / 2, 12, GOLD);
-        graphics.drawCenteredString(font, Component.literal("Elige una sección"), width / 2, 28, MUTED);
+        graphics.drawCenteredString(font, Component.translatableWithFallback("ui.zianutilities.638506ea5f0a", "Elige una sección"), width / 2, 28, MUTED);
 
         drawCard(graphics, firstX(), firstY(), cardWidth(), cardHeight(), GOLD);
         drawCard(graphics, secondX(), secondY(), cardWidth(), cardHeight(), 0xFFB590E8);
@@ -83,7 +83,7 @@ public final class ZianHubScreen extends com.zianblk.zianutilities.neoforge.clie
         drawQuestContent(graphics);
         drawGachaContent(graphics);
         drawBreedingContent(graphics);
-        graphics.drawCenteredString(font,Component.literal("Tu aventura, tus recompensas, tu equipo"),width/2,Math.min(height-24,firstY()+cardHeight()+18),MUTED);
+        graphics.drawCenteredString(font,Component.translatableWithFallback("ui.zianutilities.88d2b99764bf", "Tu aventura, tus recompensas, tu equipo"),width/2,Math.min(height-24,firstY()+cardHeight()+18),MUTED);
         renderWidgets(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -91,8 +91,8 @@ public final class ZianHubScreen extends com.zianblk.zianutilities.neoforge.clie
         int x = firstX();
         int y = firstY();
         graphics.renderItem(new ItemStack(Items.BOOK), x + 11, y + 11);
-        graphics.drawString(font, Component.literal("Misiones"), x + 35, y + 13, WHITE, false);
-        graphics.drawWordWrap(font,Component.literal("Captura Pokémon y supera desafíos.\n\nObjetivos globales con avance personal."),x+11,y+40,cardWidth()-22,MUTED);
+        graphics.drawString(font, Component.translatableWithFallback("ui.zianutilities.996d6c04342f", "Misiones"), x + 35, y + 13, WHITE, false);
+        graphics.drawWordWrap(font,Component.translatableWithFallback("ui.zianutilities.04f11adb5f3b", "Captura Pokémon y supera desafíos.\n\nObjetivos globales con avance personal."),x+11,y+40,cardWidth()-22,MUTED);
         status(graphics,x,y,state.questsEnabled());
     }
 
@@ -100,16 +100,16 @@ public final class ZianHubScreen extends com.zianblk.zianutilities.neoforge.clie
         int x = secondX();
         int y = secondY();
         graphics.renderItem(new ItemStack(Items.AMETHYST_SHARD), x + 11, y + 11);
-        graphics.drawString(font, Component.literal("Gachas"), x + 35, y + 13, WHITE, false);
-        graphics.drawWordWrap(font,Component.literal("Descubre recompensas con tickets.\n\nConsulta premios y probabilidades antes de girar."),x+11,y+40,cardWidth()-22,MUTED);
+        graphics.drawString(font, Component.translatableWithFallback("ui.zianutilities.ff654082965c", "Gachas"), x + 35, y + 13, WHITE, false);
+        graphics.drawWordWrap(font,Component.translatableWithFallback("ui.zianutilities.f25b1afefaf9", "Descubre recompensas con tickets.\n\nConsulta premios y probabilidades antes de girar."),x+11,y+40,cardWidth()-22,MUTED);
         status(graphics,x,y,state.gachasEnabled());
     }
 
     private void drawBreedingContent(GuiGraphics graphics){
         int x=thirdX(),y=firstY();
         graphics.renderItem(new ItemStack(Items.EGG),x+11,y+11);
-        graphics.drawString(font,Component.literal("Crianza"),x+35,y+13,WHITE,false);
-        graphics.drawWordWrap(font,Component.literal("Elige padres de tu equipo.\n\nConsulta la posible cría y gestiona tus crianzas."),x+11,y+40,cardWidth()-22,MUTED);
+        graphics.drawString(font,Component.translatableWithFallback("ui.zianutilities.ad62ee6e83cd", "Crianza"),x+35,y+13,WHITE,false);
+        graphics.drawWordWrap(font,Component.translatableWithFallback("ui.zianutilities.5d1776706890", "Elige padres de tu equipo.\n\nConsulta la posible cría y gestiona tus crianzas."),x+11,y+40,cardWidth()-22,MUTED);
         status(graphics,x,y,state.breedingEnabled());
     }
     private void status(GuiGraphics graphics,int x,int y,boolean enabled){graphics.drawString(font,Component.literal(enabled?"Disponible":"No disponible"),x+11,y+cardHeight()-48,enabled?0xFF88D5AD:MUTED,false);}

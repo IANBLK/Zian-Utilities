@@ -66,6 +66,7 @@ public final class GachaNetwork {
         if (!(context.player() instanceof ServerPlayer player)
             || !GachaRuntime.enabled()) return;
         try {
+            if(!com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(player,"gacha.use",false))throw new IllegalStateException("No tienes acceso a Gachas");
             switch (action.kind()) {
                 case 0 -> { }
                 case 1 -> GachaRuntime.create(player);

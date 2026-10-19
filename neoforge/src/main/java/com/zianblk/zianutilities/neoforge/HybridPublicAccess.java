@@ -1,0 +1,11 @@
+package com.zianblk.zianutilities.neoforge;
+import java.util.*;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
+/** Optional Bukkit permission defaults for the two public-only roots. Never grants admin roots. */
+public final class HybridPublicAccess {
+ public static final List<String> ROOTS=List.of("ZianUtilities","crianza");
+ public static void register(){NeoForge.EVENT_BUS.addListener((ServerStartedEvent event)->enable());}
+ @SuppressWarnings({"unchecked","rawtypes"}) private static void enable(){try{var bukkit=Class.forName("org.bukkit.Bukkit");var permission=Class.forName("org.bukkit.permissions.Permission");var defaults=(Class<? extends Enum>)Class.forName("org.bukkit.permissions.PermissionDefault");var managerType=Class.forName("org.bukkit.plugin.PluginManager");Object manager=bukkit.getMethod("getPluginManager").invoke(null);if(manager==null)return;Object everyone=Enum.valueOf(defaults,"TRUE");for(String root:ROOTS){String node="minecraft.command."+root;Object existing=managerType.getMethod("getPermission",String.class).invoke(manager,node);if(existing==null){existing=permission.getConstructor(String.class,defaults).newInstance(node,everyone);managerType.getMethod("addPermission",permission).invoke(manager,existing);}else permission.getMethod("setDefault",defaults).invoke(existing,everyone);managerType.getMethod("recalculatePermissionDefaults",permission).invoke(manager,existing);}var permissible=Class.forName("org.bukkit.permissions.Permissible");var player=Class.forName("org.bukkit.entity.Player");for(Object online:(Collection<?>)bukkit.getMethod("getOnlinePlayers").invoke(null)){permissible.getMethod("recalculatePermissions").invoke(online);player.getMethod("updateCommands").invoke(online);}org.slf4j.LoggerFactory.getLogger("zianutilities").info("Public companion commands registered with Bukkit permission defaults; explicit permission denies remain respected.");}catch(ClassNotFoundException ignored){/* Ordinary NeoForge has no Bukkit command gate. */}catch(ReflectiveOperationException ex){org.slf4j.LoggerFactory.getLogger("zianutilities").warn("Could not register hybrid public companion permissions; allow minecraft.command.companions in your permission manager.",ex);}}
+ private HybridPublicAccess(){}
+}

@@ -1,0 +1,39 @@
+{
+  "name": "Zian Utilities",
+  "projectId": 1715870,
+  "version": "0.1.2",
+  "jar": "Zian-Utilities-0.1.2-NeoForge-1.21.1.jar",
+  "sha256": "907c599d0097ed44f92de5c59033d16433a0b6af4cae1d1551a43af95d916589",
+  "dependencies": {
+    "zianutilities": [
+      {
+        "modId": "minecraft",
+        "type": "required",
+        "versionRange": "[1.21.1]",
+        "ordering": "NONE",
+        "side": "BOTH"
+      },
+      {
+        "modId": "neoforge",
+        "type": "required",
+        "versionRange": "[21.1,)",
+        "ordering": "NONE",
+        "side": "BOTH"
+      },
+      {
+        "modId": "cobblemon",
+        "type": "required",
+        "versionRange": "[1.8.2,1.9)",
+        "ordering": "AFTER",
+        "side": "BOTH"
+      }
+    ]
+  },
+  "license": "MIT (original code); separate artwork permissions - see META-INF/THIRD_PARTY_LICENSES.md",
+  "uploaded": true,
+  "descriptionVerified": true,
+  "fileId": 9252515,
+  "authorFileUrl": "https://authors.curseforge.com/#/projects/1715870/files/9252515",
+  "status": "Processing",
+  "verifiedAt": "2026-10-19T05:23:22.257905+00:00"
+}

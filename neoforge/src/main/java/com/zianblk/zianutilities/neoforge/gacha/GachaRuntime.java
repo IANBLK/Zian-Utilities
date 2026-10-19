@@ -167,7 +167,7 @@ public final class GachaRuntime {
 
     public static synchronized View view(ServerPlayer player) throws IOException {
         List<Pool> visible = pools(player);
-        if (!player.hasPermissions(2)) visible.removeIf(pool -> !pool.enabled());
+        if (!com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(player,"admin.gacha",true)) visible.removeIf(pool -> !pool.enabled());
         List<Pending> pending = new ArrayList<>();
         ListTag ops = operations(player);
         for (int i = ops.size() - 1; i >= 0; i--) {
@@ -180,7 +180,7 @@ public final class GachaRuntime {
                 pending.add(new Pending(op.getUUID("id"), prize, op.getString("pool"), phase));
             }
         }
-        return new View(visible, pending, player.hasPermissions(2), paymentsEnabled());
+        return new View(visible, pending, com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(player,"admin.gacha",true), paymentsEnabled());
     }
 
     public static synchronized void create(ServerPlayer player) throws IOException {
@@ -268,7 +268,7 @@ public final class GachaRuntime {
     }
 
     private static void requireAdmin(ServerPlayer player) {
-        if (!player.hasPermissions(2)) throw new IllegalStateException("Se requiere permiso de administrador");
+        if (!com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(player,"admin.gacha",true)) throw new IllegalStateException("Se requiere permiso de administrador");
     }
 
     /** Read-only details for an operator to reconcile a stalled roll with the player's inventory. */

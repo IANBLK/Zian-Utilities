@@ -8,22 +8,28 @@ import java.util.*;
 /** Loaded only by the server; omitted currencies are disabled, never silently free. */
 public final class BreedingConfig {
   public boolean enabled = false;
+  public int balanceRevision=1;
 
   /** Optional server policy; wild-spawn generation limits do not restrict breeding by default. */
   public boolean respectGenerationRestrictions = false;
 
-  public long baseMinutes = 1440, minimumMinutes = 120;
+  public long baseMinutes = 720, minimumMinutes = 120;
   public int defaultSlots = 1, vipSlots = 2, maxSlots = 8;
   public double alphaChance = 0.05;
-  public Map<String, Long> currencyReductionsMinutes =
-      new LinkedHashMap<>(
-          Map.of(
-              "avecoins:coppercoin",
-              2L,
-              "avecoins:diamondcoin",
-              20L,
-              "avecoins:netheriteticket",
-              220L));
+  /** Reduction per wallet unit, in minutes; the minimum wait still applies. */
+  public static Map<String, Long> defaultCurrencies() {
+    var values = new LinkedHashMap<String, Long>();
+    values.put("avecoins:coppercoin", 2L);
+    values.put("avecoins:ironcoin", 5L);
+    values.put("avecoins:goldcoin", 10L);
+    values.put("avecoins:diamondcoin", 20L);
+    values.put("avecoins:netheritecoin", 40L);
+    values.put("avecoins:goldticket", 60L);
+    values.put("avecoins:diamondticket", 120L);
+    values.put("avecoins:netheriteticket", 220L);
+    return values;
+  }
+  public Map<String, Long> currencyReductionsMinutes = defaultCurrencies();
 
   public static BreedingConfig load(Path path) throws Exception {
     var gson = new GsonBuilder().setPrettyPrinting().create();
@@ -41,6 +47,13 @@ public final class BreedingConfig {
     var c = gson.fromJson(text, BreedingConfig.class);
     if (c == null) throw new IllegalArgumentException("Configuración vacía");
     c.validate();
+    var raw=JsonParser.parseString(text).getAsJsonObject();
+    if(!raw.has("balanceRevision")&&c.baseMinutes==1440&&c.currencyReductionsMinutes.equals(Map.of("avecoins:coppercoin",2L,"avecoins:diamondcoin",20L,"avecoins:netheriteticket",220L))){
+      Path backup=path.resolveSibling(path.getFileName()+".before-12h.json");
+      if(!StorageFiles.exists(backup))StorageFiles.writeString(backup,text);
+      c.baseMinutes=720;c.currencyReductionsMinutes=defaultCurrencies();c.balanceRevision=1;
+      StorageFiles.writeString(path,gson.toJson(c));
+    }
     return c;
   }
 

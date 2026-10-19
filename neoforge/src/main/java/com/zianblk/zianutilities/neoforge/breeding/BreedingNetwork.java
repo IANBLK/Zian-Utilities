@@ -72,6 +72,13 @@ public final class BreedingNetwork {
 
   public record Job(String id, String status, long readyAt, String reason) {}
 
+  private static String accelerationSummary(net.minecraft.server.level.ServerPlayer player,Session session,java.util.List<Job> jobs,java.util.List<Currency> currencies){
+    var pending=session.pending;var job=jobs.stream().filter(j->j.id().equals(pending.job.toString())).findFirst().orElse(null);
+    long balance=currencies.stream().filter(c->c.id().equals(pending.currency)).mapToLong(Currency::balance).findFirst().orElse(-1);
+    long remaining=job==null?0:Math.max(0,job.readyAt()-System.currentTimeMillis());
+    String currency=pending.currency.substring(pending.currency.indexOf(':')+1);
+    return "Tiempo: "+duration(remaining)+" → "+duration(Math.max(0,remaining-pending.cut))+" · coste: "+pending.units+" "+currency+" · saldo: "+(balance<0?"no disponible":balance<pending.units?"insuficiente (tienes "+balance+")":balance+" → "+(balance-pending.units));
+  }
   public record Currency(String id, long minutes, long balance) {}
 
   public record State(
@@ -529,11 +536,7 @@ public final class BreedingNetwork {
                   "Inicio gratuito · " + BreedingRuntime.config.baseMinutes / 60 + " horas";
               case "cancel" -> "Cancelar sin devolver aceleraciones";
               default ->
-                  s.pending.units
-                      + " × "
-                      + s.pending.currency
-                      + " · reduce hasta "
-                      + duration(s.pending.cut);
+                  accelerationSummary(p,s,jobs,currencies);
             };
     return new State(
         open,

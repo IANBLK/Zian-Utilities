@@ -18,19 +18,19 @@ public final class GachaCommands {
     private GachaCommands() {}
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
-        var gacha = Commands.literal("gacha").executes(GachaCommands::open);
+        var gacha = Commands.literal("gacha").requires(s->com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(s,"gacha.use",false)).executes(GachaCommands::open);
         gacha.then(Commands.literal("review")
-            .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
+            .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(source,"admin.gacha",true))
             .then(Commands.argument("player", EntityArgument.player()).executes(GachaCommands::review)));
         gacha.then(Commands.literal("confirm-delivered")
-            .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
+            .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(source,"admin.gacha",true))
             .then(Commands.argument("player", EntityArgument.player())
-                .then(Commands.argument("operationId", StringArgumentType.word())
+                .then(Commands.argument("operationId", StringArgumentType.word()).suggests(GachaCommands::suggestOperations)
                     .executes(GachaCommands::confirmDelivered))));
         gacha.then(Commands.literal("resolve-debit")
-            .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
+            .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(source,"admin.gacha",true))
             .then(Commands.argument("player", EntityArgument.player())
-                .then(Commands.argument("operationId", StringArgumentType.word())
+                .then(Commands.argument("operationId", StringArgumentType.word()).suggests(GachaCommands::suggestOperations)
                     .then(Commands.literal("charged")
                         .then(Commands.argument("evidence", StringArgumentType.greedyString())
                             .executes(context -> resolveDebit(context, true))))
@@ -38,9 +38,9 @@ public final class GachaCommands {
                         .then(Commands.argument("evidence", StringArgumentType.greedyString())
                             .executes(context -> resolveDebit(context, false)))))));
         gacha.then(Commands.literal("confirm-compensated")
-            .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
+            .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(source,"admin.gacha",true))
             .then(Commands.argument("player", EntityArgument.player())
-                .then(Commands.argument("operationId", StringArgumentType.word())
+                .then(Commands.argument("operationId", StringArgumentType.word()).suggests(GachaCommands::suggestOperations)
                     .then(Commands.argument("evidence", StringArgumentType.greedyString())
                         .executes(GachaCommands::confirmCompensated)))));
         event.getDispatcher().register(Commands.literal(ZianUtilitiesMod.COMMAND_ROOT).requires(source -> true).then(gacha));
@@ -70,7 +70,7 @@ public final class GachaCommands {
             if (pending.isEmpty()) context.getSource().sendSuccess(() -> Component.literal(
                 "No hay tiradas pendientes para " + target.getGameProfile().getName()), false);
             for (var operation : pending) context.getSource().sendSuccess(() -> Component.literal(
-                operation.id() + " | " + operation.phase() + " | " + operation.poolName()
+                com.zianblk.zianutilities.neoforge.references.References.label(target.server,target.getUUID(),operation.id()) + " | " + operation.phase() + " | " + operation.poolName()
                     + " | " + operation.cost() + " " + operation.ticket()
                     + " | premio: " + operation.prize().getHoverName().getString()
                     + " x" + operation.prize().getCount() + " | motivo: " + operation.reason()), false);
@@ -126,8 +126,9 @@ public final class GachaCommands {
         }
     }
 
+    private static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestOperations(CommandContext<CommandSourceStack> c,com.mojang.brigadier.suggestion.SuggestionsBuilder b){try{var target=EntityArgument.getPlayer(c,"player");var refs=new java.util.ArrayList<String>();for(var operation:GachaRuntime.review(target))refs.add(com.zianblk.zianutilities.neoforge.references.References.label(target.server,target.getUUID(),operation.id()));return net.minecraft.commands.SharedSuggestionProvider.suggest(refs,b);}catch(Exception unavailable){return b.buildFuture();}}
     private static UUID operationId(CommandContext<CommandSourceStack> context) {
-        return UUID.fromString(StringArgumentType.getString(context, "operationId"));
+        try{var target=EntityArgument.getPlayer(context,"player");return com.zianblk.zianutilities.neoforge.references.References.resolve(context.getSource().getServer(),target.getUUID(),StringArgumentType.getString(context,"operationId"));}catch(com.mojang.brigadier.exceptions.CommandSyntaxException e){throw new IllegalArgumentException("Jugador no disponible",e);}
     }
 
     private static UUID admin(CommandContext<CommandSourceStack> context) {

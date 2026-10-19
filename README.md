@@ -1,46 +1,35 @@
-# Zian Utilities
+# Zian Utilities 0.1.2
 
-**0.1.1 · Minecraft 1.21.1 · Cobblemon 1.8.2 · NeoForge 21.1.x · Java 21**
+**Language notice:** The current in-game interface, preset dialogues and administrator messages are primarily Spanish. English localization is incomplete. The English guide explains the controls and includes their Spanish button names. Changing Minecraft to English does not translate administrator-written NPC names, dialogues or configuration text.
 
-Control de generaciones, misiones, Gachas, crianza, equipo y ajustes de monturas desde una interfaz dentro del juego. Instala el mismo JAR en cliente y servidor, con Kotlin for Forge 5.10 o una versión compatible de 5.x.
+[English guide](docs/GUIDE.md) · [Guía en español](docs/GUIA_ES.md) · [Updating and recovery](docs/UPDATING.md) · [Current changes](CHANGELOG.md) · [Download](https://github.com/IANBLK/Zian-Utilities/releases/latest)
 
-## Funciones actuales
+Manage Pokémon generations, breed compatible party Pokémon, run recurring quests and offer configurable Gachas from a responsive in-game hub.
 
-- **Generaciones:** habilitación acumulativa y control de apariciones naturales, pesca y Poké Snack; conserva los Pokémon ya existentes. La elegibilidad de crianza es independiente de este filtro.
-- **Misiones:** objetivos compartidos con aceptación y progreso individual, misiones semanales y campañas persistentes.
-- **Gachas:** catálogo con nombres, iconos, descripciones y probabilidades visibles; tickets, premios y entregas pendientes se validan en el servidor.
-- **Crianza:** selección de padres, compatibilidad y estimación de la cría, inicio gratuito de 24 horas, aceleración económica opcional y entrega al PC. Trabajos y entregas quedan registrados para recuperación.
-- **Interfaz:** tarjetas de Misiones, Gachas y Crianza, con confirmaciones y distribución adaptadas a distintas escalas.
-- **Monturas voladoras:** límites administrativos de velocidad y estamina máxima. No modifica el permiso `/fly`. Desactivar la política restaura el comportamiento normal de las monturas; no prohíbe volar.
-- **Equipo:** sets Prismático y Dark Reaper con nombres y lore, armas y cuatro arcos con bonificaciones de daño diferentes y encantamientos de durabilidad. Reforged se retiró; las piezas antiguas se convierten en equivalentes vanilla conservando sus componentes. Las armas permanecen.
-- **Minería 3×3:** encantamiento `zianutilities:mineria_3x3` para picos, obtenido por comando, con permisos de rotura, desgaste y drops. No se añade a la mesa de encantamientos ni al loot normal.
+Breeding displays both parents and estimated offspring with hover details. Players can inspect jobs, accelerate waiting with configured currencies and claim completed offspring to their PC. Breeding eligibility is independent from generation-based natural spawn restrictions.
 
-## Economía y compatibilidad
+Gachas open as a named catalog with configurable icons and descriptions. Prize probabilities are visible before spending a ticket. The hub includes Missions, Gachas and Breeding cards, with layouts improved for GUI scales 3 and 4.
 
-AVECOINS es opcional para las funciones económicas; se instala por separado y no se incluye en el JAR. AVECOINS 2.3, 2.4 y 2.5 están inspeccionados. Una versión posterior solo se admite si las tres clases económicas verificadas conservan exactamente sus huellas revisadas y pasan las comprobaciones de métodos y capacidad. Un cambio real de contrato requiere revisión; no se promete compatibilidad automática con cualquier actualización.
+Administrators can limit flying Pokémon mount speed and maximum stamina without changing player fly permissions. Disabling these limits restores normal riding; it does not prohibit flight.
 
-La versión 0.1.1 corrige el rechazo de AVECOINS 2.5 por su número de versión, sin cambiar saldos, monedas, recibos ni trabajos de crianza. Consulta [el contrato revisado](docs/AVECOINS25_COMPATIBILITY.md).
+A command-only 3x3 mining enchantment lets compatible pickaxes mine an area while respecting player block-breaking permissions, drops and durability. It is not added to normal enchanting or loot.
 
-## Uso y administración
+Custom bows accept durability enchantments and have distinct arrow-damage bonuses. Problematic Reforged armor is retired; existing pieces convert to vanilla equivalents with item components preserved. Weapons remain.
 
-- `/ZianUtilities`: abre el panel principal.
-- `/ZianUtilities crianza`: abre crianza.
-- `/ZianUtilities generation active`: consulta las generaciones activas.
-- `/ZianUtilities generation enable gen1`: habilita una generación.
-- `/ZianUtilities vuelo ver`: muestra la política de monturas.
-- `/ZianUtilities vuelo velocidad 65`: ajusta la velocidad al 65%.
-- `/ZianUtilities vuelo estamina 60`: limita la estamina máxima al 60%; no representa el porcentaje de gasto.
+Install on client and server: Minecraft 1.21.1, Java 21, NeoForge 21.1.x, Cobblemon 1.8.2 and Kotlin for Forge 5.10 or compatible newer 5.x. AVECOINS 2.3/2.4/2.5 is optional for supported currency features.
 
-Consulta la [guía de crianza](docs/ZIAN_BREEDING_DESIGN.md), [su configuración económica](docs/ZIAN_BREEDING_CURRENCY_CONFIG.md), [recuperación](docs/BETA6_RECOVERY.md) y [cambios](CHANGELOG.md). Los documentos con nombres alpha/beta describen etapas históricas; esta página y [las notas de 0.1.1](docs/releases/0.1.1/changelog.md) describen la versión actual.
+Durable progress supports optional SQLite migration and safe administrative maintenance. Back up the world before upgrades or migration.
 
-## Instalación y datos
+## Español
 
-Descarga el JAR de [Releases](https://github.com/IANBLK/Zian-Utilities/releases/latest), retira el JAR anterior y usa la misma versión en cliente y servidor. Conserva una copia del mundo y de la configuración antes de actualizar.
+Controle generaciones, críe Pokémon, configure misiones y Gachas y limite velocidad/estamina de monturas. La crianza no depende del bloqueo de generaciones. Instale en cliente y servidor con Cobblemon 1.8.2. Respalde antes de actualizar.
 
-Las operaciones económicas inciertas requieren revisión y no se repiten a ciegas. La migración opcional a SQLite y las tareas de mantenimiento son explícitas; actualizar el mod no implica borrar ni migrar automáticamente los datos.
+## Latest update — 0.1.2
 
-El código y el arte incluido tienen condiciones separadas, indicadas en los avisos de licencia del proyecto y del JAR.
+New default breeding jobs take 12 hours. Eight coin/ticket options are available in a paginated selector. The cost, balance and waiting-time reduction are shown before acceleration. Only the previous default is migrated; existing jobs and custom settings are preserved. Added /crianza, readable operation references, and matching permission checks in commands and network handlers.
 
-## Desarrollo
+## Novedades — Español
 
-Java 21. Compila con `gradlew.bat build` en Windows o `./gradlew build` en Linux. El JAR NeoForge se genera en `neoforge/build/libs/`.
+Crianza nueva de 12 horas, ocho monedas/tickets y selector paginado. Se muestran coste, saldo y reducción antes de acelerar. Conserva trabajos existentes y configuraciones personalizadas. Alias /crianza y referencias de operaciones legibles.
+
+Minecraft 1.21.1 · NeoForge · Java 21. Install the same mod version on client and server. Back up your world before upgrading; replace the old JAR instead of keeping both copies.

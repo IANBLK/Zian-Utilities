@@ -1,1 +1,0 @@
-Expand your Cobblemon server with generation control, recurring quests, customizable animated gachas, custom equipment, and a command-only mining enchantment.

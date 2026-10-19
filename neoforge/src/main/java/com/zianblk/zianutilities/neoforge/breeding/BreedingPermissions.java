@@ -10,7 +10,7 @@ public final class BreedingPermissions {
       return switch (LuckPermsLookup.lookup(player, "zianutilities.breeding." + action)) {
         case TRUE -> true;
         case FALSE -> false;
-        case ABSENT, UNDEFINED -> !admin || player.hasPermissions(2);
+        case ABSENT, UNDEFINED -> !admin || (action.equals("admin")?com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(player,"admin.breeding",true):player.hasPermissions(2));
       };
     } catch (Exception | LinkageError error) {
       return false;

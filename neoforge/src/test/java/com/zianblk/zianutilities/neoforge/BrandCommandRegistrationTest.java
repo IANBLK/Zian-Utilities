@@ -34,7 +34,8 @@ class BrandCommandRegistrationTest {
             var id=node.getChild("id");if(id instanceof com.mojang.brigadier.tree.ArgumentCommandNode<?,?> argument)assertNotNull(argument.getCustomSuggestions(),"UUID autocomplete missing for "+node.getName());
         }
         assertNull(dispatcher.getRoot().getChild("zian"));
-        assertEquals(1, dispatcher.getRoot().getChildren().size());
+        assertEquals(2, dispatcher.getRoot().getChildren().size());
+        assertNotNull(dispatcher.getRoot().getChild("crianza"));
         var root = dispatcher.getRoot().getChild("ZianUtilities");
         assertNotNull(root);
         assertNotNull(root.getCommand(), "Opening the hub must remain available");

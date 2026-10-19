@@ -31,7 +31,7 @@ public final class ProgressionQuestScreen extends com.zianblk.zianutilities.neof
     private StyledButton accept;
 
     public ProgressionQuestScreen(ProgressionQuestNetwork.State state) {
-        super(Component.literal("Zian Utilities | Misiones"));
+        super(Component.translatableWithFallback("ui.zianutilities.b24b97bd7817", "Zian Utilities | Misiones"));
         this.state = state;
     }
 
@@ -269,4 +269,6 @@ public final class ProgressionQuestScreen extends com.zianblk.zianutilities.neof
                 active ? 0xFFE2E8F0 : 0xFF7C838B);
         }
     }
+
+ @Override public void onClose(){if(!GuiReturn.returnToMenu())super.onClose();}
 }

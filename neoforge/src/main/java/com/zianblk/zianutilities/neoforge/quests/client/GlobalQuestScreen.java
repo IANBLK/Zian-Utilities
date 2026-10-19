@@ -37,7 +37,7 @@ public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.
     private boolean waiting;
 
     public GlobalQuestScreen(GlobalQuestNetwork.State state) {
-        super(Component.literal("Zian Utilities | Misiones"));
+        super(Component.translatableWithFallback("ui.zianutilities.b24b97bd7817", "Zian Utilities | Misiones"));
         this.state = state;
     }
 
@@ -58,21 +58,21 @@ public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.
     protected void init() {fitViewport(600,360);
         int x = width / 2;
         int controlsY = controlsY();
-        addRenderableWidget(new StyledButton(10, 9, 55, 18, Component.literal("Inicio"),
+        addRenderableWidget(new StyledButton(10, 9, 55, 18, Component.translatableWithFallback("ui.zianutilities.4f70d8c37e6a", "Inicio"),
             ZianHubNetwork::requestHub));
-        addRenderableWidget(new StyledButton(width - 165, 9, 78, 18, Component.literal("Semanales"),
+        addRenderableWidget(new StyledButton(width - 165, 9, 78, 18, Component.translatableWithFallback("ui.zianutilities.490124c0919f", "Semanales"),
             () -> ProgressionQuestNetwork.request((byte) 0, 0)));
-        addRenderableWidget(new StyledButton(width - 83, 9, 78, 18, Component.literal("Campañas"),
+        addRenderableWidget(new StyledButton(width - 83, 9, 78, 18, Component.translatableWithFallback("ui.zianutilities.a9f4b07452d3", "Campañas"),
             () -> ProgressionQuestNetwork.request((byte) 1, 0)));
         acceptButton = addRenderableWidget(new StyledButton(x - 111, controlsY, 110, 20,
-            Component.literal("Aceptar objetivos"), () -> {
+            Component.translatableWithFallback("ui.zianutilities.654156dc759d", "Aceptar objetivos"), () -> {
             waiting = true;
             updateButtons();
             GlobalQuestNetwork.request(true, state.windowStartEpochMs(),
                 state.targetSpecies(), state.generationIds());
         }));
         addRenderableWidget(new StyledButton(x + 1, controlsY, 110, 20,
-            Component.literal("Actualizar"), () -> {
+            Component.translatableWithFallback("ui.zianutilities.c725f8bffa86", "Actualizar"), () -> {
             waiting = true;
             updateButtons();
             GlobalQuestNetwork.request(false, state.windowStartEpochMs(),
@@ -134,7 +134,7 @@ public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.
 
     private void drawCaptureCard(GuiGraphics graphics, int x, int y, int w, int h, float partialTick) {
         card(graphics, x, y, w, h, state.captureComplete() ? GREEN : GOLD);
-        graphics.drawString(font, Component.literal("01  CAPTURA"), x + 10, y + 10, GOLD, false);
+        graphics.drawString(font, Component.translatableWithFallback("ui.zianutilities.643b241b1775", "01  CAPTURA"), x + 10, y + 10, GOLD, false);
         String species = state.targetSpecies().isBlank() ? "Sin especie disponible"
             : friendly(state.targetSpecies());
         graphics.drawString(font, Component.literal(species), x + 10, y + 29, WHITE, false);
@@ -165,8 +165,8 @@ public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.
     private void drawBattleCard(GuiGraphics graphics, int x, int y, int w, int h) {
         boolean complete = state.battleWins() >= 5;
         card(graphics, x, y, w, h, complete ? GREEN : GOLD);
-        graphics.drawString(font, Component.literal("02  BATALLAS SALVAJES"), x + 10, y + 10, GOLD, false);
-        graphics.drawString(font, Component.literal("Gana 5 batallas"), x + 10, y + 29, WHITE, false);
+        graphics.drawString(font, Component.translatableWithFallback("ui.zianutilities.208fe17459c9", "02  BATALLAS SALVAJES"), x + 10, y + 10, GOLD, false);
+        graphics.drawString(font, Component.translatableWithFallback("ui.zianutilities.f9466020d89a", "Gana 5 batallas"), x + 10, y + 29, WHITE, false);
         graphics.drawString(font, Component.literal(complete ? "✓ Completado"
             : Math.min(5, state.battleWins()) + " / 5 victorias"),
             x + 10, y + 43, complete ? GREEN : MUTED, false);
@@ -178,7 +178,7 @@ public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.
                 i < state.battleWins() ? GREEN : 0xFF39414A);
         }
         if (h > 95) {
-            graphics.drawString(font, Component.literal("Solo combates contra Pokémon salvajes"),
+            graphics.drawString(font, Component.translatableWithFallback("ui.zianutilities.2df03ba44809", "Solo combates contra Pokémon salvajes"),
                 x + 10, y + 86, MUTED, false);
         }
         graphics.drawString(font, Component.literal(reward(state.battleAmount(), state.battleCurrency())),
@@ -243,4 +243,6 @@ public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.
                 active ? 0xFFE2E8F0 : 0xFF7C838B);
         }
     }
+
+ @Override public void onClose(){if(!GuiReturn.returnToMenu())super.onClose();}
 }
