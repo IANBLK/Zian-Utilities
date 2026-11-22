@@ -26,10 +26,11 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 /** Server-owned, journaled first gacha slice. Files are per world and per player. */
 public final class GachaRuntime {
+    // Las tiradas reparten premios: no deben ser predecibles (mismo criterio que crianza).
+    private static final java.security.SecureRandom RANDOM = new java.security.SecureRandom();
     private static final Logger LOG = LoggerFactory.getLogger("ZianUtilities/Gacha");
     public static boolean enabled() { return ZianFeatureSettings.get().gachas(); }
     public static boolean paymentsEnabled() { return ZianFeatureSettings.get().gachaPaymentsActive(); }
@@ -386,7 +387,7 @@ public final class GachaRuntime {
         if (waiting >= MAX_PENDING) throw new IllegalStateException("Reclama tus premios pendientes");
         if (pool.prizes().isEmpty()) throw new IllegalStateException("Gacha sin premios");
         Prize winner = pool.prizes().get(GachaDraw.choose(
-            pool.prizes().stream().map(Prize::weight).toList(), ThreadLocalRandom.current()));
+            pool.prizes().stream().map(Prize::weight).toList(), RANDOM));
         UUID id = UUID.randomUUID();
         CompoundTag op = new CompoundTag();
         op.putUUID("id", id);

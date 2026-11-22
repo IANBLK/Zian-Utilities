@@ -25,7 +25,7 @@ import java.util.Set;
 public final class CaptureCycleCommands {
     private static final Logger LOGGER = LoggerFactory.getLogger("ZianUtilities/CaptureCycle");
     static final String TEST_FLAG = "zianutilities.captureCycleTestEnabled";
-    private static final ZoneId SCHEDULE_ZONE = ZoneId.of("America/Guayaquil");
+    private static final ZoneId SCHEDULE_ZONE = com.zianblk.zianutilities.core.quests.QuestSchedule.ZONE;
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     private CaptureCycleCommands() {}

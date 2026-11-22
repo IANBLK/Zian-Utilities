@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneId
 import java.util.UUID
 
 enum class SharedCaptureObjective(val description: String) {
@@ -29,7 +28,7 @@ data class SharedCaptureMission(
 }
 
 object SharedCaptureSchedule {
-    private val zone = ZoneId.of("America/Guayaquil")
+    private val zone = QuestSchedule.ZONE
 
     fun at(epochMs: Long): SharedCaptureMission {
         val local = Instant.ofEpochMilli(epochMs).atZone(zone)
@@ -99,6 +98,8 @@ class SharedCaptureMissionService @JvmOverloads constructor(
         val mission = offer()
         val existing = current(playerId, mission)
         if (existing != null) return@withPlayerLock SharedCaptureStatus(mission, existing)
+        // Reloj atrasado: no pisar la misión más nueva guardada; se recupera cuando el reloj la alcance.
+        if (newerThan(store.load(playerId), mission)) return@withPlayerLock SharedCaptureStatus(mission, null)
         val accepted = SharedCaptureProgress(
             mission.missionId, playerId, mission.windowStartEpochMs, clock.millis(),
         )
@@ -142,11 +143,12 @@ class SharedCaptureMissionService @JvmOverloads constructor(
     private fun current(playerId: UUID, mission: SharedCaptureMission): SharedCaptureProgress? {
         val stored = store.load(playerId) ?: return null
         if (stored.missionId == mission.missionId) return stored
-        require(stored.windowStartEpochMs < mission.windowStartEpochMs) {
-            "stored mission is newer than the server clock"
-        }
+        if (newerThan(stored, mission)) return null
         store.archiveAndClear(stored)
         return null
     }
+
+    private fun newerThan(stored: SharedCaptureProgress?, mission: SharedCaptureMission): Boolean =
+        stored != null && stored.windowStartEpochMs > mission.windowStartEpochMs
 }
 

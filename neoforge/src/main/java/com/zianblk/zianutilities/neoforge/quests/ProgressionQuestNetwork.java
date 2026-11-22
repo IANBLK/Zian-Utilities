@@ -56,8 +56,11 @@ public final class ProgressionQuestNetwork {
         com.zianblk.zianutilities.neoforge.quests.client.ProgressionQuestScreen.receive(state);
     }
 
+    private static final com.zianblk.zianutilities.neoforge.ReadThrottle READS = new com.zianblk.zianutilities.neoforge.ReadThrottle(250);
+
     private static void onAction(Action action, IPayloadContext context) {
-        if (!(context.player() instanceof ServerPlayer player) || !GlobalQuestRuntime.moduleEnabled()) return;
+        if (!(context.player() instanceof ServerPlayer player) || !GlobalQuestRuntime.moduleEnabled()
+            || action.kind() <= 1 && !READS.tryAcquire(player.getUUID())) return;
         try {
             switch (action.kind()) {
                 case 0 -> send(player, true, (byte) 0);
