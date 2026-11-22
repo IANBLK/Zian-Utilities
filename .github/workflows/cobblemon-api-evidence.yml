@@ -9,6 +9,9 @@ on:
     paths:
       - '.github/workflows/cobblemon-api-evidence.yml'
 
+permissions:
+  contents: read
+
 jobs:
   javap:
     runs-on: ubuntu-24.04
