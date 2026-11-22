@@ -60,6 +60,16 @@ class AvecoinsContractProbeTest {
         var wallet = new ReflectiveAvecoinsWallet(Crafting.class, WStore.class, WData.class);
         assertThrows(IllegalStateException.class, () -> wallet.credit(UUID.randomUUID(), "coin", 5));
         assertEquals(0, WStore.saves);
+        assertEquals(10, WStore.data.coins);
+    }
+
+    @Test
+    void debitFailsWithoutSavingWhenCopyIsNotACopy() {
+        WStore.data = new SameCopyData(); WStore.saves = 0;
+        var wallet = new ReflectiveAvecoinsWallet(Crafting.class, WStore.class, WData.class);
+        assertThrows(IllegalStateException.class, () -> wallet.debit(UUID.randomUUID(), "coin", 5));
+        assertEquals(0, WStore.saves);
+        assertEquals(10, WStore.data.coins);
     }
 
     @Test
