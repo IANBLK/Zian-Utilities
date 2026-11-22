@@ -38,7 +38,13 @@ public final class ZianHubNetwork {
             return;
         }
         PacketDistributor.sendToPlayer(player, new State(GlobalQuestRuntime.moduleEnabled(),
-            GachaRuntime.enabled(), com.zianblk.zianutilities.neoforge.breeding.BreedingRuntime.enabled()));
+            gachaAllowed(player), com.zianblk.zianutilities.neoforge.breeding.BreedingRuntime.enabled()));
+    }
+
+    // Mismo nodo que /zianutilities gacha: una denegación de LuckPerms también cierra el atajo del hub.
+    private static boolean gachaAllowed(ServerPlayer player) {
+        return GachaRuntime.enabled()
+            && com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(player, "gacha.use", false);
     }
 
     private static void onState(State state, IPayloadContext context) {
@@ -57,7 +63,7 @@ public final class ZianHubNetwork {
                 GlobalQuestNetwork.send(player, true);
             }
             case 2 -> {
-                if (GachaRuntime.enabled()) GachaNetwork.send(player, true);
+                if (gachaAllowed(player)) GachaNetwork.send(player, true);
             }
             case 3 -> com.zianblk.zianutilities.neoforge.breeding.BreedingMenu.open(player);
             default -> { }
