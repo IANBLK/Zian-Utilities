@@ -37,3 +37,7 @@ logs/
 crash-reports/
 world/
 saves/
+
+# Jars de publicación: salen de CI o de build/libs, no de git
+artifacts/*.jar
+artifacts/*.jar.sha256

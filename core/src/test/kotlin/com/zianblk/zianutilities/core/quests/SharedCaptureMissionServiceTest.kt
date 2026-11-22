@@ -173,5 +173,25 @@ class SharedCaptureMissionServiceTest {
         Files.newBufferedReader(path).use(p::load)
         return UUID.fromString(p.getProperty("missionId"))
     }
+
+    @Test
+    fun `a clock that moves backwards neither fails nor loses the newer progress`() {
+        val clock = MutableClock(start.plusSeconds(3 * 3600))
+        val service = SharedCaptureMissionService(FileSharedCaptureProgressStore(directory), clock)
+        val accepted = assertNotNull(service.accept(player).progress)
+        assertEquals(SharedCaptureResult.ADVANCED, service.recordCapture(
+            player, UUID.randomUUID(), "cobblemon:komala", gen7, gen7))
+
+        clock.now = start
+        assertNull(service.inspect(player).progress)
+        assertNull(service.accept(player).progress)
+        assertEquals(SharedCaptureResult.NOT_ACCEPTED, service.recordCapture(
+            player, UUID.randomUUID(), "cobblemon:komala", gen7, gen7))
+
+        clock.now = start.plusSeconds(3 * 3600)
+        val restored = assertNotNull(service.inspect(player).progress)
+        assertEquals(accepted.missionId, restored.missionId)
+        assertEquals(1, restored.captures.size)
+    }
 }
 
