@@ -52,6 +52,11 @@ public final class SharedCaptureMissionCommands {
         try {
             SharedCaptureStatus status = SharedCaptureMissionRuntime.service(source.getServer())
                 .accept(player.getUUID());
+            if (status.getProgress() == null) {
+                // Reloj del servidor atrasado respecto a la misión guardada (ver SharedCaptureMissionService).
+                source.sendFailure(Component.literal("Tu misión guardada es más reciente que el reloj del servidor; inténtalo en unos minutos."));
+                return 0;
+            }
             LOGGER.info("[ZIAN-SHARED-QUEST] action=accept playerUuid={} missionId={} progress={}",
                 player.getUUID(), status.getMission().getMissionId(),
                 status.getProgress().getCaptures().size());
