@@ -18,7 +18,9 @@ public final class RidingHookCheck {
   for(String h:HOOKS)if(!names.contains(h))out.add(h);return out;
  }
  public static void install(){
-  NeoForge.EVENT_BUS.addListener((ServerStartedEvent e)->{var m=missing(PokemonEntity.class);
-   if(!m.isEmpty())LOGGER.warn("Zian Utilities: el control de vuelo/estamina no se aplicó; versión de Cobblemon no compatible (probado con 1.8.4). Faltan: {}",m);});
+  // shortcut: solo compara nombres; si Cobblemon cambia la firma de la lambda y conserva el nombre, Mixin registra el error pero aquí no se avisa. Comparar getParameterTypes() si vuelve a pasar.
+  NeoForge.EVENT_BUS.addListener((ServerStartedEvent e)->{try{var m=missing(PokemonEntity.class);
+   if(!m.isEmpty())LOGGER.warn("Zian Utilities: el control de vuelo/estamina no se aplicó; versión de Cobblemon no compatible (probado con 1.8.4). Faltan: {}",m);
+  }catch(Throwable t){LOGGER.warn("Zian Utilities: no se pudo comprobar el control de vuelo/estamina",t);}});
  }
 }
