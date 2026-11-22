@@ -11,7 +11,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
@@ -23,7 +22,7 @@ public final class ProgressionQuestScreen extends com.zianblk.zianutilities.neof
     private static final int MUTED = 0xFF9FAAB5;
     private static final int GREEN = 0xFF78D498;
     private static final DateTimeFormatter RESET = DateTimeFormatter.ofPattern("EEE HH:mm", Locale.forLanguageTag("es"))
-        .withZone(ZoneId.of("America/Guayaquil"));
+        .withZone(com.zianblk.zianutilities.core.quests.QuestSchedule.ZONE);
     private ProgressionQuestNetwork.State state;
     private int selectedGeneration;
     private int albumPage;

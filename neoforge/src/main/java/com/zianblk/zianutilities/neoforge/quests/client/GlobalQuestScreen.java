@@ -28,7 +28,7 @@ public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.
     private static final int WHITE = 0xFFF4F7FA;
     private static final int MUTED = 0xFF9FAAB5;
     private static final int GREEN = 0xFF78D498;
-    private static final ZoneId ECUADOR = ZoneId.of("America/Guayaquil");
+    private static final ZoneId ECUADOR = com.zianblk.zianutilities.core.quests.QuestSchedule.ZONE;
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT);
 
     private GlobalQuestNetwork.State state;

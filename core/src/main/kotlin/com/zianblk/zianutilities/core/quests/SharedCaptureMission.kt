@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneId
 import java.util.UUID
 
 enum class SharedCaptureObjective(val description: String) {
@@ -29,7 +28,7 @@ data class SharedCaptureMission(
 }
 
 object SharedCaptureSchedule {
-    private val zone = ZoneId.of("America/Guayaquil")
+    private val zone = QuestSchedule.ZONE
 
     fun at(epochMs: Long): SharedCaptureMission {
         val local = Instant.ofEpochMilli(epochMs).atZone(zone)
