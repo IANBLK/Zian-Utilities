@@ -19,6 +19,7 @@ import net.neoforged.neoforge.network.registration.NetworkRegistry;
 /** The hub is navigation only; all quest and gacha mutations remain server-owned. */
 public final class ZianHubNetwork {
     private ZianHubNetwork() {}
+    private static final com.zianblk.zianutilities.neoforge.ReadThrottle READS = new com.zianblk.zianutilities.neoforge.ReadThrottle(250);
 
     public static void register(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar("zian-hub-3");
@@ -52,7 +53,7 @@ public final class ZianHubNetwork {
     }
 
     private static void onNavigate(Navigate request, IPayloadContext context) {
-        if (!(context.player() instanceof ServerPlayer player)) return;
+        if (!(context.player() instanceof ServerPlayer player) || !READS.tryAcquire(player.getUUID())) return;
         switch (request.destination()) {
             case 0 -> open(player);
             case 1 -> {
