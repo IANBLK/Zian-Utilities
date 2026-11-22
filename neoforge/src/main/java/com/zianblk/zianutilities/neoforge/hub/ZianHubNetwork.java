@@ -19,6 +19,7 @@ import net.neoforged.neoforge.network.registration.NetworkRegistry;
 /** The hub is navigation only; all quest and gacha mutations remain server-owned. */
 public final class ZianHubNetwork {
     private ZianHubNetwork() {}
+    private static final com.zianblk.zianutilities.neoforge.ReadThrottle READS = new com.zianblk.zianutilities.neoforge.ReadThrottle(250);
 
     public static void register(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar("zian-hub-3");
@@ -38,7 +39,13 @@ public final class ZianHubNetwork {
             return;
         }
         PacketDistributor.sendToPlayer(player, new State(GlobalQuestRuntime.moduleEnabled(),
-            GachaRuntime.enabled(), com.zianblk.zianutilities.neoforge.breeding.BreedingRuntime.enabled()));
+            gachaAllowed(player), com.zianblk.zianutilities.neoforge.breeding.BreedingRuntime.enabled()));
+    }
+
+    // Mismo nodo que /zianutilities gacha: una denegación de LuckPerms también cierra el atajo del hub.
+    private static boolean gachaAllowed(ServerPlayer player) {
+        return GachaRuntime.enabled()
+            && com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(player, "gacha.use", false);
     }
 
     private static void onState(State state, IPayloadContext context) {
@@ -46,7 +53,7 @@ public final class ZianHubNetwork {
     }
 
     private static void onNavigate(Navigate request, IPayloadContext context) {
-        if (!(context.player() instanceof ServerPlayer player)) return;
+        if (!(context.player() instanceof ServerPlayer player) || !READS.tryAcquire(player.getUUID())) return;
         switch (request.destination()) {
             case 0 -> open(player);
             case 1 -> {
@@ -57,7 +64,7 @@ public final class ZianHubNetwork {
                 GlobalQuestNetwork.send(player, true);
             }
             case 2 -> {
-                if (GachaRuntime.enabled()) GachaNetwork.send(player, true);
+                if (gachaAllowed(player)) GachaNetwork.send(player, true);
             }
             case 3 -> com.zianblk.zianutilities.neoforge.breeding.BreedingMenu.open(player);
             default -> { }

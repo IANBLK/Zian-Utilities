@@ -62,9 +62,12 @@ public final class GachaNetwork {
         com.zianblk.zianutilities.neoforge.gacha.client.GachaScreen.receiveRollResult(result);
     }
 
+    private static final com.zianblk.zianutilities.neoforge.ReadThrottle READS = new com.zianblk.zianutilities.neoforge.ReadThrottle(250);
+
     private static void onAction(Action action, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player)
-            || !GachaRuntime.enabled()) return;
+            || !GachaRuntime.enabled()
+            || action.kind() == 0 && !READS.tryAcquire(player.getUUID())) return;
         try {
             if(!com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(player,"gacha.use",false))throw new IllegalStateException("No tienes acceso a Gachas");
             switch (action.kind()) {

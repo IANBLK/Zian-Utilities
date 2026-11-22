@@ -41,7 +41,7 @@ import java.util.UUID;
 /** Server-owned weekly and generation campaign progress. All methods run on the server thread. */
 public final class ProgressionQuestRuntime {
     private static final Logger LOGGER = LoggerFactory.getLogger("ZianUtilities/ProgressionQuests");
-    private static final ZoneId ZONE = ZoneId.of("America/Guayaquil");
+    private static final ZoneId ZONE = com.zianblk.zianutilities.core.quests.QuestSchedule.ZONE;
     private static final String COIN = "avecoins:coppercoin";
     private static final int[] LEGACY_COMPLETED_COUNTS = {0, 3, 11, 26};
     private static final CobblemonGenerationResolver RESOLVER = new CobblemonGenerationResolver(null);

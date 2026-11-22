@@ -4,7 +4,6 @@ import com.zianblk.zianutilities.core.generation.Generation
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneId
 import java.util.UUID
 
 data class CycleCapture(
@@ -60,7 +59,7 @@ class CaptureCycleService @JvmOverloads constructor(
     private val store: CaptureCycleStore,
     private val clock: Clock = Clock.systemUTC(),
 ) {
-    private val scheduleZone = ZoneId.of("America/Guayaquil")
+    private val scheduleZone = QuestSchedule.ZONE
 
     fun assign(playerId: UUID, enabled: Set<Generation>): CaptureCycle =
         store.withPlayerLock(playerId) {

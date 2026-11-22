@@ -57,9 +57,12 @@ public final class GlobalQuestNetwork {
         com.zianblk.zianutilities.neoforge.quests.client.GlobalQuestScreen.receive(state);
     }
 
+    private static final com.zianblk.zianutilities.neoforge.ReadThrottle READS = new com.zianblk.zianutilities.neoforge.ReadThrottle(250);
+
     private static void onAction(Action action, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player)
-            || !GlobalQuestRuntime.moduleEnabled()) return;
+            || !GlobalQuestRuntime.moduleEnabled()
+            || !action.accept() && !READS.tryAcquire(player.getUUID())) return;
         try {
             GlobalQuestOffer offer = GlobalQuestRuntime.offer(player.getServer());
             if (action.accept() && action.windowStartEpochMs() == offer.getWindowStartEpochMs()
