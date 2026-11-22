@@ -16,13 +16,13 @@ A command-only 3x3 mining enchantment lets compatible pickaxes mine an area whil
 
 Custom bows accept durability enchantments and have distinct arrow-damage bonuses. Problematic Reforged armor is retired; existing pieces convert to vanilla equivalents with item components preserved. Weapons remain.
 
-Install on client and server: Minecraft 1.21.1, Java 21, NeoForge 21.1.x, Cobblemon 1.8.2 and Kotlin for Forge 5.10 or compatible newer 5.x. AVECOINS 2.3/2.4/2.5 is optional for supported currency features.
+Install on client and server: Minecraft 1.21.1, Java 21, NeoForge 21.1.x, Cobblemon 1.8.4 and Kotlin for Forge 5.10 or compatible newer 5.x. AVECOINS 2.3/2.4/2.5 is optional for supported currency features.
 
 Durable progress supports optional SQLite migration and safe administrative maintenance. Back up the world before upgrades or migration.
 
 ## Español
 
-Controle generaciones, críe Pokémon, configure misiones y Gachas y limite velocidad/estamina de monturas. La crianza no depende del bloqueo de generaciones. Instale en cliente y servidor con Cobblemon 1.8.2. Respalde antes de actualizar.
+Controle generaciones, críe Pokémon, configure misiones y Gachas y limite velocidad/estamina de monturas. La crianza no depende del bloqueo de generaciones. Instale en cliente y servidor con Cobblemon 1.8.4. Respalde antes de actualizar.
 
 ## Latest update — 0.1.2
 
