@@ -16,7 +16,7 @@ A command-only 3x3 mining enchantment lets compatible pickaxes mine an area whil
 
 Custom bows accept durability enchantments and have distinct arrow-damage bonuses. Problematic Reforged armor is retired; existing pieces convert to vanilla equivalents with item components preserved. Weapons remain.
 
-Install on client and server: Minecraft 1.21.1, Java 21, NeoForge 21.1.x, Cobblemon 1.8.4 and Kotlin for Forge 5.10 or compatible newer 5.x. AVECOINS is optional for supported currency features; any version (tested 2.3 to 3.0) whose wallet API matches what Zian uses is accepted, otherwise the feature stays disabled and the reason is logged.
+Install on client and server: Minecraft 1.21.1, Java 21, NeoForge 21.1.x, Cobblemon 1.8.4 and Kotlin for Forge 5.10 or compatible newer 5.x. AVECOINS is optional for supported currency features; any version (compatible by contract check with 3.0) whose wallet API matches what Zian uses is accepted, otherwise the feature stays disabled and the reason is logged.
 
 Durable progress supports optional SQLite migration and safe administrative maintenance. Back up the world before upgrades or migration.
 
