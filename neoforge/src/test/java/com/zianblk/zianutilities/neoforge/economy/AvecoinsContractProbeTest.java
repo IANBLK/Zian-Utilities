@@ -74,6 +74,28 @@ class AvecoinsContractProbeTest {
         public static boolean save(WrongData data) { throw new AssertionError("probe must not save wallet"); }
     }
 
+    @Test
+    void rejectsCreditThatReturnsAValue() throws Exception {
+        // Si credit devolviera false = "no abonado", se ignoraría y se daría por pagado.
+        var result = AvecoinsContractProbe.inspectLayout(Crafting.class, BoolCreditStore.class, BoolCreditData.class);
+        assertFalse(result.compatible());
+    }
+
+    public static final class BoolCreditStore {
+        public static BoolCreditData get() { throw new AssertionError("probe must not read wallet"); }
+        public static boolean save(BoolCreditData data) { throw new AssertionError("probe must not save wallet"); }
+    }
+
+    public static final class BoolCreditData {
+        public static final int SLOT_COUNT = 27;
+        public static final int STACK_SIZE = 64;
+        public BoolCreditData copy() { throw new AssertionError("probe must not copy wallet"); }
+        public long balance(UUID player, String currency) { throw new AssertionError("probe must not read wallet"); }
+        public Map<String, Long> balances(UUID player) { throw new AssertionError("probe must not read wallet"); }
+        public boolean credit(UUID player, String currency, long amount) { throw new AssertionError("probe must not credit"); }
+        public boolean debit(UUID player, String currency, long amount) { throw new AssertionError("probe must not debit"); }
+    }
+
     public static class Data {
         public static final int SLOT_COUNT = 27;
         public static final int STACK_SIZE = 64;

@@ -56,9 +56,10 @@ public final class AvecoinsContractProbe {
             var copy = data.getMethod("copy");
             var balance = data.getMethod("balance", UUID.class, String.class);
             var balances = data.getMethod("balances", UUID.class);
-            data.getMethod("credit", UUID.class, String.class, long.class);
+            var credit = data.getMethod("credit", UUID.class, String.class, long.class);
             var debit = data.getMethod("debit", UUID.class, String.class, long.class);
-            if (!Modifier.isStatic(get.getModifiers())
+            if (credit.getReturnType() != void.class
+                || !Modifier.isStatic(get.getModifiers())
                 || !data.isAssignableFrom(get.getReturnType())
                 || !Modifier.isStatic(save.getModifiers())
                 || !booleanType(save.getReturnType())
