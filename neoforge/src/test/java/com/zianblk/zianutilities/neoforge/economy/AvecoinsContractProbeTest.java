@@ -54,6 +54,57 @@ class AvecoinsContractProbeTest {
         assertEquals("firmas de cartera incompatibles", result.detail());
     }
 
+    @Test
+    void creditFailsWithoutSavingWhenCopyIsNotACopy() {
+        WStore.data = new SameCopyData(); WStore.saves = 0;
+        var wallet = new ReflectiveAvecoinsWallet(Crafting.class, WStore.class, WData.class);
+        assertThrows(IllegalStateException.class, () -> wallet.credit(UUID.randomUUID(), "coin", 5));
+        assertEquals(0, WStore.saves);
+    }
+
+    @Test
+    void creditFailsWithoutSavingWhenWalletClipsSilently() {
+        WStore.data = new ClippingData(); WStore.saves = 0;
+        var wallet = new ReflectiveAvecoinsWallet(Crafting.class, WStore.class, WData.class);
+        assertThrows(IllegalStateException.class, () -> wallet.credit(UUID.randomUUID(), "coin", 5));
+        assertEquals(0, WStore.saves);
+    }
+
+    @Test
+    void debitFailsWithoutSavingWhenWalletClipsSilently() {
+        WStore.data = new ClippingData(); WStore.saves = 0;
+        var wallet = new ReflectiveAvecoinsWallet(Crafting.class, WStore.class, WData.class);
+        assertThrows(IllegalStateException.class, () -> wallet.debit(UUID.randomUUID(), "coin", 5));
+        assertEquals(0, WStore.saves);
+    }
+
+    public static final class WStore {
+        static WData data; static int saves;
+        public static WData get() { return data; }
+        public static boolean save(WData candidate) { saves++; data = candidate; return true; }
+    }
+
+    public static class WData {
+        public static final int SLOT_COUNT = 27;
+        public static final int STACK_SIZE = 64;
+        long coins = 10;
+        public WData copy() { var result = new WData(); result.coins = coins; return result; }
+        public long balance(UUID player, String currency) { return coins; }
+        public Map<String, Long> balances(UUID player) { return Map.of(); }
+        public void credit(UUID player, String currency, long amount) { coins += amount; }
+        public boolean debit(UUID player, String currency, long amount) { coins -= amount; return true; }
+    }
+
+    public static final class SameCopyData extends WData {
+        @Override public WData copy() { return this; }
+    }
+
+    public static final class ClippingData extends WData {
+        @Override public WData copy() { var result = new ClippingData(); result.coins = coins; return result; }
+        @Override public void credit(UUID player, String currency, long amount) { coins += amount - 1; }
+        @Override public boolean debit(UUID player, String currency, long amount) { coins -= amount - 1; return true; }
+    }
+
     public static final class Crafting {
         public static final Set<String> MANAGED_RESULTS = Set.of("token", "coin");
     }
@@ -138,3 +189,4 @@ class AvecoinsContractProbeTest {
         public void credit(UUID player, String currency, long amount) { throw new AssertionError("probe must not credit"); }
     }
 }
+
