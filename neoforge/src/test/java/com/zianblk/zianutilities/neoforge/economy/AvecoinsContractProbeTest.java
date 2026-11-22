@@ -8,15 +8,27 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AvecoinsContractProbeTest {
     @Test
-    void allowsOnlyInspectedAvecoinsVersions() {
-        assertTrue(AvecoinsContractProbe.supportedVersion("2.3"));
-        assertTrue(AvecoinsContractProbe.supportedVersion("2.4"));
-        assertTrue(AvecoinsContractProbe.supportedVersion("2.5"));
-        assertFalse(AvecoinsContractProbe.supportedVersion("2.6"));
+    void acceptsNewerVersionsWithExtraMembersAsLongAsContractFits() throws Exception {
+        // 3.0 / 4.1 add MAX_BALANCE, forPlayer, etc.; only the signatures Utilities uses matter.
+        var result = AvecoinsContractProbe.inspectLayout(Crafting.class, NewerStore.class, NewerData.class);
+        assertTrue(result.compatible());
+    }
+
+    @Test
+    void failsClosedWhenAUsedMethodIsMissing() {
+        assertThrows(NoSuchMethodException.class,
+            () -> AvecoinsContractProbe.inspectLayout(Crafting.class, NoDebitStore.class, NoDebitData.class));
+    }
+
+    @Test
+    void failsClosedWhenManagedResultsIsMissing() {
+        assertThrows(NoSuchFieldException.class,
+            () -> AvecoinsContractProbe.inspectLayout(Store.class, Store.class, Data.class));
     }
 
     @Test
@@ -78,5 +90,29 @@ class AvecoinsContractProbeTest {
 
         @Override public WrongData copy() { throw new AssertionError("probe must not copy wallet"); }
     }
-}
 
+    public static final class NewerStore {
+        public static NewerData get() { throw new AssertionError("probe must not read wallet"); }
+        public static boolean save(NewerData data) { throw new AssertionError("probe must not save wallet"); }
+    }
+
+    public static final class NewerData extends Data {
+        public static final int MAX_BALANCE = 1728;
+        public static NewerData forPlayer(UUID player) { throw new AssertionError("probe must not read wallet"); }
+        @Override public NewerData copy() { throw new AssertionError("probe must not copy wallet"); }
+    }
+
+    public static final class NoDebitStore {
+        public static NoDebitData get() { throw new AssertionError("probe must not read wallet"); }
+        public static boolean save(NoDebitData data) { throw new AssertionError("probe must not save wallet"); }
+    }
+
+    public static final class NoDebitData {
+        public static final int SLOT_COUNT = 27;
+        public static final int STACK_SIZE = 64;
+        public NoDebitData copy() { throw new AssertionError("probe must not copy wallet"); }
+        public long balance(UUID player, String currency) { throw new AssertionError("probe must not read wallet"); }
+        public Map<String, Long> balances(UUID player) { throw new AssertionError("probe must not read wallet"); }
+        public void credit(UUID player, String currency, long amount) { throw new AssertionError("probe must not credit"); }
+    }
+}
