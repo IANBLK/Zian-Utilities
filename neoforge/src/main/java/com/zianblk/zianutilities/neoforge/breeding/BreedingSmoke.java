@@ -103,6 +103,7 @@ final class BreedingSmoke {
             };
         BreedingRuntime.server.getPlayerList().op(profile);
         verifyGachaCatalog(player);
+        com.zianblk.zianutilities.neoforge.equipment.WeaponSmoke.verify(player);
         var mother =
             pokemon(
                 "bulbasaur gender=female nature=adamant hp_iv=31 attack_iv=31 defence_iv=31"

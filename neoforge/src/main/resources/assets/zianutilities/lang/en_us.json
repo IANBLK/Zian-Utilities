@@ -112,5 +112,16 @@
   "item.zianutilities.regular_bow.lore": "Noble wood and a steady hand. A classic with balanced power.",
   "item.zianutilities.curve_bow.lore": "Its curved limbs focus tension into a lightly enhanced shot.",
   "item.zianutilities.harp_bow.lore": "Its strings sing to the wind with intermediate power.",
-  "item.zianutilities.long_bow.lore": "A long-tempered bow, the most powerful in this collection."
+  "item.zianutilities.long_bow.lore": "A long-tempered bow, the most powerful in this collection.",
+  "tooltip.zianutilities.shift": "Hold Shift for details",
+  "tooltip.zianutilities.cooldown": "✧ Cooldown: %s s",
+  "message.zianutilities.weapon_wait": "Available in %s seconds",
+  "tooltip.zianutilities.poison_dagger.ability": "Passive: Venomous touch",
+  "tooltip.zianutilities.poison_dagger.effect": "On hit, Poison I for %s s; it refreshes and never stacks.",
+  "tooltip.zianutilities.reapers_scythe.ability": "Passive: Soul harvest",
+  "tooltip.zianutilities.reapers_scythe.effect": "Killing a mob heals you %s heart.",
+  "tooltip.zianutilities.frost_axe.ability": "Ability (right-click): Frozen breath",
+  "tooltip.zianutilities.frost_axe.effect": "Slowness II for %s s on nearby enemies.",
+  "tooltip.zianutilities.molten_mace.ability": "Ability (right-click): Eruption",
+  "tooltip.zianutilities.molten_mace.effect": "Sets nearby enemies on fire for %s s."
 }
