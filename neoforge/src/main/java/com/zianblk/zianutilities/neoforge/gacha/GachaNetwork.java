@@ -83,6 +83,7 @@ public final class GachaNetwork {
                 }
                 case 10 -> GachaRuntime.claim(player, UUID.fromString(action.text()));
                 case 11 -> GachaRuntime.delete(player, action.poolId(), action.text());
+                case 14 -> GachaRuntime.undo(player);
                 default -> throw new IllegalStateException("Acción inválida");
             }
             send(player, false);

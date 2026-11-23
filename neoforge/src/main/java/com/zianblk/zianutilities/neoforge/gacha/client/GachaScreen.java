@@ -203,6 +203,12 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
     private void initAdmin(int x, int w, GachaNetwork.PoolView pool) {
         addRenderableWidget(new StyledButton(x + w - 174, 40, 130, 19,
             "Crear gacha", () -> GachaNetwork.request(1, 0, 0, "")));
+        addRenderableWidget(new StyledButton(x + w - 256, 40, 76, 19,
+            "Deshacer", () -> Minecraft.getInstance().setScreen(new ConfirmScreen(confirmed -> {
+                Minecraft.getInstance().setScreen(this);
+                if (confirmed) GachaNetwork.request(14, 0, 0, "");
+            }, Component.literal("¿Deshacer el último cambio?"),
+                Component.literal("Se restaurará la configuración anterior de los gachas; no se puede rehacer.")))));
         if (pool == null) return;
         addRenderableWidget(new StyledButton(x + 8, 72, 100, 18,
             "Eliminar gacha", () -> Minecraft.getInstance().setScreen(new ConfirmScreen(confirmed -> {
