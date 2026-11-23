@@ -16,21 +16,32 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** Rotating backups, undo and an append-only change log for one config file. */
 public final class ConfigHistory {
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS").withZone(ZoneOffset.UTC);
+    private static final Pattern NAME = Pattern.compile("(\\d{8}-\\d{6}-\\d{3})(?:-(\\d{1,9}))?");
+    private static final long MAX_LOG_BYTES = 1L << 20;
     private final Path file, backupDir, changeLog;
     private final int keep;
     private final Clock clock;
+    private final long maxLogBytes;
 
     public ConfigHistory(Path file, Path backupDir, Path changeLog, int keep, Clock clock) {
+        this(file, backupDir, changeLog, keep, clock, MAX_LOG_BYTES);
+    }
+
+    ConfigHistory(Path file, Path backupDir, Path changeLog, int keep, Clock clock, long maxLogBytes) {
+        this.maxLogBytes = maxLogBytes;
         if (keep < 1 || keep > 100) throw new IllegalArgumentException("keep must be between 1 and 100");
         this.file = file; this.backupDir = backupDir; this.changeLog = changeLog; this.keep = keep; this.clock = clock;
     }
 
-    public void backup() throws IOException {
-        if (!StorageFiles.exists(file)) return;
+    /** Returns the copy created, or null if there was no file to copy. */
+    public Path backup() throws IOException {
+        if (!StorageFiles.exists(file)) return null;
         byte[] data = StorageFiles.readAllBytes(file);
         StorageFiles.createDirectories(backupDir);
         String base = file.getFileName() + "." + STAMP.format(clock.instant());
@@ -39,6 +50,12 @@ public final class ConfigHistory {
         atomicWrite(target, data, false);
         List<Path> all = backups();
         for (int i = 0; i < all.size() - keep; i++) StorageFiles.deleteIfExists(all.get(i));
+        return target;
+    }
+
+    /** Drops a copy returned by {@link #backup()} when the write it protected failed. */
+    public void discard(Path backup) throws IOException {
+        if (backup != null) StorageFiles.deleteIfExists(backup);
     }
 
     /** Undo cannot be redone: the used backup is deleted. */
@@ -55,6 +72,8 @@ public final class ConfigHistory {
         String line = "{\"at\":\"" + Instant.now(clock) + "\",\"actor\":\"" + actor + "\",\"actorName\":\"" + esc(actorName)
             + "\",\"module\":\"" + esc(module) + "\",\"summary\":\"" + esc(summary) + "\"}\n";
         StorageFiles.createDirectories(changeLog.getParent());
+        if (StorageFiles.exists(changeLog) && StorageFiles.size(changeLog) > maxLogBytes)
+            StorageFiles.move(changeLog, changeLog.resolveSibling(changeLog.getFileName() + ".1"), StandardCopyOption.REPLACE_EXISTING);
         try (FileChannel c = StorageFiles.channel(changeLog, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
             c.write(ByteBuffer.wrap(line.getBytes(StandardCharsets.UTF_8)));
             c.force(true);
@@ -65,20 +84,18 @@ public final class ConfigHistory {
         if (!StorageFiles.isDirectory(backupDir)) return List.of();
         String prefix = file.getFileName() + ".";
         try (var s = StorageFiles.list(backupDir)) {
-            return s.filter(p -> p.getFileName().toString().startsWith(prefix) && p.getFileName().toString().endsWith(".bak"))
-                .sorted(Comparator.comparing((Path p) -> key(p, prefix))).toList();
+            // Foreign files (unparseable name) are ignored so they never block backup or undo.
+            return s.filter(p -> key(p, prefix) != null).sorted(Comparator.comparing((Path p) -> key(p, prefix))).toList();
         }
     }
 
-    // Sort by stamp, then numeric collision suffix (plain name = 0); stamp is yyyyMMdd-HHmmss-SSS.
+    // Sort by stamp, then numeric collision suffix (plain name = 0); null if the name is not ours.
     private static String key(Path p, String prefix) {
         String n = p.getFileName().toString();
-        String core = n.substring(prefix.length(), n.length() - 4);
-        int dash2 = core.indexOf('-', core.indexOf('-') + 1);
-        int dash3 = dash2 < 0 ? -1 : core.indexOf('-', dash2 + 1);
-        String stamp = dash3 < 0 ? core : core.substring(0, dash3);
-        int seq = dash3 < 0 ? 0 : Integer.parseInt(core.substring(dash3 + 1));
-        return stamp + String.format("-%09d", seq);
+        if (!n.startsWith(prefix) || !n.endsWith(".bak") || n.length() < prefix.length() + 4) return null;
+        Matcher m = NAME.matcher(n.substring(prefix.length(), n.length() - 4));
+        if (!m.matches()) return null;
+        return m.group(1) + String.format("-%09d", m.group(2) == null ? 0 : Integer.parseInt(m.group(2)));
     }
 
     private static void atomicWrite(Path target, byte[] data, boolean replace) throws IOException {

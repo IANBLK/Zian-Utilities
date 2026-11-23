@@ -151,9 +151,23 @@ public final class GachaRuntime {
         ListTag tags = new ListTag();
         for (Pool pool : pools) tags.add(encodePool(player, pool));
         data.put("pools", tags);
-        history(player.getServer()).backup();
-        write(root(player.getServer()).resolve("pools.nbt"), data);
-        history(player.getServer()).record(player.getUUID(), player.getGameProfile().getName(), "gacha", summary);
+        ConfigHistory history = history(player.getServer());
+        Path backup = history.backup();
+        try {
+            write(root(player.getServer()).resolve("pools.nbt"), data);
+        } catch (IOException | RuntimeException e) {
+            history.discard(backup);
+            throw e;
+        }
+        record(history, player, summary);
+    }
+
+    private static void record(ConfigHistory history, ServerPlayer player, String summary) {
+        try {
+            history.record(player.getUUID(), player.getGameProfile().getName(), "gacha", summary);
+        } catch (IOException | RuntimeException e) {
+            LOG.warn("[ZIAN-AUDIT] No se pudo escribir changes.jsonl", e);
+        }
     }
 
     private static ListTag operations(ServerPlayer player) throws IOException {
@@ -282,7 +296,7 @@ public final class GachaRuntime {
         requireAdmin(player);
         ConfigHistory history = history(player.getServer());
         if (!history.undoLast()) throw new IllegalStateException("No hay cambios que deshacer");
-        history.record(player.getUUID(), player.getGameProfile().getName(), "gacha", "deshacer último cambio");
+        record(history, player, "deshacer último cambio");
         LOG.info("[ZIAN-AUDIT] action=gacha_undo admin={}", player.getUUID());
     }
 

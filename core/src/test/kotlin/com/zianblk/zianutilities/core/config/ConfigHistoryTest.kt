@@ -78,4 +78,30 @@ class ConfigHistoryTest {
         assertThrows(IllegalArgumentException::class.java) { history(0) }
         assertThrows(IllegalArgumentException::class.java) { history(101) }
     }
+
+    @Test fun `foreign file in backup dir blocks neither backup nor undo and is kept`() {
+        val h = history(); val f = dir.resolve("pools.nbt")
+        Files.createDirectories(dir.resolve("bk"))
+        val junk = dir.resolve("bk/pools.nbt.basura.bak"); Files.writeString(junk, "x")
+        Files.writeString(f, "a"); h.backup(); Files.writeString(f, "b")
+        assertTrue(h.undoLast()); assertEquals("a", Files.readString(f))
+        assertTrue(Files.exists(junk))
+    }
+
+    @Test fun `discard removes the copy and tolerates null`() {
+        val h = history(); val f = dir.resolve("pools.nbt")
+        Files.writeString(f, "a")
+        val b = h.backup()!!; assertTrue(Files.exists(b))
+        h.discard(b); assertFalse(Files.exists(b)); h.discard(null)
+        assertNull(history().also { Files.delete(f) }.backup())
+    }
+
+    @Test fun `record rotates oversized log to dot one`() {
+        val log = dir.resolve("log/changes.jsonl")
+        val h = ConfigHistory(dir.resolve("pools.nbt"), dir.resolve("bk"), log, 10, Ticking(), 50)
+        val id = UUID.randomUUID()
+        h.record(id, "a", "m", "one"); h.record(id, "a", "m", "two"); h.record(id, "a", "m", "three")
+        assertTrue(Files.exists(dir.resolve("log/changes.jsonl.1")))
+        assertEquals(1, Files.readAllLines(log).size)
+    }
 }
