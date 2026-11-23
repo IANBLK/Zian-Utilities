@@ -11,12 +11,12 @@ import net.minecraft.world.phys.Vec3;
 
 /** Hook the common entity call sites; air behaviours contain client-only classes. */
 @Mixin(PokemonEntity.class)
-public abstract class PokemonRidingMixin {
- @Inject(method="travel$lambda$0",at=@At("RETURN"),cancellable=true,remap=false)
+public abstract class PokemonRidingMixin implements com.zianblk.zianutilities.neoforge.riding.ZianRidingHooked {
+ @Inject(method="travel$lambda$0",at=@At("RETURN"),cancellable=true,remap=false,require=0)
  private static void zianVelocity(PokemonEntity entity,RidingBehaviour<?,?> behaviour,RidingBehaviourSettings settings,RidingBehaviourState state,CallbackInfoReturnable<Vec3> result){
   result.setReturnValue(RidingPolicy.velocity(entity,result.getReturnValue()));
  }
- @Inject(method="setRideBar$lambda$0",at=@At("RETURN"),cancellable=true,remap=false)
+ @Inject(method="setRideBar$lambda$0",at=@At("RETURN"),cancellable=true,remap=false,require=0)
  private static void zianStamina(PokemonEntity entity,Player player,RidingBehaviour<?,?> behaviour,RidingBehaviourSettings settings,RidingBehaviourState state,CallbackInfoReturnable<Float> result){
   result.setReturnValue(RidingPolicy.stamina(entity,state,result.getReturnValue()));
  }

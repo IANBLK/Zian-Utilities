@@ -50,6 +50,7 @@ public final class ZianUtilitiesMod {
         PlaneMining.install();
         com.zianblk.zianutilities.neoforge.breeding.BreedingRuntime.install();
         com.zianblk.zianutilities.neoforge.riding.RidingCommands.install();
+        com.zianblk.zianutilities.neoforge.riding.RidingHookCheck.install();
         modBus.addListener(com.zianblk.zianutilities.neoforge.riding.RidingNetwork::register);
         modBus.addListener(GlobalQuestNetwork::register);
         modBus.addListener(ProgressionQuestNetwork::register);
