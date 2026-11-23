@@ -1,6 +1,9 @@
 package com.zianblk.zianutilities.neoforge.equipment;
 
 import com.zianblk.zianutilities.core.equipment.WeaponBalance;
+import com.zianblk.zianutilities.core.equipment.TooltipLayout;
+import java.util.List;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -77,5 +80,29 @@ final class WeaponAbilities {
     level.sendParticles(frost ? ParticleTypes.SNOWFLAKE : ParticleTypes.FLAME, p.getX(), p.getY() + 1, p.getZ(), 40, radius / 2.0, 0.5, radius / 2.0, 0.02);
     level.playSound(null, p.blockPosition(), frost ? SoundEvents.GLASS_BREAK : SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 1, 1);
     return true;
+  }
+
+  private static boolean shift() {
+    return net.neoforged.fml.loading.FMLEnvironment.dist.isClient() && com.zianblk.zianutilities.neoforge.client.TooltipKeys.shift();
+  }
+
+  /** Tras el lore: habilidad y pista de Mayús; con Mayús, efecto y espera. Las demás armas no cambian. */
+  static void tooltip(String id, List<Component> lines) {
+    var spec = switch (id) {
+      case "poison_dagger" -> new TooltipLayout.Spec(id, WeaponBalance.POISON_SECONDS, 0);
+      case "reapers_scythe" -> new TooltipLayout.Spec(id, WeaponBalance.REAPER_HEAL / 2, 0);
+      case "frost_axe" -> new TooltipLayout.Spec(id, WeaponBalance.FROST_SECONDS, WeaponBalance.ACTIVE_COOLDOWN_SECONDS);
+      case "molten_mace" -> new TooltipLayout.Spec(id, WeaponBalance.MOLTEN_FIRE_SECONDS, WeaponBalance.ACTIVE_COOLDOWN_SECONDS);
+      default -> null;
+    };
+    if (spec == null) return;
+    for (var l : TooltipLayout.lines(spec, shift())) {
+      var text = Component.translatable(l.key(), l.arg());
+      lines.add(switch (l.kind()) {
+        case ABILITY, COOLDOWN -> text.withStyle(ChatFormatting.GOLD);
+        case DETAIL -> text.withStyle(ChatFormatting.DARK_GRAY);
+        case HINT -> text.withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC);
+      });
+    }
   }
 }

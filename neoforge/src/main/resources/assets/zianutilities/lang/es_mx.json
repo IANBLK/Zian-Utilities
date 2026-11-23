@@ -211,5 +211,16 @@
   "flavor.zianutilities.poison_dagger.short": "Un fragmento de leyenda espera a su portador.",
   "flavor.zianutilities.reapers_scythe.short": "La sombra y la luz sellan un pacto antiguo.",
   "flavor.zianutilities.storm_katana.short": "Un fragmento de leyenda espera a su portador.",
-  "flavor.zianutilities.dark_lightning_book.short": "Un fragmento de leyenda espera a su portador."
+  "flavor.zianutilities.dark_lightning_book.short": "Un fragmento de leyenda espera a su portador.",
+  "tooltip.zianutilities.shift": "Mantén Mayús para ver detalles",
+  "tooltip.zianutilities.cooldown": "✧ Espera: %s s",
+  "message.zianutilities.weapon_wait": "Disponible en %s segundos",
+  "tooltip.zianutilities.poison_dagger.ability": "Pasiva: Toque venenoso",
+  "tooltip.zianutilities.poison_dagger.effect": "Al golpear, Veneno I durante %s s; se renueva, no se acumula.",
+  "tooltip.zianutilities.reapers_scythe.ability": "Pasiva: Cosecha de almas",
+  "tooltip.zianutilities.reapers_scythe.effect": "Al matar a un mob, te cura %s corazón.",
+  "tooltip.zianutilities.frost_axe.ability": "Habilidad (clic derecho): Aliento helado",
+  "tooltip.zianutilities.frost_axe.effect": "Lentitud II durante %s s a los enemigos cercanos.",
+  "tooltip.zianutilities.molten_mace.ability": "Habilidad (clic derecho): Erupción",
+  "tooltip.zianutilities.molten_mace.effect": "Prende fuego durante %s s a los enemigos cercanos."
 }
