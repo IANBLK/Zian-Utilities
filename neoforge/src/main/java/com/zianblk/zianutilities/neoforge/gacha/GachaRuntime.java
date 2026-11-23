@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.gacha;
+import com.zianblk.zianutilities.core.config.ConfigHistory;
 import com.zianblk.zianutilities.core.storage.StorageFiles;
 
 import com.zianblk.zianutilities.core.economy.EconomyMutationResult;
@@ -23,6 +24,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -138,13 +140,20 @@ public final class GachaRuntime {
         return result;
     }
 
-    private static void savePools(ServerPlayer player, List<Pool> pools) throws IOException {
+    private static ConfigHistory history(MinecraftServer server) {
+        return new ConfigHistory(root(server).resolve("pools.nbt"), root(server).resolve("config-backups"),
+            root(server).resolve("changes.jsonl"), 10, Clock.systemUTC());
+    }
+
+    private static void savePools(ServerPlayer player, List<Pool> pools, String summary) throws IOException {
         CompoundTag data = new CompoundTag();
         data.putInt("schema", 1);
         ListTag tags = new ListTag();
         for (Pool pool : pools) tags.add(encodePool(player, pool));
         data.put("pools", tags);
+        history(player.getServer()).backup();
         write(root(player.getServer()).resolve("pools.nbt"), data);
+        history(player.getServer()).record(player.getUUID(), player.getGameProfile().getName(), "gacha", summary);
     }
 
     private static ListTag operations(ServerPlayer player) throws IOException {
@@ -190,7 +199,7 @@ public final class GachaRuntime {
         if (pools.size() >= MAX_POOLS) throw new IllegalStateException("Máximo de gachas alcanzado");
         int id = pools.stream().mapToInt(Pool::id).max().orElse(0) + 1;
         pools.add(new Pool(id, "Gacha " + id, TICKETS.getFirst(), 1, false, List.of()));
-        savePools(player, pools);
+        savePools(player, pools, "crear gacha " + id);
     }
 
     public static synchronized void delete(ServerPlayer player, int id, String expectedName)
@@ -202,7 +211,7 @@ public final class GachaRuntime {
         if (!selected.name().equals(expectedName))
             throw new IllegalStateException("El gacha cambió; vuelve a abrirlo antes de eliminar");
         pools.removeIf(pool -> pool.id() == id);
-        savePools(player, pools);
+        savePools(player, pools, "eliminar gacha " + id + " " + selected.name());
         // Player prize journals contain the awarded item and remain claimable after pool deletion.
         LOG.info("[ZIAN-AUDIT] action=gacha_delete admin={} pool={} name={}",
             player.getUUID(), id, selected.name());
@@ -264,8 +273,17 @@ public final class GachaRuntime {
         // Changes to a published pool take effect only after explicitly republishing it.
         if (action != 8 && action != 12 && action != 13) enabled = false;
         pools.set(pos, new Pool(id, name, ticket, cost, enabled, prizes,icon,description));
-        savePools(player, pools);
+        savePools(player, pools, "editar gacha " + id + " acción " + action);
         LOG.info("[ZIAN-AUDIT] action=gacha_edit admin={} pool={} kind={}", player.getUUID(), id, action);
+    }
+
+    /** Restores pools.nbt to its previous state, including each pool's enabled flag at that time. */
+    public static synchronized void undo(ServerPlayer player) throws IOException {
+        requireAdmin(player);
+        ConfigHistory history = history(player.getServer());
+        if (!history.undoLast()) throw new IllegalStateException("No hay cambios que deshacer");
+        history.record(player.getUUID(), player.getGameProfile().getName(), "gacha", "deshacer último cambio");
+        LOG.info("[ZIAN-AUDIT] action=gacha_undo admin={}", player.getUUID());
     }
 
     private static void requireAdmin(ServerPlayer player) {
