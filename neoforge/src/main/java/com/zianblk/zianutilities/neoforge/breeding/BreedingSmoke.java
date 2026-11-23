@@ -332,7 +332,15 @@ final class BreedingSmoke {
                     dispatcher.parse("ZianUtilities breeding-admin complete ", console))
                 .join();
         require(
-            suggestions.getList().stream().anyMatch(v -> v.getText().equals(jobId.toString())),
+            suggestions.getList().stream()
+                .anyMatch(
+                    v ->
+                        v.getText()
+                            .equals(
+                                com.zianblk.zianutilities.neoforge.references.References.label(
+                                    BreedingRuntime.server,
+                                    BreedingRuntime.store.jobs.get(jobId).owner(),
+                                    jobId))),
             "Admin UUID autocomplete missing");
         var ordinary =
             new ServerPlayer(
