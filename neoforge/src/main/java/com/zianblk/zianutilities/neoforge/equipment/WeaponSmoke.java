@@ -49,6 +49,14 @@ public final class WeaponSmoke {
       player.attack(cow);
       var poison = cow.getEffect(MobEffects.POISON);
       require(poison != null && poison.getDuration() == 80 && poison.getAmplifier() == 0, "Daga: Veneno I 80 ticks esperado, hay " + poison);
+      // Renovación: segundo golpe tras unos ticks vuelve a nivel 0 y 80 ticks, sin acumular.
+      cow.removeEffect(MobEffects.POISON);
+      cow.addEffect(new net.minecraft.world.effect.MobEffectInstance(MobEffects.POISON, 30, 0));
+      cow.invulnerableTime = 0; // simula el paso de los ticks de inmunidad
+      player.setItemInHand(InteractionHand.MAIN_HAND, weapon("poison_dagger"));
+      player.attack(cow);
+      poison = cow.getEffect(MobEffects.POISON);
+      require(poison != null && poison.getDuration() == 80 && poison.getAmplifier() == 0, "Daga: renovación esperada 80 ticks nivel 0, hay " + poison);
       // Guadaña: matar un mob de poca vida cura 2.
       var victim = at.apply(EntityType.PIG, 1.0);
       victim.setHealth(0.1f);
@@ -62,11 +70,16 @@ public final class WeaponSmoke {
       var far = at.apply(EntityType.ZOMBIE, 6.0);
       var wolf = (net.minecraft.world.entity.animal.Wolf) at.apply(EntityType.WOLF, 2.0);
       wolf.tame(player);
+      var bystander = at.apply(EntityType.COW, 2.5);
+      var immune = at.apply(EntityType.ZOMBIE, 3.5);
+      immune.setInvulnerable(true);
       require(WeaponAbilities.activate("frost_axe", player, frostStack), "Hacha: primera activación rechazada");
       var slow = near.getEffect(MobEffects.MOVEMENT_SLOWDOWN);
       require(slow != null && slow.getDuration() == 80 && slow.getAmplifier() == 1, "Hacha: Lentitud II 80 ticks esperada, hay " + slow);
       require(far.getEffect(MobEffects.MOVEMENT_SLOWDOWN) == null, "Hacha: afectó fuera del radio");
       require(wolf.getEffect(MobEffects.MOVEMENT_SLOWDOWN) == null, "Hacha: afectó a una mascota");
+      require(bystander.getEffect(MobEffects.MOVEMENT_SLOWDOWN) == null, "Hacha: afectó a una vaca");
+      require(immune.getEffect(MobEffects.MOVEMENT_SLOWDOWN) == null, "Hacha: afectó a un invulnerable");
       near.removeAllEffects();
       require(!WeaponAbilities.activate("frost_axe", player, frostStack) && near.getEffect(MobEffects.MOVEMENT_SLOWDOWN) == null, "Hacha: la segunda activación seguida debía esperar");
       // Maza: radio 3.

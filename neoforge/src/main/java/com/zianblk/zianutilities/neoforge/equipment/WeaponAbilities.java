@@ -67,13 +67,14 @@ final class WeaponAbilities {
       p.displayClientMessage(Component.translatable("message.zianutilities.weapon_wait", (wait + 999) / 1000), true);
       return false;
     }
+    data.putInt("v", 1); // versión de formato; leer sin versión sigue valiendo
     data.putLong(id, now + WeaponBalance.ACTIVE_COOLDOWN_SECONDS * 1000L);
     p.getPersistentData().put(COOLDOWNS, data);
     p.getCooldowns().addCooldown(stack.getItem(), WeaponBalance.ACTIVE_COOLDOWN_SECONDS * 20);
     boolean frost = id.equals("frost_axe");
     int radius = frost ? WeaponBalance.FROST_RADIUS : WeaponBalance.MOLTEN_RADIUS;
     var level = p.serverLevel();
-    for (var e : level.getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(radius), e -> e != p && e.isAlive() && !e.isSpectator() && e.distanceToSqr(p) <= radius * radius && !(e instanceof OwnableEntity o && o.getOwnerUUID() != null) && !e.isAlliedTo(p) && (!(e instanceof Player other) || (p.server.isPvpAllowed() && p.canHarmPlayer(other))))) {
+    for (var e : level.getEntitiesOfClass(LivingEntity.class, p.getBoundingBox().inflate(radius), e -> e != p && e.isAlive() && !e.isSpectator() && e.distanceToSqr(p) <= radius * radius && !e.isInvulnerable() && !(e instanceof OwnableEntity o && o.getOwnerUUID() != null) && !e.isAlliedTo(p) && (e instanceof Player other ? p.server.isPvpAllowed() && p.canHarmPlayer(other) && !other.getAbilities().invulnerable : e instanceof net.minecraft.world.entity.monster.Enemy))) {
       if (frost) e.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, WeaponBalance.FROST_SECONDS * 20, WeaponBalance.FROST_AMPLIFIER), p);
       else e.igniteForSeconds(WeaponBalance.MOLTEN_FIRE_SECONDS);
     }
