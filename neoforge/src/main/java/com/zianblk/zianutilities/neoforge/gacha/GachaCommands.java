@@ -20,15 +20,15 @@ public final class GachaCommands {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         var gacha = Commands.literal("gacha").requires(s->com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(s,"gacha.use",false)).executes(GachaCommands::open);
         gacha.then(Commands.literal("review")
-            .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(source,"admin.gacha",true))
+            .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.opOnly(source,"admin.gacha"))
             .then(Commands.argument("player", EntityArgument.player()).executes(GachaCommands::review)));
         gacha.then(Commands.literal("confirm-delivered")
-            .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(source,"admin.gacha",true))
+            .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.opOnly(source,"admin.gacha"))
             .then(Commands.argument("player", EntityArgument.player())
                 .then(Commands.argument("operationId", StringArgumentType.word()).suggests(GachaCommands::suggestOperations)
                     .executes(GachaCommands::confirmDelivered))));
         gacha.then(Commands.literal("resolve-debit")
-            .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(source,"admin.gacha",true))
+            .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.opOnly(source,"admin.gacha"))
             .then(Commands.argument("player", EntityArgument.player())
                 .then(Commands.argument("operationId", StringArgumentType.word()).suggests(GachaCommands::suggestOperations)
                     .then(Commands.literal("charged")
@@ -38,7 +38,7 @@ public final class GachaCommands {
                         .then(Commands.argument("evidence", StringArgumentType.greedyString())
                             .executes(context -> resolveDebit(context, false)))))));
         gacha.then(Commands.literal("confirm-compensated")
-            .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(source,"admin.gacha",true))
+            .requires(source -> com.zianblk.zianutilities.neoforge.UtilitiesPermissions.opOnly(source,"admin.gacha"))
             .then(Commands.argument("player", EntityArgument.player())
                 .then(Commands.argument("operationId", StringArgumentType.word()).suggests(GachaCommands::suggestOperations)
                     .then(Commands.argument("evidence", StringArgumentType.greedyString())

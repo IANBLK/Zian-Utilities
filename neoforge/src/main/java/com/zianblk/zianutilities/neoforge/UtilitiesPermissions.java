@@ -13,4 +13,13 @@ public final class UtilitiesPermissions {
    return !admin||source.hasPermission(2);
   }catch(Exception|LinkageError unavailable){return false;}
  }
+ /** Solo OP (nivel 2); un FALSE explicito de LuckPerms gana, un TRUE no concede nada. */
+ public static boolean opOnly(ServerPlayer player,String action){return opOnly(player.createCommandSourceStack(),action);}
+ public static boolean opOnly(CommandSourceStack source,String action){
+  if(!source.hasPermission(2))return false;
+  if(source.getPlayer()==null)return true;
+  try{return decideOpOnly(true,LuckPermsLookup.lookup(source.getPlayer(),"zianutilities."+action),LuckPermsLookup.lookup(source.getPlayer(),"zianutilities.admin"));}
+  catch(Exception|LinkageError unavailable){return false;}
+ }
+ static boolean decideOpOnly(boolean op,LuckPermsLookup.Decision specific,LuckPermsLookup.Decision parent){return op&&specific!=LuckPermsLookup.Decision.FALSE&&parent!=LuckPermsLookup.Decision.FALSE;}
 }
