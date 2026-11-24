@@ -10,6 +10,7 @@ import com.zianblk.zianutilities.core.quests.GlobalQuestEventResult;
 import com.zianblk.zianutilities.core.quests.GlobalQuestOffer;
 import com.zianblk.zianutilities.core.quests.GlobalQuestProgress;
 import com.zianblk.zianutilities.core.rewards.ClaimStatus;
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.cobblemon.CobblemonGenerationResolver;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -53,8 +54,7 @@ public final class GlobalQuestListener {
                 if (result == GlobalQuestEventResult.COMPLETE) {
                     GlobalQuestProgress progress = GlobalQuestRuntime.service(server).inspect(player.getUUID(), offer);
                     ClaimStatus claim = GlobalQuestRuntime.pay(progress, "capture");
-                    player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("Objetivo de captura completado. Premio: "
-                        + (claim == null ? "desactivado" : claim))));
+                    player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Tr.c("zianutilities.quests.msg.capture_done", "Objetivo de captura completado. Premio: %s", claim == null ? Tr.c("zianutilities.quests.msg.reward_disabled", "desactivado") : Component.literal(String.valueOf(claim)))));
                     refresh(player);
                 }
             } catch (Exception error) {

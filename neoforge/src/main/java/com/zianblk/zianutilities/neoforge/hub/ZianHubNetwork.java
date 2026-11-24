@@ -1,5 +1,6 @@
 package com.zianblk.zianutilities.neoforge.hub;
 
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 import com.zianblk.zianutilities.neoforge.quests.GlobalQuestNetwork;
 import com.zianblk.zianutilities.neoforge.quests.GlobalQuestRuntime;
@@ -34,8 +35,7 @@ public final class ZianHubNetwork {
 
     public static void open(ServerPlayer player) {
         if (!hasClient(player)) {
-            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal(
-                "Instala la misma versión de Zian Utilities en tu cliente.")));
+            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Tr.c("zianutilities.hub.msg.install_client", "Instala la misma versión de Zian Utilities en tu cliente.")));
             return;
         }
         PacketDistributor.sendToPlayer(player, new State(GlobalQuestRuntime.moduleEnabled(),

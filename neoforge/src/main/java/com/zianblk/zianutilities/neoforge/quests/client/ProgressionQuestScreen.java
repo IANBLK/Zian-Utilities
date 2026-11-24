@@ -1,5 +1,6 @@
 package com.zianblk.zianutilities.neoforge.quests.client;
 
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
 import com.zianblk.zianutilities.neoforge.quests.ProgressionQuestNetwork;
 import com.zianblk.zianutilities.neoforge.quests.ProgressionQuestRuntime;
@@ -21,8 +22,11 @@ public final class ProgressionQuestScreen extends com.zianblk.zianutilities.neof
     private static final int WHITE = 0xFFF4F7FA;
     private static final int MUTED = 0xFF9FAAB5;
     private static final int GREEN = 0xFF78D498;
-    private static final DateTimeFormatter RESET = DateTimeFormatter.ofPattern("EEE HH:mm", Locale.forLanguageTag("es"))
-        .withZone(com.zianblk.zianutilities.core.quests.QuestSchedule.ZONE);
+    private static DateTimeFormatter reset() {
+        String code = Minecraft.getInstance().getLanguageManager().getSelected();
+        return DateTimeFormatter.ofPattern("EEE HH:mm", Locale.forLanguageTag(code.replace('_', '-')))
+            .withZone(com.zianblk.zianutilities.core.quests.QuestSchedule.ZONE);
+    }
     private ProgressionQuestNetwork.State state;
     private int selectedGeneration;
     private int albumPage;
@@ -48,14 +52,14 @@ public final class ProgressionQuestScreen extends com.zianblk.zianutilities.neof
 
     @Override protected void init() {fitViewport(600,360);
         int x = width / 2;
-        addRenderableWidget(new StyledButton(10, 9, 70, 20, "Inicio", ZianHubNetwork::requestHub));
-        addRenderableWidget(new StyledButton(x - 170, 35, 110, 20, "Cada 3 horas", ZianHubNetwork::requestQuests));
-        addRenderableWidget(new StyledButton(x - 55, 35, 110, 20, "Semanales", () -> ProgressionQuestNetwork.request((byte) 0, 0)));
-        addRenderableWidget(new StyledButton(x + 60, 35, 110, 20, "Campañas", () -> ProgressionQuestNetwork.request((byte) 1, 0)));
+        addRenderableWidget(new StyledButton(10, 9, 70, 20, Tr.s("ui.zianutilities.4f70d8c37e6a", "Inicio"), ZianHubNetwork::requestHub));
+        addRenderableWidget(new StyledButton(x - 170, 35, 110, 20, Tr.s("zianutilities.quests.every_3h", "Cada 3 horas"), ZianHubNetwork::requestQuests));
+        addRenderableWidget(new StyledButton(x - 55, 35, 110, 20, Tr.s("ui.zianutilities.490124c0919f", "Semanales"), () -> ProgressionQuestNetwork.request((byte) 0, 0)));
+        addRenderableWidget(new StyledButton(x + 60, 35, 110, 20, Tr.s("ui.zianutilities.a9f4b07452d3", "Campañas"), () -> ProgressionQuestNetwork.request((byte) 1, 0)));
 
         if (state.tab() == 0) {
             accept = addRenderableWidget(new StyledButton(x - 80, Math.min(height - 35, 211), 160, 20,
-                state.weeklyAccepted() ? "Objetivos aceptados" : "Aceptar objetivos",
+                state.weeklyAccepted() ? Tr.s("zianutilities.quests.accepted", "Objetivos aceptados") : Tr.s("ui.zianutilities.654156dc759d", "Aceptar objetivos"),
                 () -> ProgressionQuestNetwork.request((byte) 2, 0)));
             accept.active = !state.weeklyAccepted();
         } else {
@@ -75,7 +79,7 @@ public final class ProgressionQuestScreen extends com.zianblk.zianutilities.neof
                 ProgressionQuestRuntime.Campaign campaign = state.campaigns().get(selectedGeneration);
                 if (campaign.accepted()) {
                     addRenderableWidget(new StyledButton(x + 150, 69, 90, 20,
-                        showAlbum ? "Resumen" : "Capturados", () -> {
+                        showAlbum ? Tr.s("zianutilities.quests.summary", "Resumen") : Tr.s("zianutilities.quests.captured", "Capturados"), () -> {
                             showAlbum = !showAlbum;
                             rebuildWidgets();
                         }));
@@ -98,7 +102,7 @@ public final class ProgressionQuestScreen extends com.zianblk.zianutilities.neof
                     next.active = albumPage + 1 < pages;
                 } else {
                     accept = addRenderableWidget(new StyledButton(x - 80, Math.min(height - 35, 211), 160, 20,
-                        campaign.accepted() ? "Campaña aceptada" : "Aceptar campaña",
+                        campaign.accepted() ? Tr.s("zianutilities.quests.campaign_accepted", "Campaña aceptada") : Tr.s("zianutilities.quests.accept_campaign", "Aceptar campaña"),
                         () -> ProgressionQuestNetwork.request((byte) 3, selectedGeneration)));
                     accept.active = campaign.available() && campaign.finalGoal() > 0 && !campaign.accepted();
                 }
@@ -121,45 +125,45 @@ public final class ProgressionQuestScreen extends com.zianblk.zianutilities.neof
 
     private void drawWeekly(GuiGraphics graphics) {
         graphics.drawCenteredString(font, Component.literal(state.weeklyTest()
-            ? "Rotación semanal de prueba · sin pago"
-            : "Reinicio semanal: " + RESET.format(Instant.ofEpochMilli(state.weeklyEndsAt()))),
+            ? Tr.s("zianutilities.quests.weekly_test", "Rotación semanal de prueba · sin pago")
+            : Tr.s("zianutilities.quests.weekly_reset", "Reinicio semanal: %s", reset().format(Instant.ofEpochMilli(state.weeklyEndsAt())))),
             width / 2, 65, MUTED);
         int w = Math.min(230, (width - 42) / 2);
         int left = width / 2 - w - 5;
         int top = 89;
         card(graphics, left, top, w, 106, state.capturePaid() ? GREEN : GOLD);
         card(graphics, left + w + 10, top, w, 106, state.battlePaid() ? GREEN : GOLD);
-        graphics.drawString(font, "01  CAPTURAS", left + 10, top + 10, GOLD, false);
-        graphics.drawString(font, "Captura 25 Pokémon", left + 10, top + 30, WHITE, false);
+        graphics.drawString(font, Tr.s("zianutilities.quests.weekly_capture", "01  CAPTURAS"), left + 10, top + 10, GOLD, false);
+        graphics.drawString(font, Tr.s("zianutilities.quests.catch_25", "Captura 25 Pokémon"), left + 10, top + 30, WHITE, false);
         graphics.drawString(font, Math.min(25, state.captures()) + " / 25", left + 10, top + 47,
             state.capturePaid() ? GREEN : MUTED, false);
-        graphics.drawString(font, "Generaciones activas", left + 10, top + 64, MUTED, false);
-        graphics.drawString(font, state.weeklyTest() ? "Prueba sin pago" :
-            state.captureSkipped() ? "Completada sin pago" :
-            !state.rewardsEnabled() ? "Pago desactivado" :
-            "Premio: " + state.captureAmount() + " " + friendly(state.captureCurrency()), left + 10, top + 85,
+        graphics.drawString(font, Tr.s("zianutilities.quests.active_generations", "Generaciones activas"), left + 10, top + 64, MUTED, false);
+        graphics.drawString(font, state.weeklyTest() ? Tr.s("zianutilities.quests.test_no_payout", "Prueba sin pago") :
+            state.captureSkipped() ? Tr.s("zianutilities.quests.completed_no_payout", "Completada sin pago") :
+            !state.rewardsEnabled() ? Tr.s("zianutilities.quests.payout_disabled", "Pago desactivado") :
+            Tr.s("zianutilities.quests.reward", "Premio: %s %s", state.captureAmount(), friendly(state.captureCurrency())), left + 10, top + 85,
             GOLD, false);
 
         int right = left + w + 10;
-        graphics.drawString(font, "02  BATALLAS SALVAJES", right + 10, top + 10, GOLD, false);
-        graphics.drawString(font, "Gana 50 batallas", right + 10, top + 30, WHITE, false);
+        graphics.drawString(font, Tr.s("ui.zianutilities.208fe17459c9", "02  BATALLAS SALVAJES"), right + 10, top + 10, GOLD, false);
+        graphics.drawString(font, Tr.s("zianutilities.quests.win_50", "Gana 50 batallas"), right + 10, top + 30, WHITE, false);
         graphics.drawString(font, Math.min(50, state.battles()) + " / 50", right + 10, top + 47,
             state.battlePaid() ? GREEN : MUTED, false);
-        graphics.drawString(font, "Solo Pokémon salvajes", right + 10, top + 64, MUTED, false);
-        graphics.drawString(font, state.weeklyTest() ? "Prueba sin pago" :
-            state.battleSkipped() ? "Completada sin pago" :
-            !state.rewardsEnabled() ? "Pago desactivado" :
-            "Premio: " + state.battleAmount() + " " + friendly(state.battleCurrency()), right + 10, top + 85,
+        graphics.drawString(font, Tr.s("zianutilities.quests.wild_only", "Solo Pokémon salvajes"), right + 10, top + 64, MUTED, false);
+        graphics.drawString(font, state.weeklyTest() ? Tr.s("zianutilities.quests.test_no_payout", "Prueba sin pago") :
+            state.battleSkipped() ? Tr.s("zianutilities.quests.completed_no_payout", "Completada sin pago") :
+            !state.rewardsEnabled() ? Tr.s("zianutilities.quests.payout_disabled", "Pago desactivado") :
+            Tr.s("zianutilities.quests.reward", "Premio: %s %s", state.battleAmount(), friendly(state.battleCurrency())), right + 10, top + 85,
             GOLD, false);
-        graphics.drawCenteredString(font, state.weeklyAccepted() ? "Avance personal · Reinicio cada lunes"
-            : "Acepta para empezar; las acciones anteriores no cuentan", width / 2,
+        graphics.drawCenteredString(font, state.weeklyAccepted() ? Tr.s("zianutilities.quests.weekly_note", "Avance personal · Reinicio cada lunes")
+            : Tr.s("zianutilities.quests.accept_to_begin", "Acepta para empezar; las acciones anteriores no cuentan"), width / 2,
             Math.min(height - 11, 240), MUTED);
     }
 
     private void drawCampaign(GuiGraphics graphics) {
         if (selectedGeneration >= state.campaigns().size()) return;
         ProgressionQuestRuntime.Campaign c = state.campaigns().get(selectedGeneration);
-        graphics.drawCenteredString(font, "Generación " + (selectedGeneration + 1), width / 2, 75, GOLD);
+        graphics.drawCenteredString(font, Tr.s("zianutilities.quests.generation", "Generación %s", selectedGeneration + 1), width / 2, 75, GOLD);
         int w = Math.min(470, width - 30);
         int x = (width - w) / 2;
         if (showAlbum && c.accepted()) {
@@ -168,34 +172,31 @@ public final class ProgressionQuestScreen extends com.zianblk.zianutilities.neof
         }
         card(graphics, x, 100, w, 95, c.chapter() == 3 ? GREEN : GOLD);
         if (!c.available()) {
-            graphics.drawCenteredString(font, "Se desbloquea al activar esta generación", width / 2, 137, MUTED);
+            graphics.drawCenteredString(font, Tr.s("zianutilities.quests.locked", "Se desbloquea al activar esta generación"), width / 2, 137, MUTED);
             return;
         }
         if (!c.accepted()) {
-            graphics.drawCenteredString(font, "Captura la mitad de las especies elegibles en 3 etapas", width / 2, 127, WHITE);
-            graphics.drawCenteredString(font, "Meta final: " + c.finalGoal() + " de " + c.eligibleSpecies(),
+            graphics.drawCenteredString(font, Tr.s("zianutilities.quests.campaign_intro", "Captura la mitad de las especies elegibles en 3 etapas"), width / 2, 127, WHITE);
+            graphics.drawCenteredString(font, Tr.s("zianutilities.quests.final_goal", "Meta final: %s de %s", c.finalGoal(), c.eligibleSpecies()),
                 width / 2, 151, MUTED);
             return;
         }
         if (c.chapter() >= 3) {
-            graphics.drawCenteredString(font, "✓ Campaña completada", width / 2, 124, GREEN);
-            graphics.drawCenteredString(font, c.capturedSpecies() + " / " + c.finalGoal()
-                + " especies registradas", width / 2, 151, WHITE);
+            graphics.drawCenteredString(font, Tr.s("zianutilities.quests.campaign_done", "✓ Campaña completada"), width / 2, 124, GREEN);
+            graphics.drawCenteredString(font, Tr.s("zianutilities.quests.species_registered", "%s / %s especies registradas", c.capturedSpecies(), c.finalGoal()), width / 2, 151, WHITE);
             if (c.skippedRewards() > 0) graphics.drawCenteredString(font,
-                "Etapas completadas sin pago: " + c.skippedRewards(), width / 2, 173, MUTED);
+                Tr.s("zianutilities.quests.stages_no_payout", "Etapas completadas sin pago: %s", c.skippedRewards()), width / 2, 173, MUTED);
             return;
         }
-        graphics.drawCenteredString(font, "Etapa " + (c.chapter() + 1) + " de 3", width / 2, 112, GOLD);
-        graphics.drawCenteredString(font, "Especies distintas capturadas: " + c.capturedSpecies()
-            + " / " + c.goal(), width / 2, 132, WHITE);
-        graphics.drawCenteredString(font, "Meta final: " + c.finalGoal() + " de " + c.eligibleSpecies()
-            + " especies elegibles", width / 2, 151, MUTED);
-        graphics.drawCenteredString(font, !state.rewardsEnabled() ? "Pago desactivado" :
-            c.rewardPending() ? "Premio pendiente de recuperación"
-            : "Premio de etapa: " + c.amount() + " " + friendly(c.currency()), width / 2, 173, MUTED);
+        graphics.drawCenteredString(font, Tr.s("zianutilities.quests.stage", "Etapa %s de 3", c.chapter() + 1), width / 2, 112, GOLD);
+        graphics.drawCenteredString(font, Tr.s("zianutilities.quests.distinct", "Especies distintas capturadas: %s / %s", c.capturedSpecies(), c.goal()), width / 2, 132, WHITE);
+        graphics.drawCenteredString(font, Tr.s("zianutilities.quests.final_goal_eligible", "Meta final: %s de %s especies elegibles", c.finalGoal(), c.eligibleSpecies()), width / 2, 151, MUTED);
+        graphics.drawCenteredString(font, !state.rewardsEnabled() ? Tr.s("zianutilities.quests.payout_disabled", "Pago desactivado") :
+            c.rewardPending() ? Tr.s("zianutilities.quests.reward_pending", "Premio pendiente de recuperación")
+            : Tr.s("zianutilities.quests.stage_reward", "Premio de etapa: %s %s", c.amount(), friendly(c.currency())), width / 2, 173, MUTED);
         graphics.drawCenteredString(font, c.skippedRewards() > 0
-            ? "Etapas previas sin pago: " + c.skippedRewards()
-            : "Pulsa Capturados para ver tu registro personal",
+            ? Tr.s("zianutilities.quests.prev_no_payout", "Etapas previas sin pago: %s", c.skippedRewards())
+            : Tr.s("zianutilities.quests.press_captured", "Pulsa Capturados para ver tu registro personal"),
             width / 2, Math.min(height - 11, 240), MUTED);
     }
 
@@ -205,15 +206,14 @@ public final class ProgressionQuestScreen extends com.zianblk.zianutilities.neof
 
     private void drawAlbum(GuiGraphics graphics, ProgressionQuestRuntime.Campaign campaign, int x, int w) {
         card(graphics, x, 100, w, Math.max(95, Math.min(height - 148, 110)), GOLD);
-        graphics.drawCenteredString(font, "Especies capturadas: " + campaign.species().size()
-            + " · Avance total: " + campaign.capturedSpecies() + " / " + campaign.finalGoal(),
+        graphics.drawCenteredString(font, Tr.s("zianutilities.quests.album_header", "Especies capturadas: %s · Avance total: %s / %s", campaign.species().size(), campaign.capturedSpecies(), campaign.finalGoal()),
             width / 2, 108, WHITE);
         List<String> captured = campaign.species();
         int pageSize = albumPageSize();
         int from = albumPage * pageSize;
         int until = Math.min(captured.size(), from + pageSize);
         if (captured.isEmpty()) {
-            graphics.drawCenteredString(font, "Todavía no hay especies registradas", width / 2, 145, MUTED);
+            graphics.drawCenteredString(font, Tr.s("zianutilities.quests.none_registered", "Todavía no hay especies registradas"), width / 2, 145, MUTED);
         } else {
             for (int i = from; i < until; i++) {
                 int local = i - from;
@@ -224,12 +224,11 @@ public final class ProgressionQuestScreen extends com.zianblk.zianutilities.neof
             }
         }
         if (campaign.legacyCount() > 0) {
-            graphics.drawCenteredString(font, campaign.legacyCount()
-                + " capturas previas acreditadas sin nombres guardados", width / 2,
+            graphics.drawCenteredString(font, Tr.s("zianutilities.quests.legacy", "%s capturas previas acreditadas sin nombres guardados", campaign.legacyCount()), width / 2,
                 Math.min(height - 11, 240), MUTED);
         } else {
             int pages = Math.max(1, (captured.size() + pageSize - 1) / pageSize);
-            graphics.drawCenteredString(font, "Página " + (albumPage + 1) + " / " + pages,
+            graphics.drawCenteredString(font, Tr.s("zianutilities.common.page", "Página %s / %s", albumPage + 1, pages),
                 width / 2, Math.min(height - 11, 240), MUTED);
         }
     }

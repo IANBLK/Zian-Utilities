@@ -5,6 +5,7 @@ import com.cobblemon.mod.common.api.pokemon.stats.Stats;
 import com.cobblemon.mod.common.item.PokemonItem;
 import com.zianblk.zianutilities.core.breeding.*;
 import com.zianblk.zianutilities.core.economy.EconomyBalanceResult;
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 import com.zianblk.zianutilities.neoforge.economy.AvecoinsEconomyPort;
 import java.util.*;
@@ -77,7 +78,10 @@ public final class BreedingNetwork {
     long balance=currencies.stream().filter(c->c.id().equals(pending.currency)).mapToLong(Currency::balance).findFirst().orElse(-1);
     long remaining=job==null?0:Math.max(0,job.readyAt()-System.currentTimeMillis());
     String currency=pending.currency.substring(pending.currency.indexOf(':')+1);
-    return "Tiempo: "+duration(remaining)+" → "+duration(Math.max(0,remaining-pending.cut))+" · coste: "+pending.units+" "+currency+" · saldo: "+(balance<0?"no disponible":balance<pending.units?"insuficiente (tienes "+balance+")":balance+" → "+(balance-pending.units));
+    String from=duration(remaining),to=duration(Math.max(0,remaining-pending.cut));
+    if(balance<0)return Tr.enc("zianutilities.breeding.accel_unavailable", "Tiempo: %s → %s · coste: %s %s · saldo: no disponible", from, to, pending.units, currency);
+    if(balance<pending.units)return Tr.enc("zianutilities.breeding.accel_insufficient", "Tiempo: %s → %s · coste: %s %s · saldo: insuficiente (tienes %s)", from, to, pending.units, currency, balance);
+    return Tr.enc("zianutilities.breeding.accel_ok", "Tiempo: %s → %s · coste: %s %s · saldo: %s → %s", from, to, pending.units, currency, balance, balance-pending.units);
   }
   public record Currency(String id, long minutes, long balance) {}
 
@@ -285,7 +289,7 @@ public final class BreedingNetwork {
   public static void register(RegisterPayloadHandlersEvent event) {
     var r =
         event
-            .registrar("breeding-ui-2")
+            .registrar("breeding-ui-3")
             .executesOn(net.neoforged.neoforge.network.registration.HandlerThread.MAIN);
     r.playToClient(
         State.TYPE,
@@ -299,7 +303,7 @@ public final class BreedingNetwork {
     try {
       BreedingRuntime.check(p);
       if (!NetworkRegistry.hasChannel(p.connection, State.TYPE.id()))
-        throw new IllegalStateException("Instala Zian Utilities beta.14 también en el cliente");
+        throw new IllegalStateException(Tr.enc("zianutilities.breeding.msg.client_missing", "Instala Zian Utilities beta.14 también en el cliente"));
       sessions
           .entrySet()
           .removeIf(e -> BreedingRuntime.server.getPlayerList().getPlayer(e.getKey()) == null);
@@ -309,7 +313,7 @@ public final class BreedingNetwork {
       p.closeContainer();
       send(p, s, true);
     } catch (Exception e) {
-      p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal(e.getMessage())));
+      p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Tr.dec(e.getMessage())));
     }
   }
 
@@ -320,7 +324,7 @@ public final class BreedingNetwork {
       var s = sessions.get(p.getUUID());
       long now = BreedingRuntime.store.now();
       if (s == null || !s.token.toString().equals(a.session) || now - s.seen > 120000)
-        throw new IllegalStateException("La sesión venció; abre de nuevo Crianza");
+        throw new IllegalStateException(Tr.enc("zianutilities.breeding.msg.session_expired", "La sesión venció; abre de nuevo Crianza"));
       s.seen = now;
       if (a.kind == 0) {
         if (now - s.lastPoll < 1000) return;
@@ -334,14 +338,14 @@ public final class BreedingNetwork {
         case 12, 13 -> {
           UUID selected = UUID.fromString(a.target);
           if (party.get(selected) == null)
-            throw new IllegalArgumentException("Este Pokémon ya no está en tu equipo");
+            throw new IllegalArgumentException(Tr.enc("zianutilities.breeding.msg.not_in_team", "Este Pokémon ya no está en tu equipo"));
           s.select(selected, a.kind == 12 ? 1 : 2);
         }
         case 1 -> {
           UUID selected = UUID.fromString(a.target);
           var pokemon = party.get(selected);
           if (pokemon == null)
-            throw new IllegalArgumentException("Este Pokémon ya no está en tu equipo");
+            throw new IllegalArgumentException(Tr.enc("zianutilities.breeding.msg.not_in_team", "Este Pokémon ya no está en tu equipo"));
           s.pending = null;
           s.job = null;
           if (selected.equals(s.first)) s.first = null;
@@ -361,7 +365,7 @@ public final class BreedingNetwork {
           if (!why.isEmpty()) throw new IllegalStateException(why);
           if (BreedingRuntime.store.pendingMine(p.getUUID()).size()
               >= BreedingPermissions.slots(p, BreedingRuntime.config))
-            throw new IllegalStateException("Todas tus ranuras están ocupadas");
+            throw new IllegalStateException(Tr.enc("zianutilities.breeding.msg.slots_full", "Todas tus ranuras están ocupadas"));
           s.pending = new Pending("start", UUID.randomUUID(), null, null, 0, 0, 0);
         }
         case 4 -> {
@@ -371,13 +375,13 @@ public final class BreedingNetwork {
         }
         case 5 -> {
           if (!BreedingRuntime.currencies().contains(a.target))
-            throw new IllegalArgumentException("Moneda deshabilitada");
+            throw new IllegalArgumentException(Tr.enc("zianutilities.breeding.msg.currency_disabled", "Moneda deshabilitada"));
           s.currency = a.target;
           s.pending = null;
         }
         case 6 -> {
           if (s.job == null || s.currency == null)
-            throw new IllegalStateException("Selecciona una crianza y una moneda");
+            throw new IllegalStateException(Tr.enc("zianutilities.breeding.msg.pick_job_currency", "Selecciona una crianza y una moneda"));
           var j = BreedingRuntime.owned(p, s.job);
           long rate =
               Math.multiplyExact(
@@ -398,7 +402,7 @@ public final class BreedingNetwork {
         case 7 -> {
           BreedingRuntime.claim(p, s.job);
           s.pending = null;
-          s.message = "Entrega solicitada; se comprobará el PC guardado";
+          s.message = Tr.enc("zianutilities.breeding.msg.delivery_requested", "Entrega solicitada; se comprobará el PC guardado");
         }
         case 8 -> {
           BreedingRuntime.owned(p, s.job);
@@ -412,23 +416,23 @@ public final class BreedingNetwork {
             case "start" -> {
               BreedingRuntime.start(p, s.first, s.second, pending.nonce);
               s.first = s.second = null;
-              s.message = "Crianza iniciada. Encontrarás el progreso en Mis crianzas";
+              s.message = Tr.enc("zianutilities.breeding.msg.started", "Crianza iniciada. Encontrarás el progreso en Mis crianzas");
             }
             case "accelerate" -> {
               if (!Objects.equals(
                   BreedingRuntime.config.currencyReductionsMinutes.get(pending.currency),
                   pending.rate / 60000))
-                throw new IllegalStateException("La tarifa cambió; prepara de nuevo la compra");
+                throw new IllegalStateException(Tr.enc("zianutilities.breeding.msg.rate_changed", "La tarifa cambió; prepara de nuevo la compra"));
               BreedingRuntime.accelerate(
                   p, pending.job, pending.currency, pending.units, pending.nonce);
-              s.message = "Aceleración aplicada";
+              s.message = Tr.enc("zianutilities.breeding.msg.accelerated", "Aceleración aplicada");
             }
             case "cancel" -> {
               BreedingRuntime.cancel(p, pending.job);
               s.job = null;
-              s.message = "Crianza cancelada; los padres quedaron libres";
+              s.message = Tr.enc("zianutilities.breeding.msg.cancelled", "Crianza cancelada; los padres quedaron libres");
             }
-            default -> throw new IllegalStateException("Confirmación inválida");
+            default -> throw new IllegalStateException(Tr.enc("zianutilities.breeding.msg.invalid_confirm", "Confirmación inválida"));
           }
         }
         case 10 -> {
@@ -438,7 +442,7 @@ public final class BreedingNetwork {
           sessions.remove(p.getUUID());
           return;
         }
-        default -> throw new IllegalArgumentException("Acción inválida");
+        default -> throw new IllegalArgumentException(Tr.enc("zianutilities.breeding.msg.invalid_action", "Acción inválida"));
       }
       send(p, s, false);
     } catch (Exception error) {
@@ -446,13 +450,13 @@ public final class BreedingNetwork {
       if (s != null) {
         s.pending = null;
         s.message =
-            error.getMessage() == null ? "No se pudo completar la acción" : error.getMessage();
+            error.getMessage() == null ? Tr.enc("zianutilities.breeding.msg.failed", "No se pudo completar la acción") : error.getMessage();
         try {
           send(p, s, false);
         } catch (Exception ignored) {
-          p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal(s.message)));
+          p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Tr.dec(s.message)));
         }
-      } else p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("Abre nuevamente Crianza")));
+      } else p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Tr.c("zianutilities.breeding.msg.reopen", "Abre nuevamente Crianza")));
     }
   }
 
@@ -461,12 +465,12 @@ public final class BreedingNetwork {
     if (s.first != null && party.get(s.first) == null) {
       s.first = null;
       s.pending = null;
-      s.message = "El primer Pokémon salió del equipo; vuelve a elegirlo";
+      s.message = Tr.enc("zianutilities.breeding.msg.first_left", "El primer Pokémon salió del equipo; vuelve a elegirlo");
     }
     if (s.second != null && party.get(s.second) == null) {
       s.second = null;
       s.pending = null;
-      s.message = "El segundo Pokémon salió del equipo; vuelve a elegirlo";
+      s.message = Tr.enc("zianutilities.breeding.msg.second_left", "El segundo Pokémon salió del equipo; vuelve a elegirlo");
     }
     var parents = new ArrayList<Parent>();
     var order =
@@ -533,8 +537,8 @@ public final class BreedingNetwork {
             ? ""
             : switch (s.pending.kind) {
               case "start" ->
-                  "Inicio gratuito · " + BreedingRuntime.config.baseMinutes / 60 + " horas";
-              case "cancel" -> "Cancelar sin devolver aceleraciones";
+                  Tr.enc("zianutilities.breeding.confirm_start_text", "Inicio gratuito · %s horas", BreedingRuntime.config.baseMinutes / 60);
+              case "cancel" -> Tr.enc("zianutilities.breeding.confirm_cancel_text", "Cancelar sin devolver aceleraciones");
               default ->
                   accelerationSummary(p,s,jobs,currencies);
             };

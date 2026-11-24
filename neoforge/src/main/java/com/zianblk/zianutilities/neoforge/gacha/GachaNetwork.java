@@ -1,5 +1,6 @@
 package com.zianblk.zianutilities.neoforge.gacha;
 
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -50,7 +51,7 @@ public final class GachaNetwork {
                 new State(open, view.admin(), view.paymentEnabled(), pools, pending));
         } catch (Exception error) {
             LOG.error("[ZIAN-GACHA] action=sync playerUuid={} result=error", player.getUUID(), error);
-            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("No se pudo cargar Gachas; revisa la consola.")));
+            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Tr.c("zianutilities.gacha.msg.load_failed", "No se pudo cargar Gachas; revisa la consola.")));
         }
     }
 
@@ -100,8 +101,8 @@ public final class GachaNetwork {
                 LOG.warn("[ZIAN-GACHA] action={} playerUuid={} result=error",
                     action.kind(), player.getUUID(), error);
             }
-            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal(error instanceof IllegalStateException
-                ? error.getMessage() : "No se pudo guardar la operación de gacha; revisa la consola.")));
+            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(error instanceof IllegalStateException
+                ? Component.literal(error.getMessage()) : Tr.c("zianutilities.gacha.msg.save_failed", "No se pudo guardar la operación de gacha; revisa la consola.")));
             send(player, false);
             if (action.kind() == 9 && hasClient(player))
                 PacketDistributor.sendToPlayer(player, new RollResult(action.poolId(), ItemStack.EMPTY));

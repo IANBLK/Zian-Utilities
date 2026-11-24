@@ -1,5 +1,6 @@
 package com.zianblk.zianutilities.neoforge.hub.client;
 
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -112,7 +113,7 @@ public final class ZianHubScreen extends com.zianblk.zianutilities.neoforge.clie
         graphics.drawWordWrap(font,Component.translatableWithFallback("ui.zianutilities.5d1776706890", "Elige padres de tu equipo.\n\nConsulta la posible cría y gestiona tus crianzas."),x+11,y+40,cardWidth()-22,MUTED);
         status(graphics,x,y,state.breedingEnabled());
     }
-    private void status(GuiGraphics graphics,int x,int y,boolean enabled){graphics.drawString(font,Component.literal(enabled?"Disponible":"No disponible"),x+11,y+cardHeight()-48,enabled?0xFF88D5AD:MUTED,false);}
+    private void status(GuiGraphics graphics,int x,int y,boolean enabled){graphics.drawString(font,enabled?Tr.c("zianutilities.hub.available", "Disponible"):Tr.c("zianutilities.hub.unavailable", "No disponible"),x+11,y+cardHeight()-48,enabled?0xFF88D5AD:MUTED,false);}
 
     private static void drawCard(GuiGraphics graphics, int x, int y, int w, int h, int accent) {
         graphics.fill(x, y, x + w, y + h, 0xFF59616B);
