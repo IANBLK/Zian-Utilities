@@ -1,6 +1,5 @@
 package com.zianblk.zianutilities.neoforge.quests;
 
-import com.zianblk.zianutilities.neoforge.Tr;
 import com.cobblemon.mod.common.api.Priority;
 import com.cobblemon.mod.common.api.battles.model.actor.ActorType;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
@@ -11,6 +10,7 @@ import com.zianblk.zianutilities.core.quests.GlobalQuestEventResult;
 import com.zianblk.zianutilities.core.quests.GlobalQuestOffer;
 import com.zianblk.zianutilities.core.quests.GlobalQuestProgress;
 import com.zianblk.zianutilities.core.rewards.ClaimStatus;
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.cobblemon.CobblemonGenerationResolver;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;

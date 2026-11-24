@@ -1,9 +1,9 @@
 package com.zianblk.zianutilities.neoforge.breeding;
 
 import com.cobblemon.mod.common.api.pokemon.egg.EggGroup;
-import com.zianblk.zianutilities.neoforge.Tr;
 import com.cobblemon.mod.common.pokemon.Gender;
 import com.cobblemon.mod.common.pokemon.Pokemon;
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.breeding.genetics.BreedingUtilities;
 import java.util.List;
 

@@ -26,11 +26,17 @@ public final class Tr {
         return out.toString();
     }
 
-    /** Lo contrario de enc; el texto sin marca (el de siempre) pasa tal cual. */
-    public static MutableComponent dec(String text) {
-        if (text == null || text.isEmpty() || text.charAt(0) != MARK)
-            return Component.literal(text == null ? "" : text);
+    /** Parte pura de dec: {clave, respaldo, args...}, o null si el texto no es un enc valido. */
+    static String[] parse(String text) {
+        if (text == null || text.isEmpty() || text.charAt(0) != MARK) return null;
         String[] parts = text.substring(1).split(String.valueOf(SEP), -1);
+        return parts.length < 2 || parts[0].isEmpty() ? null : parts;
+    }
+
+    /** Lo contrario de enc; el texto sin marca (el de siempre) o mal formado pasa tal cual. */
+    public static MutableComponent dec(String text) {
+        String[] parts = parse(text);
+        if (parts == null) return Component.literal(text == null ? "" : text);
         return c(parts[0], parts[1], (Object[]) java.util.Arrays.copyOfRange(parts, 2, parts.length));
     }
 

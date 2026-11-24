@@ -5,6 +5,7 @@ import com.cobblemon.mod.common.api.pokemon.stats.Stats;
 import com.cobblemon.mod.common.item.PokemonItem;
 import com.zianblk.zianutilities.core.breeding.*;
 import com.zianblk.zianutilities.core.economy.EconomyBalanceResult;
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 import com.zianblk.zianutilities.neoforge.economy.AvecoinsEconomyPort;
 import java.util.*;
@@ -18,7 +19,6 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import com.zianblk.zianutilities.neoforge.Tr;
 import net.neoforged.neoforge.network.registration.NetworkRegistry;
 
 /** Server-owned selections, quotes and confirmations. Clients send only session-bound actions. */
