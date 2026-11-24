@@ -1,5 +1,6 @@
 package com.zianblk.zianutilities.neoforge.quests;
 
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.cobblemon.mod.common.api.Priority;
 import com.cobblemon.mod.common.api.battles.model.actor.ActorType;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
@@ -53,8 +54,7 @@ public final class GlobalQuestListener {
                 if (result == GlobalQuestEventResult.COMPLETE) {
                     GlobalQuestProgress progress = GlobalQuestRuntime.service(server).inspect(player.getUUID(), offer);
                     ClaimStatus claim = GlobalQuestRuntime.pay(progress, "capture");
-                    player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("Objetivo de captura completado. Premio: "
-                        + (claim == null ? "desactivado" : claim))));
+                    player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Tr.c("zianutilities.quests.msg.capture_done", "Objetivo de captura completado. Premio: %s", claim == null ? Tr.c("zianutilities.quests.msg.reward_disabled", "desactivado") : Component.literal(String.valueOf(claim)))));
                     refresh(player);
                 }
             } catch (Exception error) {

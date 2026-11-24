@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.gacha;
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.core.config.ConfigHistory;
 import com.zianblk.zianutilities.core.storage.StorageFiles;
 
@@ -465,8 +466,7 @@ public final class GachaRuntime {
             if (!op.getUUID("id").equals(id) || !op.getString("phase").equals("READY")) continue;
             ItemStack prize = stack(player, op.getCompound("prize"));
             if (!fits(player, prize)) {
-                player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(net.minecraft.network.chat.Component.literal(
-                    "Ganaste " + prize.getHoverName().getString() + ". Libera espacio y reclámalo en Gachas.")));
+                player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Tr.c("zianutilities.gacha.msg.won_no_space", "Ganaste %s. Libera espacio y reclámalo en Gachas.", prize.getHoverName())));
                 return;
             }
             claim(player, id);

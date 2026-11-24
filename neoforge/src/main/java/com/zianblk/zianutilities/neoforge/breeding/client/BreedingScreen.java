@@ -406,7 +406,7 @@ public final class BreedingScreen
                 .append(
                     p.held().isEmpty() ? Component.translatableWithFallback("ui.zianutilities.f3c24118253b", "Ninguno") : p.held().getHoverName()));
         lines.add(
-            Component.literal(p.reason().isEmpty() ? Tr.s("zianutilities.breeding.available", "Disponible para seleccionar") : p.reason()));
+            p.reason().isEmpty() ? Tr.c("zianutilities.breeding.available", "Disponible para seleccionar") : Tr.dec(p.reason()));
         queueTooltip(lines);
       }
     }
@@ -420,7 +420,7 @@ public final class BreedingScreen
         lines.add(
             Component.literal(
 Tr.s("zianutilities.breeding.child_stat", "%s ≈ %s · IV medio ≈ %s/31", labels[i], child.stats().get(i), child.ivs().get(i))));
-      for (String sentence : child.detail().split("\\. ")) lines.add(Component.literal(sentence));
+      for (String sentence : child.detail().split("\\. ")) lines.add(Tr.dec(sentence));
       lines.add(Component.translatableWithFallback("ui.zianutilities.8cc1b8ef0629", "Sexo, naturaleza, habilidad y shiny se determinan al iniciar."));
       if (state.offspring().size() > 1)
         lines.add(Component.translatableWithFallback("ui.zianutilities.fcd5767d2c74", "Haz clic para ver otra especie o forma posible."));
@@ -429,13 +429,13 @@ Tr.s("zianutilities.breeding.child_stat", "%s ≈ %s · IV medio ≈ %s/31", lab
   }
 
   private void wrap(GuiGraphics g, String text, int x, int y, int w, int color, int rows) {
-    var lines = font.split(Component.literal(text), w);
+    var lines = font.split(Tr.dec(text), w);
     for (int i = 0; i < Math.min(rows, lines.size()); i++)
       g.drawString(font, lines.get(i), x, y + i * 11, color, false);
   }
 
   private void wrapCentered(GuiGraphics g, String text, int x, int y, int w, int color, int rows) {
-    var lines = font.split(Component.literal(text), w);
+    var lines = font.split(Tr.dec(text), w);
     for (int i = 0; i < Math.min(rows, lines.size()); i++)
       g.drawCenteredString(font, lines.get(i), width / 2, y + i * 11, color);
   }

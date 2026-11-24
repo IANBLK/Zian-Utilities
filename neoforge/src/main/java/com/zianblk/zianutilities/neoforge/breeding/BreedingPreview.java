@@ -3,6 +3,7 @@ package com.zianblk.zianutilities.neoforge.breeding;
 import com.cobblemon.mod.common.api.pokemon.stats.Stats;
 import com.cobblemon.mod.common.item.PokemonItem;
 import com.cobblemon.mod.common.pokemon.Pokemon;
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.breeding.genetics.BreedingUtilities;
 import java.util.*;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -40,11 +41,17 @@ final class BreedingPreview {
             knot,
             powers);
     String detail =
-        (knot ? "Lazo Destino: 5 IV heredados" : "3 IV heredados")
-            + " entre ambos padres"
-            + (powers.isEmpty() ? "" : " · Objeto recio: un IV fijado")
-            + ". Valores medios, no garantizados. Nivel 1, EV 0 y naturaleza neutra para la"
-            + " estimación.";
+        (powers.isEmpty()
+                ? (knot
+                    ? Tr.enc("zianutilities.breeding.detail_ivs5", "Lazo Destino: 5 IV heredados entre ambos padres")
+                    : Tr.enc("zianutilities.breeding.detail_ivs3", "3 IV heredados entre ambos padres"))
+                : (knot
+                    ? Tr.enc("zianutilities.breeding.detail_ivs5_power", "Lazo Destino: 5 IV heredados entre ambos padres · Objeto recio: un IV fijado")
+                    : Tr.enc("zianutilities.breeding.detail_ivs3_power", "3 IV heredados entre ambos padres · Objeto recio: un IV fijado")))
+            + ". "
+            + Tr.enc("zianutilities.breeding.detail_avg", "Valores medios, no garantizados")
+            + ". "
+            + Tr.enc("zianutilities.breeding.detail_level", "Nivel 1, EV 0 y naturaleza neutra para la estimación.");
     return BreedingUtilities.getPossibleEggs(List.of(a, b)).stream()
         .map(Map.Entry::getKey)
         .filter(f -> BreedingRuntime.allowed(f.getSpecies()))
