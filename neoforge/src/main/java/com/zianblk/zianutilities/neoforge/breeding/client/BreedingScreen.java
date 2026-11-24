@@ -100,7 +100,7 @@ public final class BreedingScreen
         var mother = addRenderableWidget(new ParentSlot(x + w / 2 + 6, y + 55, (w - 36) / 2, 64, 2));
         father.active = false;
         mother.active = false;
-        addRenderableWidget(new OffspringButton(x + (w - 250) / 2, y + 125, 250, 80));
+        addRenderableWidget(new OffspringButton(x + (w - Math.min(300, w - 24)) / 2, y + 125, Math.min(300, w - 24), 80));
       }
       button(x + 12, y + 242, (w - 36) / 2, Tr.s("zianutilities.breeding.confirm", "Confirmar"), () -> act(9, "", false), true);
       button(x + w / 2 + 6, y + 242, (w - 36) / 2, Tr.s("zianutilities.common.back", "Volver"), () -> act(10, "", false), true);
@@ -166,7 +166,7 @@ public final class BreedingScreen
       int cw = tabWidth;
       addRenderableWidget(new ParentSlot(tabLeft, 65, cw, ch, 1));
       addRenderableWidget(new ParentSlot(width / 2 + 6, 65, cw, ch, 2));
-      int childWidth = Math.min(w, 190);
+      int childWidth = Math.min(w, 230);
       addRenderableWidget(
           new OffspringButton((width - childWidth) / 2, 65 + ch + 12, childWidth, ch));
       button(

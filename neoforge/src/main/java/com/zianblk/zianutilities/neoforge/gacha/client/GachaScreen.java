@@ -294,7 +294,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
         int x = width / 2 - 146, y = height / 2 - 67;
         graphics.fill(0, 0, width, height, 0xB8000000);
         card(graphics, x, y, 292, 134);
-        graphics.drawCenteredString(font, awaitingRoll ? Tr.s("zianutilities.gacha.processing","Procesando tirada...") : "Gacha", width / 2, y + 13, GOLD);
+        graphics.drawCenteredString(font, awaitingRoll ? Tr.s("zianutilities.gacha.processing","Procesando tirada...") : "Gacha", width / 2, reel == null ? y + 63 : y + 13, GOLD);
         if (reel == null) return;
         long elapsed = Math.max(0, System.currentTimeMillis() - reel.started());
         double progress = Math.min(1.0, elapsed / (double) GachaTiming.SPIN_MILLIS);
