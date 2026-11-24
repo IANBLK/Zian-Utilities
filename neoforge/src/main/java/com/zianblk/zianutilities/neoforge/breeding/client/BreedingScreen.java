@@ -1,5 +1,6 @@
 package com.zianblk.zianutilities.neoforge.breeding.client;
 
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.breeding.BreedingNetwork;
 import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
 import java.util.*;
@@ -85,13 +86,13 @@ public final class BreedingScreen
         10,
         9,
         55,
-        "Inicio",
+        Tr.s("ui.zianutilities.4f70d8c37e6a", "Inicio"),
         () -> {
           act(11, "", false);
           ZianHubNetwork.requestHub();
         },
         true);
-    button(width - 65, 9, 55, "Cerrar", this::onClose, true);
+    button(width - 65, 9, 55, Tr.s("ui.zianutilities.4b0816bbd5e9", "Cerrar"), this::onClose, true);
     if (!state.pending().isEmpty()) {
       int y = panelTop();
       if (state.pending().equals("start")) {
@@ -101,8 +102,8 @@ public final class BreedingScreen
         mother.active = false;
         addRenderableWidget(new OffspringButton(x + (w - 250) / 2, y + 125, 250, 80));
       }
-      button(x + 12, y + 242, (w - 36) / 2, "Confirmar", () -> act(9, "", false), true);
-      button(x + w / 2 + 6, y + 242, (w - 36) / 2, "Volver", () -> act(10, "", false), true);
+      button(x + 12, y + 242, (w - 36) / 2, Tr.s("zianutilities.breeding.confirm", "Confirmar"), () -> act(9, "", false), true);
+      button(x + w / 2 + 6, y + 242, (w - 36) / 2, Tr.s("zianutilities.common.back", "Volver"), () -> act(10, "", false), true);
       return;
     }
     int tabWidth = Math.min(170, (w - 12) / 2);
@@ -111,7 +112,7 @@ public final class BreedingScreen
         tabLeft,
         39,
         tabWidth,
-        "Elegir padres",
+        Tr.s("zianutilities.breeding.pick_parents", "Elegir padres"),
         () -> {
           jobs = false;
           picker = 0;
@@ -122,7 +123,7 @@ public final class BreedingScreen
         width / 2 + 6,
         39,
         tabWidth,
-        "Mis crianzas (" + state.used() + "/" + state.capacity() + ")",
+        Tr.s("zianutilities.breeding.my_jobs", "Mis crianzas (%s/%s)", state.used(), state.capacity()),
         () -> {
           jobs = true;
           picker = 0;
@@ -154,7 +155,7 @@ public final class BreedingScreen
             x,
             height - 29,
             w,
-            "Volver a la pareja",
+            Tr.s("zianutilities.breeding.back_to_pair", "Volver a la pareja"),
             () -> {
               picker = 0;
               rebuildWidgets();
@@ -172,14 +173,14 @@ public final class BreedingScreen
           tabLeft,
           height - 29,
           tabWidth,
-          "Limpiar selección",
+          Tr.s("zianutilities.breeding.clear", "Limpiar selección"),
           () -> act(2, "", false),
           !state.first().isEmpty() || !state.second().isEmpty());
       button(
           width / 2 + 6,
           height - 29,
           tabWidth,
-          "Iniciar gratis",
+          Tr.s("zianutilities.breeding.start_free", "Iniciar gratis"),
           () -> act(3, "", false),
           state.compatible() && state.used() < state.capacity());
     } else if (!state.jobs().isEmpty()) {
@@ -198,22 +199,21 @@ public final class BreedingScreen
             x + 12,
             y,
             w - 24,
-            "Acelerar con "
-                + friendly(currency.id()),
+            Tr.s("zianutilities.breeding.speed_with", "Acelerar con %s", friendly(currency.id())),
             this::nextCurrency,
             true);
       }
       boolean canBuy = j.status().equals("ACTIVE") && j.readyAt() > now() && currency != null && currency.balance() != 0;
-      button(x + 12, y + 50, (w - 36) / 2, "Acelerar 1 unidad", () -> act(6, "", false), canBuy);
-      button(x + w / 2 + 6, y + 50, (w - 36) / 2, "Hasta el mínimo", () -> act(6, "", true), canBuy);
+      button(x + 12, y + 50, (w - 36) / 2, Tr.s("zianutilities.breeding.speed_one", "Acelerar 1 unidad"), () -> act(6, "", false), canBuy);
+      button(x + w / 2 + 6, y + 50, (w - 36) / 2, Tr.s("zianutilities.breeding.speed_min", "Hasta el mínimo"), () -> act(6, "", true), canBuy);
       boolean claim =
           (j.status().equals("ACTIVE") || j.status().equals("BLOCKED")) && j.readyAt() <= now();
-      button(x + 12, top + 278, (w - 36) / 2, "Entregar al PC", () -> act(7, "", false), claim);
+      button(x + 12, top + 278, (w - 36) / 2, Tr.s("zianutilities.breeding.deliver", "Entregar al PC"), () -> act(7, "", false), claim);
       button(
           x + w / 2 + 6,
           top + 278,
           (w - 36) / 2,
-          "Cancelar crianza",
+          Tr.s("zianutilities.breeding.cancel", "Cancelar crianza"),
           () -> act(8, "", false),
           j.status().equals("ACTIVE") || j.status().equals("BLOCKED"));
     }
@@ -274,9 +274,9 @@ public final class BreedingScreen
           font,
           Component.literal(
               switch (state.pending()) {
-                case "start" -> "Confirmar crianza gratuita";
-                case "cancel" -> "Confirmar cancelación";
-                default -> "Confirmar aceleración";
+                case "start" -> Tr.s("zianutilities.breeding.confirm_start", "Confirmar crianza gratuita");
+                case "cancel" -> Tr.s("zianutilities.breeding.confirm_cancel", "Confirmar cancelación");
+                default -> Tr.s("zianutilities.breeding.confirm_speed", "Confirmar aceleración");
               }),
           width / 2,
           top + 14,
@@ -289,11 +289,10 @@ public final class BreedingScreen
       wrap(
           g,
           state.pending().equals("accelerate")
-              ? "Se cobra la cantidad completa. La última unidad puede cubrir tiempo parcial; no"
-                  + " hay devolución parcial."
+              ? Tr.s("zianutilities.breeding.note_accelerate", "Se cobra la cantidad completa. La última unidad puede cubrir tiempo parcial; no hay devolución parcial.")
               : state.pending().equals("cancel")
-                  ? "Los padres quedarán libres. No se devuelven monedas de aceleraciones."
-                  : "Los padres seguirán contigo. La cría se entregará al PC al finalizar.",
+                  ? Tr.s("zianutilities.breeding.note_cancel", "Los padres quedarán libres. No se devuelven monedas de aceleraciones.")
+                  : Tr.s("zianutilities.breeding.note_start", "Los padres seguirán contigo. La cría se entregará al PC al finalizar."),
           x + 12,
           top + 214,
           w - 24,
@@ -303,11 +302,11 @@ public final class BreedingScreen
       if (picker != 0) {
         g.drawCenteredString(
             font,
-            "Elige " + (picker == 1 ? "el padre" : "la madre") + " de tu equipo",
+            picker == 1 ? Tr.s("zianutilities.breeding.pick_father", "Elige el padre de tu equipo") : Tr.s("zianutilities.breeding.pick_mother", "Elige la madre de tu equipo"),
             width / 2,
             65,
             GOLD);
-        if (state.parents().isEmpty()) wrap(g, "Tu equipo está vacío", x, 90, w, MUTED, 2);
+        if (state.parents().isEmpty()) wrap(g, Tr.s("zianutilities.breeding.team_empty", "Tu equipo está vacío"), x, 90, w, MUTED, 2);
       } else {
         int y = 65 + 2 * cardHeight() + 18;
         wrapCentered(
@@ -315,11 +314,7 @@ public final class BreedingScreen
             !state.message().isEmpty()
                 ? state.message()
                 : state.compatible()
-                    ? "Pareja compatible · Gratis · "
-                        + state.baseMinutes() / 60
-                        + " h (mínimo "
-                        + state.minimumMinutes() / 60
-                        + " h)"
+                    ? Tr.s("zianutilities.breeding.compatible_summary", "Pareja compatible · Gratis · %s h (mínimo %s h)", state.baseMinutes() / 60, state.minimumMinutes() / 60)
                     : state.compatibility(),
             width / 2 - Math.min(170, (w - 12) / 2) - 6,
             y,
@@ -331,7 +326,7 @@ public final class BreedingScreen
     } else if (state.jobs().isEmpty())
       wrap(
           g,
-          "Todavía no tienes crianzas pendientes. Elige dos padres para iniciar una.",
+          Tr.s("zianutilities.breeding.no_jobs", "Todavía no tienes crianzas pendientes. Elige dos padres para iniciar una."),
           x + 12,
           panelTop() + 40,
           w - 24,
@@ -343,17 +338,17 @@ public final class BreedingScreen
         int top = panelTop();
         g.drawCenteredString(
             font,
-            Component.literal("Crianza " + (jobIndex + 1) + " de " + state.jobs().size()),
+            Component.literal(Tr.s("zianutilities.breeding.job_n", "Crianza %s de %s", jobIndex + 1, state.jobs().size())),
             width / 2,
             top + 15,
             WHITE);
         String label =
             switch (j.status()) {
-              case "ACTIVE" -> j.readyAt() <= now() ? "Lista para entregar" : "En progreso";
-              case "BLOCKED" -> "Entrega pendiente";
-              case "UNCERTAIN" -> "Necesita revisión administrativa";
-              case "DELIVERING" -> "Comprobando guardado del PC";
-              default -> "Comprobando cobro";
+              case "ACTIVE" -> j.readyAt() <= now() ? Tr.s("zianutilities.breeding.ready", "Lista para entregar") : Tr.s("zianutilities.breeding.in_progress", "En progreso");
+              case "BLOCKED" -> Tr.s("zianutilities.breeding.delivery_pending", "Entrega pendiente");
+              case "UNCERTAIN" -> Tr.s("zianutilities.breeding.needs_review", "Necesita revisión administrativa");
+              case "DELIVERING" -> Tr.s("zianutilities.breeding.checking_pc", "Comprobando guardado del PC");
+              default -> Tr.s("zianutilities.breeding.checking_payment", "Comprobando cobro");
             };
         g.drawCenteredString(
             font,
@@ -365,14 +360,14 @@ public final class BreedingScreen
         g.drawCenteredString(font, remaining(j.readyAt() - now()), width / 2, top + 110, WHITE);
         String why =
             switch (j.reason()) {
-              case "PC_FULL" -> "Tu PC está lleno: libera espacio y reclama aquí";
-              case "PARENTS_NOT_OWNED" -> "Debes recuperar los padres en tu equipo o PC";
-              case "GENERATION_DISABLED" -> "La política de crianza no permite esta generación";
-              case "SPECIES_UNAVAILABLE", "SPECIES_OR_GENERATION" -> "La especie o su generación no está disponible; la cría sigue reservada";
+              case "PC_FULL" -> Tr.s("zianutilities.breeding.why_pc_full", "Tu PC está lleno: libera espacio y reclama aquí");
+              case "PARENTS_NOT_OWNED" -> Tr.s("zianutilities.breeding.why_parents", "Debes recuperar los padres en tu equipo o PC");
+              case "GENERATION_DISABLED" -> Tr.s("zianutilities.breeding.why_generation", "La política de crianza no permite esta generación");
+              case "SPECIES_UNAVAILABLE", "SPECIES_OR_GENERATION" -> Tr.s("zianutilities.breeding.why_species", "La especie o su generación no está disponible; la cría sigue reservada");
               default ->
                   j.status().equals("UNCERTAIN")
-                      ? "Un administrador debe revisar la operación antes de continuar"
-                      : "La cría permanece reservada; no se vuelve a sortear";
+                      ? Tr.s("zianutilities.breeding.why_uncertain", "Un administrador debe revisar la operación antes de continuar")
+                      : Tr.s("zianutilities.breeding.why_reserved", "La cría permanece reservada; no se vuelve a sortear");
             };
         wrap(
             g,
@@ -384,11 +379,10 @@ public final class BreedingScreen
             2);
         g.fill(x + 12, top + 152, x + w - 12, top + 153, 0xFF3B4148);
         var money = currency();
-        if (money != null) g.drawCenteredString(font, money.minutes() + " min por unidad · saldo "
-            + (money.balance() < 0 ? "?" : money.balance()), width / 2, top + 188, WHITE);
-        wrapCentered(g, currency() == null ? "No hay monedas de aceleración configuradas"
-            : currency().balance() == 0 ? "Sin saldo para acelerar · puedes esperar sin costo"
-            : "Acelerar reduce la espera hasta el mínimo permitido", x + 12, top + 241, w - 24, MUTED, 2);
+        if (money != null) g.drawCenteredString(font, Tr.s("zianutilities.breeding.unit_balance", "%s min por unidad · saldo %s", money.minutes(), money.balance() < 0 ? "?" : money.balance()), width / 2, top + 188, WHITE);
+        wrapCentered(g, currency() == null ? Tr.s("zianutilities.breeding.no_currencies", "No hay monedas de aceleración configuradas")
+            : currency().balance() == 0 ? Tr.s("zianutilities.breeding.no_balance", "Sin saldo para acelerar · puedes esperar sin costo")
+            : Tr.s("zianutilities.breeding.speed_hint", "Acelerar reduce la espera hasta el mínimo permitido"), x + 12, top + 241, w - 24, MUTED, 2);
       }
     }
     renderWidgets(g, mx, my, partial);
@@ -396,41 +390,36 @@ public final class BreedingScreen
       var p = state.parents().stream().filter(a -> a.id().equals(hovered)).findFirst().orElse(null);
       if (p != null) {
         var lines = new ArrayList<Component>();
-        lines.add(Component.literal(p.name() + " · Nv. " + p.level() + " · " + sex(p.sex())));
+        lines.add(Component.literal(Tr.s("zianutilities.breeding.parent_line", "%s · Nv. %s · %s", p.name(), p.level(), sex(p.sex()))));
         lines.add(Component.translatable("cobblemon.nature." + p.nature()));
         lines.add(
             Component.translatableWithFallback("ui.zianutilities.d15ab4bd0f10", "Habilidad: ")
                 .append(Component.translatable("cobblemon.ability." + p.ability())));
-        String[] labels = {"PS", "Ataque", "Defensa", "At. especial", "Def. especial", "Velocidad"};
+        String[] labels = statLabels();
         for (int i = 0; i < 6; i++)
           lines.add(
               Component.literal(
                   labels[i] + ": " + p.stats().get(i) + " · IV " + p.ivs().get(i) + "/31"));
-        lines.add(Component.literal("Grupos huevo: " + p.groups()));
+        lines.add(Component.literal(Tr.s("zianutilities.breeding.egg_groups", "Grupos huevo: %s", p.groups())));
         lines.add(
             Component.translatableWithFallback("ui.zianutilities.f74d81c04bb3", "Objeto: ")
                 .append(
                     p.held().isEmpty() ? Component.translatableWithFallback("ui.zianutilities.f3c24118253b", "Ninguno") : p.held().getHoverName()));
         lines.add(
-            Component.literal(p.reason().isEmpty() ? "Disponible para seleccionar" : p.reason()));
+            Component.literal(p.reason().isEmpty() ? Tr.s("zianutilities.breeding.available", "Disponible para seleccionar") : p.reason()));
         queueTooltip(lines);
       }
     }
     if (childHovered && !state.offspring().isEmpty()) {
       var child = state.offspring().get(Math.floorMod(childIndex, state.offspring().size()));
       var lines = new ArrayList<Component>();
-      lines.add(Component.literal(child.name() + " · Posible cría · Nv. 1"));
-      lines.add(Component.literal("Forma: " + child.form()));
-      String[] labels = {"PS", "Ataque", "Defensa", "At. especial", "Def. especial", "Velocidad"};
+      lines.add(Component.literal(Tr.s("zianutilities.breeding.child_header", "%s · Posible cría · Nv. 1", child.name())));
+      lines.add(Component.literal(Tr.s("zianutilities.breeding.form", "Forma: %s", child.form())));
+      String[] labels = statLabels();
       for (int i = 0; i < 6; i++)
         lines.add(
             Component.literal(
-                labels[i]
-                    + " ≈ "
-                    + child.stats().get(i)
-                    + " · IV medio ≈ "
-                    + child.ivs().get(i)
-                    + "/31"));
+Tr.s("zianutilities.breeding.child_stat", "%s ≈ %s · IV medio ≈ %s/31", labels[i], child.stats().get(i), child.ivs().get(i))));
       for (String sentence : child.detail().split("\\. ")) lines.add(Component.literal(sentence));
       lines.add(Component.translatableWithFallback("ui.zianutilities.8cc1b8ef0629", "Sexo, naturaleza, habilidad y shiny se determinan al iniciar."));
       if (state.offspring().size() > 1)
@@ -457,11 +446,15 @@ public final class BreedingScreen
         : font.plainSubstrByWidth(text, Math.max(1, pixels - 8)) + "…";
   }
 
+  private static String[] statLabels() {
+    return new String[] {Tr.s("zianutilities.breeding.stat_hp", "PS"), Tr.s("zianutilities.breeding.stat_atk", "Ataque"), Tr.s("zianutilities.breeding.stat_def", "Defensa"), Tr.s("zianutilities.breeding.stat_spa", "At. especial"), Tr.s("zianutilities.breeding.stat_spd", "Def. especial"), Tr.s("zianutilities.breeding.stat_spe", "Velocidad")};
+  }
+
   private static String sex(String s) {
     return switch (s) {
-      case "MALE" -> "♂ Macho";
-      case "FEMALE" -> "♀ Hembra";
-      default -> "Sin sexo";
+      case "MALE" -> Tr.s("zianutilities.breeding.male", "♂ Macho");
+      case "FEMALE" -> Tr.s("zianutilities.breeding.female", "♀ Hembra");
+      default -> Tr.s("zianutilities.breeding.genderless", "Sin sexo");
     };
   }
 
@@ -473,14 +466,14 @@ public final class BreedingScreen
   private static String friendly(String id) {
     String name = id.substring(id.indexOf(':') + 1);
     return switch (name) {
-      case "coppercoin" -> "Moneda de Cobre";
-      case "ironcoin" -> "Moneda de Hierro";
-      case "goldcoin" -> "Moneda de Oro";
-      case "diamondcoin" -> "Moneda de Diamante";
-      case "netheritecoin" -> "Moneda de Netherita";
-      case "goldticket" -> "Ticket de Oro";
-      case "diamondticket" -> "Ticket de Diamante";
-      case "netheriteticket" -> "Ticket de Netherita";
+      case "coppercoin" -> Tr.s("zianutilities.item_name.coppercoin", "Moneda de Cobre");
+      case "ironcoin" -> Tr.s("zianutilities.item_name.ironcoin", "Moneda de Hierro");
+      case "goldcoin" -> Tr.s("zianutilities.item_name.goldcoin", "Moneda de Oro");
+      case "diamondcoin" -> Tr.s("zianutilities.item_name.diamondcoin", "Moneda de Diamante");
+      case "netheritecoin" -> Tr.s("zianutilities.item_name.netheritecoin", "Moneda de Netherita");
+      case "goldticket" -> Tr.s("zianutilities.item_name.goldticket", "Ticket de Oro");
+      case "diamondticket" -> Tr.s("zianutilities.item_name.diamondticket", "Ticket de Diamante");
+      case "netheriteticket" -> Tr.s("zianutilities.item_name.netheriteticket", "Ticket de Netherita");
       default -> name;
     };
   }
@@ -515,7 +508,7 @@ public final class BreedingScreen
           y,
           w,
           h,
-          slot == 1 ? "Padre" : "Madre",
+          slot == 1 ? Tr.s("zianutilities.breeding.father", "Padre") : Tr.s("zianutilities.breeding.mother", "Madre"),
           () -> {
             picker = slot;
             rebuildWidgets();
@@ -531,7 +524,7 @@ public final class BreedingScreen
       if (p == null) {
         g.drawCenteredString(font, "+", getX() + width / 2, getY() + 24, WHITE);
         if (height >= 60)
-          g.drawCenteredString(font, "Elegir del equipo", getX() + width / 2, getY() + 44, MUTED);
+          g.drawCenteredString(font, Tr.s("zianutilities.breeding.pick_from_team", "Elegir del equipo"), getX() + width / 2, getY() + 44, MUTED);
       } else {
         int iconSize = Math.min(52, height - 28);
         pokemonIcon(g, p.icon(), getX() + 8, getY() + 22, iconSize);
@@ -539,10 +532,10 @@ public final class BreedingScreen
         g.drawString(font, fit(p.name(), textWidth), textX, getY() + 25, WHITE, false);
         if (height >= 60) {
           g.drawString(font, fit(sex(p.sex()), textWidth), textX, getY() + 39, MUTED, false);
-          g.drawString(font, "Nv. " + p.level(), textX, getY() + 51, MUTED, false);
+          g.drawString(font, Tr.s("zianutilities.breeding.level", "Nv. %s", p.level()), textX, getY() + 51, MUTED, false);
         }
         if (height >= 75)
-          g.drawString(font, fit("Cambiar", textWidth), textX, getY() + 65, GREEN, false);
+          g.drawString(font, fit(Tr.s("zianutilities.breeding.change", "Cambiar"), textWidth), textX, getY() + 65, GREEN, false);
         if (isHovered) hovered = p.id();
       }
     }
@@ -555,7 +548,7 @@ public final class BreedingScreen
           y,
           w,
           h,
-          "Posible cría",
+          Tr.s("zianutilities.breeding.offspring", "Posible cría"),
           () -> {
             if (!state.offspring().isEmpty())
               childIndex = (childIndex + 1) % state.offspring().size();
@@ -570,7 +563,7 @@ public final class BreedingScreen
         g.drawCenteredString(font, "?", getX() + width / 2, getY() + 24, WHITE);
         if (height >= 60)
           g.drawCenteredString(
-              font, "Elige una pareja compatible", getX() + width / 2, getY() + 44, MUTED);
+              font, Tr.s("zianutilities.breeding.pick_pair", "Elige una pareja compatible"), getX() + width / 2, getY() + 44, MUTED);
         return;
       }
       var child = state.offspring().get(Math.floorMod(childIndex, state.offspring().size()));
@@ -578,17 +571,12 @@ public final class BreedingScreen
       pokemonIcon(g, child.icon(), getX() + 8, getY() + 22, iconSize);
       int textX = getX() + iconSize + 15, textWidth = width - iconSize - 23;
       g.drawString(
-          font, fit(child.name() + " · Nv. 1", textWidth), textX, getY() + 25, WHITE, false);
+          font, fit(Tr.s("zianutilities.breeding.child_level1", "%s · Nv. 1", child.name()), textWidth), textX, getY() + 25, WHITE, false);
       if (height >= 65) {
         g.drawString(
             font,
             fit(
-                "≈ PS "
-                    + child.stats().get(0)
-                    + " Atq "
-                    + child.stats().get(1)
-                    + " Def "
-                    + child.stats().get(2),
+Tr.s("zianutilities.breeding.child_stats_a", "≈ PS %s Atq %s Def %s", child.stats().get(0), child.stats().get(1), child.stats().get(2)),
                 textWidth),
             textX,
             getY() + 39,
@@ -597,12 +585,7 @@ public final class BreedingScreen
         g.drawString(
             font,
             fit(
-                "≈ AE "
-                    + child.stats().get(3)
-                    + " DE "
-                    + child.stats().get(4)
-                    + " Vel "
-                    + child.stats().get(5),
+Tr.s("zianutilities.breeding.child_stats_b", "≈ AE %s DE %s Vel %s", child.stats().get(3), child.stats().get(4), child.stats().get(5)),
                 textWidth),
             textX,
             getY() + 51,
@@ -614,11 +597,8 @@ public final class BreedingScreen
             font,
             fit(
                 state.offspring().size() > 1
-                    ? "Estimación "
-                        + (Math.floorMod(childIndex, state.offspring().size()) + 1)
-                        + "/"
-                        + state.offspring().size()
-                    : "Estimación",
+                    ? Tr.s("zianutilities.breeding.estimate_n", "Estimación %s/%s", Math.floorMod(childIndex, state.offspring().size()) + 1, state.offspring().size())
+                    : Tr.s("zianutilities.breeding.estimate", "Estimación"),
                 textWidth),
             textX,
             getY() + 65,
@@ -658,7 +638,7 @@ public final class BreedingScreen
       g.drawString(font, fit(parent.name(), width - 42), getX() + 35, getY() + 9, WHITE, false);
       g.drawString(
           font,
-          fit(sex(parent.sex()) + " · Nv. " + parent.level(), width - 42),
+          fit(Tr.s("zianutilities.breeding.sex_level", "%s · Nv. %s", sex(parent.sex()), parent.level()), width - 42),
           getX() + 35,
           getY() + 21,
           parent.sex().equals("MALE")
@@ -667,13 +647,13 @@ public final class BreedingScreen
           false);
       String marker =
           parent.id().equals(state.first())
-              ? "Padre 1"
+              ? Tr.s("zianutilities.breeding.parent1", "Padre 1")
               : parent.id().equals(state.second())
-                  ? "Padre 2"
-                  : parent.reason().isEmpty() ? "Seleccionar" : "No compatible";
+                  ? Tr.s("zianutilities.breeding.parent2", "Padre 2")
+                  : parent.reason().isEmpty() ? Tr.s("zianutilities.breeding.select", "Seleccionar") : Tr.s("zianutilities.breeding.not_compatible", "No compatible");
       g.drawString(
           font,
-          fit(height < 65 ? "PS " + parent.stats().get(0) + " � " + marker : marker, width - 42),
+          fit(height < 65 ? Tr.s("zianutilities.breeding.hp_marker", "PS %s · %s", parent.stats().get(0), marker) : marker, width - 42),
           getX() + 35,
           getY() + 33,
           chosen ? GOLD : parent.reason().isEmpty() ? GREEN : RED,
@@ -682,12 +662,7 @@ public final class BreedingScreen
         g.drawString(
             font,
             fit(
-                "PS "
-                    + parent.stats().get(0)
-                    + "  Atq "
-                    + parent.stats().get(1)
-                    + "  Def "
-                    + parent.stats().get(2),
+Tr.s("zianutilities.breeding.parent_stats_a", "PS %s  Atq %s  Def %s", parent.stats().get(0), parent.stats().get(1), parent.stats().get(2)),
                 width - 12),
             getX() + 6,
             getY() + 49,
@@ -698,12 +673,7 @@ public final class BreedingScreen
         g.drawString(
             font,
             fit(
-                "AtE "
-                    + parent.stats().get(3)
-                    + "  DfE "
-                    + parent.stats().get(4)
-                    + "  Vel "
-                    + parent.stats().get(5),
+Tr.s("zianutilities.breeding.parent_stats_b", "AtE %s  DfE %s  Vel %s", parent.stats().get(3), parent.stats().get(4), parent.stats().get(5)),
                 width - 12),
             getX() + 6,
             getY() + 61,

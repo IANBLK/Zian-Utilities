@@ -7,6 +7,7 @@ import com.cobblemon.mod.common.client.render.models.blockbench.FloatingState;
 import com.cobblemon.mod.common.entity.PoseType;
 import com.zianblk.zianutilities.neoforge.quests.GlobalQuestNetwork;
 import com.zianblk.zianutilities.neoforge.quests.ProgressionQuestNetwork;
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -84,7 +85,7 @@ public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.
     private void updateButtons() {
         if (acceptButton != null) {
             acceptButton.active = !state.accepted() && !waiting;
-            acceptButton.setMessage(Component.literal(state.accepted() ? "Objetivos aceptados" : "Aceptar objetivos"));
+            acceptButton.setMessage(state.accepted() ? Tr.c("zianutilities.quests.accepted", "Objetivos aceptados") : Tr.c("ui.zianutilities.654156dc759d", "Aceptar objetivos"));
         }
     }
 
@@ -112,8 +113,7 @@ public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.
         long seconds = Math.max(0, (state.expiresAtEpochMs() - System.currentTimeMillis()) / 1000);
         String reset = Instant.ofEpochMilli(state.expiresAtEpochMs()).atZone(ECUADOR).format(TIME);
         graphics.drawCenteredString(font,
-            Component.literal("Misión global  ·  Reinicio " + reset + "  ·  "
-                + (seconds / 3600) + "h " + ((seconds % 3600) / 60) + "m"),
+            Tr.c("zianutilities.quests.global_header", "Misión global  ·  Reinicio %s  ·  %sh %sm", reset, seconds / 3600, (seconds % 3600) / 60),
             width / 2, 27, MUTED);
 
         int gap = 10;
@@ -125,8 +125,8 @@ public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.
         drawCaptureCard(graphics, left, top, cardW, cardHeight(), partialTick);
         drawBattleCard(graphics, battleX, battleY, cardW, cardHeight());
 
-        String note = state.accepted() ? "Avance personal  ·  Misión compartida por todo el servidor"
-            : "Acepta para empezar; las acciones anteriores no cuentan";
+        String note = state.accepted() ? Tr.s("zianutilities.quests.global_note", "Avance personal  ·  Misión compartida por todo el servidor")
+            : Tr.s("zianutilities.quests.accept_to_begin", "Acepta para empezar; las acciones anteriores no cuentan");
         graphics.drawCenteredString(font, Component.literal(note), width / 2,
             Math.min(height - 16, controlsY() + 25), MUTED);
         renderWidgets(graphics, mouseX, mouseY, partialTick);
@@ -135,16 +135,15 @@ public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.
     private void drawCaptureCard(GuiGraphics graphics, int x, int y, int w, int h, float partialTick) {
         card(graphics, x, y, w, h, state.captureComplete() ? GREEN : GOLD);
         graphics.drawString(font, Component.translatableWithFallback("ui.zianutilities.643b241b1775", "01  CAPTURA"), x + 10, y + 10, GOLD, false);
-        String species = state.targetSpecies().isBlank() ? "Sin especie disponible"
+        String species = state.targetSpecies().isBlank() ? Tr.s("zianutilities.quests.no_species", "Sin especie disponible")
             : friendly(state.targetSpecies());
         graphics.drawString(font, Component.literal(species), x + 10, y + 29, WHITE, false);
-        graphics.drawString(font, Component.literal(state.captureComplete() ? "✓ Completado"
-            : state.targetSpecies().isBlank() ? "Pausado" : "Captura 1 de esta especie"),
+        graphics.drawString(font, Component.literal(state.captureComplete() ? Tr.s("zianutilities.quests.completed", "✓ Completado")
+            : state.targetSpecies().isBlank() ? Tr.s("zianutilities.quests.paused", "Pausado") : Tr.s("zianutilities.quests.catch_one", "Captura 1 de esta especie")),
             x + 10, y + 43, state.captureComplete() ? GREEN : MUTED, false);
 
         if (h > 95) {
-            graphics.drawString(font, Component.literal("Generaciones: " +
-                (state.generationIds().isBlank() ? "ninguna" : state.generationIds())),
+            graphics.drawString(font, Component.literal(Tr.s("zianutilities.quests.generations", "Generaciones: %s", state.generationIds().isBlank() ? Tr.s("zianutilities.quests.none", "ninguna") : state.generationIds())),
                 x + 10, y + 64, MUTED, false);
         }
         graphics.drawString(font, Component.literal(reward(state.captureAmount(), state.captureCurrency())),
@@ -167,8 +166,8 @@ public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.
         card(graphics, x, y, w, h, complete ? GREEN : GOLD);
         graphics.drawString(font, Component.translatableWithFallback("ui.zianutilities.208fe17459c9", "02  BATALLAS SALVAJES"), x + 10, y + 10, GOLD, false);
         graphics.drawString(font, Component.translatableWithFallback("ui.zianutilities.f9466020d89a", "Gana 5 batallas"), x + 10, y + 29, WHITE, false);
-        graphics.drawString(font, Component.literal(complete ? "✓ Completado"
-            : Math.min(5, state.battleWins()) + " / 5 victorias"),
+        graphics.drawString(font, Component.literal(complete ? Tr.s("zianutilities.quests.completed", "✓ Completado")
+            : Tr.s("zianutilities.quests.victories", "%s / 5 victorias", Math.min(5, state.battleWins()))),
             x + 10, y + 43, complete ? GREEN : MUTED, false);
         int barY = h > 95 ? y + 67 : y + 58;
         int segmentW = Math.max(12, (w - 30) / 5);
@@ -207,8 +206,8 @@ public final class GlobalQuestScreen extends com.zianblk.zianutilities.neoforge.
     }
 
     private String reward(long amount, String currency) {
-        return state.rewardsEnabled() ? "Premio: " + amount + " " + friendly(currency)
-            : "Prueba sin pago";
+        return state.rewardsEnabled() ? Tr.s("zianutilities.quests.reward", "Premio: %s %s", amount, friendly(currency))
+            : Tr.s("zianutilities.quests.test_no_payout", "Prueba sin pago");
     }
 
     private static String friendly(String id) {

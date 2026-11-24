@@ -1,5 +1,6 @@
 package com.zianblk.zianutilities.neoforge.gacha.client;
 
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.gacha.GachaNetwork;
 import com.zianblk.zianutilities.neoforge.gacha.GachaTiming;
 import com.zianblk.zianutilities.neoforge.hub.ZianHubNetwork;
@@ -115,10 +116,10 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
 
     @Override
     protected void init() {fitViewport(600,440);
-        addRenderableWidget(new StyledButton(10, 9, 55, 18, "Inicio", ZianHubNetwork::requestHub));
+        addRenderableWidget(new StyledButton(10, 9, 55, 18, Tr.s("ui.zianutilities.4f70d8c37e6a","Inicio"), ZianHubNetwork::requestHub));
         if (state.admin()) addRenderableWidget(new StyledButton(width - 81, 9, 71, 18,
-            editing ? "Jugador" : "Editar", () -> { catalog=false;editing = !editing; confirming = false; reopen(); }));
-        addRenderableWidget(new StyledButton(72,9,76,18,"Catálogo",()->{catalog=true;editing=false;confirming=false;reopen();}));
+            editing ? Tr.s("zianutilities.gacha.player","Jugador") : Tr.s("zianutilities.gacha.edit","Editar"), () -> { catalog=false;editing = !editing; confirming = false; reopen(); }));
+        addRenderableWidget(new StyledButton(72,9,76,18,Tr.s("zianutilities.gacha.catalog","Catálogo"),()->{catalog=true;editing=false;confirming=false;reopen();}));
         if(catalog){initCatalog();return;}
         int x = left(), w = contentWidth();
         addRenderableWidget(new StyledButton(x, 40, 40, 19, "<", () -> movePool(-1)));
@@ -134,7 +135,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
             var pool=state.pools().get(i);
             addRenderableWidget(new GachaTile(left+(i%2)*(cardWidth+gap),64+(i/2)*82,cardWidth,72,pool));
         }
-        if(!state.pending().isEmpty())addRenderableWidget(new StyledButton(width/2-110,height-34,220,20,"Premios pendientes · "+state.pending().size(),()->{catalog=false;editing=false;reopen();}));
+        if(!state.pending().isEmpty())addRenderableWidget(new StyledButton(width/2-110,height-34,220,20,Tr.s("zianutilities.gacha.pending_button","Premios pendientes · %s",state.pending().size()),()->{catalog=false;editing=false;reopen();}));
     }
     private final class GachaTile extends AbstractButton {
         private final GachaNetwork.PoolView pool;
@@ -146,9 +147,9 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
             ItemStack icon=pool.icon();if(icon.isEmpty()){var id=ResourceLocation.tryParse(pool.ticket());if(id!=null)icon=new ItemStack(BuiltInRegistries.ITEM.get(id));}if(icon.isEmpty()&&!pool.prizes().isEmpty())icon=pool.prizes().getFirst().item();
             g.pose().pushPose();try{g.pose().translate(x+12,y+16,0);g.pose().scale(2,2,1);g.renderItem(icon,0,0);}finally{g.pose().popPose();}
             g.drawString(font,font.plainSubstrByWidth(pool.name(),width-62),x+54,y+11,GOLD);
-            String description=pool.description().isBlank()?"Descubre los tesoros de esta gacha":pool.description();
+            String description=pool.description().isBlank()?Tr.s("zianutilities.gacha.default_description","Descubre los tesoros de esta gacha"):pool.description();
             var lines=font.split(Component.literal(description),width-62);for(int i=0;i<Math.min(2,lines.size());i++)g.drawString(font,lines.get(i),x+54,y+26+i*font.lineHeight,MUTED);
-            g.drawString(font,font.plainSubstrByWidth(pool.enabled()?pool.cost()+" × "+ticketName(pool.ticket()):"En preparación",width-16),x+8,y+height-15,pool.enabled()?GREEN:MUTED);
+            g.drawString(font,font.plainSubstrByWidth(pool.enabled()?pool.cost()+" × "+ticketName(pool.ticket()):Tr.s("zianutilities.gacha.in_preparation","En preparación"),width-16),x+8,y+height-15,pool.enabled()?GREEN:MUTED);
             if(isHoveredOrFocused())queueTooltip(List.of(Component.literal(pool.name()),Component.literal(description),Component.translatableWithFallback("ui.zianutilities.8dbe7c9d421d", "Haz clic para ver sus premios")));
         }
     }
@@ -172,7 +173,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
                 prizePage = Math.min(Math.max(0, (prizeCount - 1) / 4), prizePage + 1); reopen();
             })).active = (prizePage + 1) * 4 < prizeCount;
             StyledButton roll = addRenderableWidget(new StyledButton(x + w / 2 - 77, 228, 154, 21,
-                confirming ? "Confirmar tirada" : "Girar una vez", () -> {
+                confirming ? Tr.s("zianutilities.gacha.confirm_roll","Confirmar tirada") : Tr.s("zianutilities.gacha.roll_once","Girar una vez"), () -> {
                     if (!confirming) { confirming = true; reopen(); }
                     else {
                         confirming = false;
@@ -194,33 +195,33 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
             }));
             var pending = state.pending().get(pendingPage);
             addRenderableWidget(new StyledButton(x + w / 2 - 65, 308, 130, 19,
-                "Reclamar premio", () -> GachaNetwork.request(10, 0, 0, pending.id())));
+                Tr.s("zianutilities.gacha.claim","Reclamar premio"), () -> GachaNetwork.request(10, 0, 0, pending.id())));
         }
         addRenderableWidget(new StyledButton(x + w - 76, height - 27, 76, 18,
-            "Actualizar", () -> GachaNetwork.request(0, 0, 0, "")));
+            Tr.s("ui.zianutilities.c725f8bffa86","Actualizar"), () -> GachaNetwork.request(0, 0, 0, "")));
     }
 
     private void initAdmin(int x, int w, GachaNetwork.PoolView pool) {
         addRenderableWidget(new StyledButton(x + w - 174, 40, 130, 19,
-            "Crear gacha", () -> GachaNetwork.request(1, 0, 0, "")));
+            Tr.s("zianutilities.gacha.create","Crear gacha"), () -> GachaNetwork.request(1, 0, 0, "")));
         addRenderableWidget(new StyledButton(x + w - 256, 40, 76, 19,
-            "Deshacer", () -> Minecraft.getInstance().setScreen(new ConfirmScreen(confirmed -> {
+            Tr.s("zianutilities.gacha.undo","Deshacer"), () -> Minecraft.getInstance().setScreen(new ConfirmScreen(confirmed -> {
                 Minecraft.getInstance().setScreen(this);
                 if (confirmed) GachaNetwork.request(14, 0, 0, "");
-            }, Component.literal("¿Deshacer el último cambio?"),
-                Component.literal("Se restaurará la configuración anterior de los gachas; no se puede rehacer.")))));
+            }, Tr.c("zianutilities.gacha.undo_title","¿Deshacer el último cambio?"),
+                Tr.c("zianutilities.gacha.undo_body","Se restaurará la configuración anterior de los gachas; no se puede rehacer.")))));
         if (pool == null) return;
         addRenderableWidget(new StyledButton(x + 8, 72, 100, 18,
-            "Eliminar gacha", () -> Minecraft.getInstance().setScreen(new ConfirmScreen(confirmed -> {
+            Tr.s("zianutilities.gacha.delete","Eliminar gacha"), () -> Minecraft.getInstance().setScreen(new ConfirmScreen(confirmed -> {
                 Minecraft.getInstance().setScreen(this);
                 if (confirmed) GachaNetwork.request(11, pool.id(), 0, pool.name());
-            }, Component.literal("¿Eliminar " + pool.name() + "?"),
+            }, Tr.c("zianutilities.gacha.delete_title","¿Eliminar %s?",pool.name()),
                 Component.translatableWithFallback("ui.zianutilities.977068341cd9", "Se borrará este gacha y sus premios configurados.")))));
         nameBox = new EditBox(font, x + w / 2 - 85, 72, 170, 18, Component.translatableWithFallback("ui.zianutilities.e68491e91c7c", "Nombre"));
         nameBox.setMaxLength(32);
         nameBox.setValue(pool.name());
         addRenderableWidget(nameBox);
-        addRenderableWidget(new StyledButton(x + w - 84, 72, 76, 18, "Guardar", () ->
+        addRenderableWidget(new StyledButton(x + w - 84, 72, 76, 18, Tr.s("zianutilities.common.save","Guardar"), () ->
             GachaNetwork.request(2, pool.id(), 0, nameBox.getValue())));
         addRenderableWidget(new StyledButton(x + 90, 94, 153, 18,
             ticketName(pool.ticket()), () -> GachaNetwork.request(3, pool.id(), 0, "")));
@@ -229,9 +230,9 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
         addRenderableWidget(new StyledButton(x + 279, 94, 26, 18, "+", () ->
             GachaNetwork.request(4, pool.id(), 1, "")));
         addRenderableWidget(new StyledButton(x + 8, 117, 130, 18,
-            "Añadir objeto en mano", () -> GachaNetwork.request(5, pool.id(), 0, "")));
+            Tr.s("zianutilities.gacha.add_held","Añadir objeto en mano"), () -> GachaNetwork.request(5, pool.id(), 0, "")));
         addRenderableWidget(new StyledButton(x + w - 116, 117, 108, 18,
-            pool.enabled() ? "Desactivar" : "Publicar", () -> GachaNetwork.request(8, pool.id(), 0, "")));
+            pool.enabled() ? Tr.s("zianutilities.gacha.disable","Desactivar") : Tr.s("zianutilities.gacha.publish","Publicar"), () -> GachaNetwork.request(8, pool.id(), 0, "")));
         for (int row = 0; row < 4; row++) {
             int index = prizePage * 4 + row;
             if (index >= pool.prizes().size()) break;
@@ -240,13 +241,13 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
                 GachaNetwork.request(6, pool.id(), index, "-1")));
             addRenderableWidget(new StyledButton(x + w - 77, y, 25, 18, "+", () ->
                 GachaNetwork.request(6, pool.id(), index, "1")));
-            addRenderableWidget(new StyledButton(x + w - 48, y, 40, 18, "Quitar", () ->
+            addRenderableWidget(new StyledButton(x + w - 48, y, 40, 18, Tr.s("zianutilities.gacha.remove","Quitar"), () ->
                 GachaNetwork.request(7, pool.id(), index, "")));
         }
-        addRenderableWidget(new StyledButton(x+8,316,126,18,"Icono en mano",()->GachaNetwork.request(12,pool.id(),0,"")));
+        addRenderableWidget(new StyledButton(x+8,316,126,18,Tr.s("zianutilities.gacha.icon_held","Icono en mano"),()->GachaNetwork.request(12,pool.id(),0,"")));
         descriptionBox=new EditBox(font,x+142,316,w-228,18,Component.translatableWithFallback("ui.zianutilities.7fda3970598e", "Descripción"));
         descriptionBox.setMaxLength(160);descriptionBox.setValue(pool.description());descriptionBox.setHint(Component.translatableWithFallback("ui.zianutilities.2355787db78f", "Texto del catálogo"));addRenderableWidget(descriptionBox);
-        addRenderableWidget(new StyledButton(x+w-80,316,72,18,"Guardar texto",()->GachaNetwork.request(13,pool.id(),0,descriptionBox.getValue())));
+        addRenderableWidget(new StyledButton(x+w-80,316,72,18,Tr.s("zianutilities.gacha.save_text","Guardar texto"),()->GachaNetwork.request(13,pool.id(),0,descriptionBox.getValue())));
         addRenderableWidget(new StyledButton(x + 8, 260, 42, 18, "◀", () -> {
             prizePage = Math.max(0, prizePage - 1); reopen();
         })).active = prizePage > 0;
@@ -273,14 +274,14 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
         graphics.fill(0, 0, width, 4, GOLD);
         graphics.drawCenteredString(font, title, width / 2, 12, GOLD);
         if(catalog){
-            graphics.drawCenteredString(font,"✦ Elige una gacha y descubre sus premios ✦",width/2,40,MUTED);
-            if(state.pools().isEmpty())graphics.drawCenteredString(font,"Pronto habrá nuevos tesoros disponibles",width/2,90,MUTED);
+            graphics.drawCenteredString(font,Tr.s("zianutilities.gacha.pick","✦ Elige una gacha y descubre sus premios ✦"),width/2,40,MUTED);
+            if(state.pools().isEmpty())graphics.drawCenteredString(font,Tr.s("zianutilities.gacha.soon","Pronto habrá nuevos tesoros disponibles"),width/2,90,MUTED);
             renderWidgets(graphics,mouseX,mouseY,partialTick);return;
         }
         int x = left(), w = contentWidth();
         GachaNetwork.PoolView pool = pool();
-        graphics.drawCenteredString(font, Component.literal(pool == null ? "No hay gachas disponibles"
-            : pool.name() + (state.admin() && !pool.enabled() ? " (sin publicar)" : "")), width / 2, 45, WHITE);
+        graphics.drawCenteredString(font, pool == null ? Tr.c("zianutilities.gacha.none","No hay gachas disponibles")
+            : state.admin() && !pool.enabled() ? Tr.c("zianutilities.gacha.name_unpublished","%s (sin publicar)",pool.name()) : Component.literal(pool.name()), width / 2, 45, WHITE);
         if (editing) renderAdmin(graphics, x, w, pool, mouseX, mouseY);
         else renderPlayer(graphics, x, w, pool, mouseX, mouseY);
         renderWidgets(graphics, mouseX, mouseY, partialTick);
@@ -293,7 +294,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
         int x = width / 2 - 146, y = height / 2 - 67;
         graphics.fill(0, 0, width, height, 0xB8000000);
         card(graphics, x, y, 292, 134);
-        graphics.drawCenteredString(font, awaitingRoll ? "Procesando tirada..." : "Gacha", width / 2, y + 13, GOLD);
+        graphics.drawCenteredString(font, awaitingRoll ? Tr.s("zianutilities.gacha.processing","Procesando tirada...") : "Gacha", width / 2, y + 13, GOLD);
         if (reel == null) return;
         long elapsed = Math.max(0, System.currentTimeMillis() - reel.started());
         double progress = Math.min(1.0, elapsed / (double) GachaTiming.SPIN_MILLIS);
@@ -311,7 +312,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
         ItemStack shown = reel.items().get(position);
         graphics.drawCenteredString(font, shown.getHoverName(), width / 2, y + 92, WHITE);
         graphics.drawCenteredString(font,
-            progress < 1 ? "Girando..." : "Premio reservado",
+            progress < 1 ? Tr.s("zianutilities.gacha.spinning","Girando...") : Tr.s("zianutilities.gacha.prize_reserved","Premio reservado"),
             width / 2, y + 113, progress < 1 ? MUTED : GREEN);
     }
 
@@ -334,7 +335,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
                               int mouseX, int mouseY) {
         if (pool != null) {
             card(graphics, x, 65, w, 158);
-            String costLabel = "Costo: " + pool.cost() + " " + ticketName(pool.ticket());
+            String costLabel = Tr.s("zianutilities.gacha.cost","Costo: %s %s",pool.cost(),ticketName(pool.ticket()));
             graphics.drawString(font, costLabel, x + 8, 75, GOLD, false);
             ItemStack ticketIcon = BuiltInRegistries.ITEM.getOptional(ResourceLocation.parse(pool.ticket()))
                 .map(ItemStack::new).orElse(ItemStack.EMPTY);
@@ -358,13 +359,13 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
                 graphics.drawString(font, odds, x + w - 53, y + 2, GOLD, false);
             }
             graphics.drawCenteredString(font, Component.literal(
-                state.paymentEnabled() ? (confirming ? "Confirma: se descontarán tickets"
-                    : "Cada tirada da un objeto") : "Tiradas de pago desactivadas"),
+                state.paymentEnabled() ? (confirming ? Tr.s("zianutilities.gacha.confirm_hint","Confirma: se descontarán tickets")
+                    : Tr.s("zianutilities.gacha.each_roll","Cada tirada da un objeto")) : Tr.s("zianutilities.gacha.paid_disabled","Tiradas de pago desactivadas")),
                 width / 2, 255, MUTED);
         }
         if (!state.pending().isEmpty()) {
             var pending = state.pending().get(Math.min(pendingPage, state.pending().size() - 1));
-            graphics.drawString(font, "Premios pendientes: " + state.pending().size(),
+            graphics.drawString(font, Tr.s("zianutilities.gacha.pending_label","Premios pendientes: %s",state.pending().size()),
                 x, 273, GOLD, false);
             graphics.renderItem(pending.item(), x + 48, 285);
             graphics.drawCenteredString(font, pending.item().getHoverName(),
@@ -379,9 +380,9 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
                              int mouseX, int mouseY) {
         if (pool == null) return;
         card(graphics, x, 61, w, 229);
-        graphics.drawString(font, "Costo: " + pool.cost() + " ticket(s)",
+        graphics.drawString(font, Tr.s("zianutilities.gacha.cost_tickets","Costo: %s ticket(s)",pool.cost()),
             x + 313, 99, MUTED, false);
-        graphics.drawString(font, pool.enabled() ? "Publicado" : "Borrador",
+        graphics.drawString(font, pool.enabled() ? Tr.s("zianutilities.gacha.published","Publicado") : Tr.s("zianutilities.gacha.draft","Borrador"),
             x + 145, 121, pool.enabled() ? GREEN : MUTED, false);
         long total = pool.prizes().stream().mapToLong(GachaNetwork.PrizeView::weight).sum();
         for (int row = 0; row < 4; row++) {
@@ -398,7 +399,7 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
                 x + Math.max(110, w - 193), y + 3, GOLD, false);
         }
         graphics.drawCenteredString(font, Component.literal(
-            "Cambiar premios deja la gacha en borrador · Icono y texto se guardan aparte"), width / 2, 292, MUTED);
+            Tr.s("zianutilities.gacha.admin_hint","Cambiar premios deja la gacha en borrador · Icono y texto se guardan aparte")), width / 2, 292, MUTED);
     }
 
     private void prizeHover(ItemStack item, int x, int y, int right, int mouseX, int mouseY) {
@@ -413,9 +414,9 @@ public final class GachaScreen extends com.zianblk.zianutilities.neoforge.client
 
     private static String ticketName(String id) {
         return switch (id) {
-            case "avecoins:goldticket" -> "Ticket de Oro";
-            case "avecoins:diamondticket" -> "Ticket de Diamante";
-            case "avecoins:netheriteticket" -> "Ticket de Netherita";
+            case "avecoins:goldticket" -> Tr.s("zianutilities.item_name.goldticket","Ticket de Oro");
+            case "avecoins:diamondticket" -> Tr.s("zianutilities.item_name.diamondticket","Ticket de Diamante");
+            case "avecoins:netheriteticket" -> Tr.s("zianutilities.item_name.netheriteticket","Ticket de Netherita");
             default -> id;
         };
     }
