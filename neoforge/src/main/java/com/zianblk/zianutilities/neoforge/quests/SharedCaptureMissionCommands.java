@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.quests;
+import com.zianblk.zianutilities.neoforge.Tr;
 
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 
@@ -46,7 +47,7 @@ public final class SharedCaptureMissionCommands {
 
     private static int accept(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("Acepta la misión desde el juego."));
+            source.sendFailure(Tr.c("zianutilities.quests.shared.acepta_la_mision_desde_el", "Acepta la misión desde el juego."));
             return 0;
         }
         try {
@@ -54,7 +55,7 @@ public final class SharedCaptureMissionCommands {
                 .accept(player.getUUID());
             if (status.getProgress() == null) {
                 // Reloj del servidor atrasado respecto a la misión guardada (ver SharedCaptureMissionService).
-                source.sendFailure(Component.literal("Tu misión guardada es más reciente que el reloj del servidor; inténtalo en unos minutos."));
+                source.sendFailure(Tr.c("zianutilities.quests.shared.tu_mision_guardada_es_mas", "Tu misión guardada es más reciente que el reloj del servidor; inténtalo en unos minutos."));
                 return 0;
             }
             LOGGER.info("[ZIAN-SHARED-QUEST] action=accept playerUuid={} missionId={} progress={}",
@@ -64,14 +65,14 @@ public final class SharedCaptureMissionCommands {
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
             LOGGER.error("[ZIAN-SHARED-QUEST] action=accept result=error", error);
-            source.sendFailure(Component.literal("No se pudo guardar la aceptación; no captures para probarla."));
+            source.sendFailure(Tr.c("zianutilities.quests.shared.no_se_pudo_guardar_la", "No se pudo guardar la aceptación; no captures para probarla."));
             return 0;
         }
     }
 
     private static int status(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("Consulta la misión desde el juego."));
+            source.sendFailure(Tr.c("zianutilities.quests.shared.consulta_la_mision_desde_el", "Consulta la misión desde el juego."));
             return 0;
         }
         try {
@@ -81,7 +82,7 @@ public final class SharedCaptureMissionCommands {
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
             LOGGER.error("[ZIAN-SHARED-QUEST] action=status result=error", error);
-            source.sendFailure(Component.literal("No se pudo leer la misión; no la reinicies."));
+            source.sendFailure(Tr.c("zianutilities.quests.mission.no_se_pudo_leer_la", "No se pudo leer la misión; no la reinicies."));
             return 0;
         }
     }
@@ -95,19 +96,18 @@ public final class SharedCaptureMissionCommands {
     ) {
         SharedCaptureMission mission = status.getMission();
         SharedCaptureProgress progress = status.getProgress();
-        String state = progress == null ? "SIN ACEPTAR"
-            : progress.getCompleted() ? "COMPLETADA"
-            : enabled.isEmpty() ? "PAUSADA sin generaciones activas" : "ACTIVA";
+        Component state = progress == null ? Tr.c("zianutilities.quests.shared.state_unaccepted", "SIN ACEPTAR")
+            : progress.getCompleted() ? Tr.c("zianutilities.quests.shared.state_done", "COMPLETADA")
+            : enabled.isEmpty() ? Tr.c("zianutilities.quests.shared.state_paused", "PAUSADA sin generaciones activas") : Tr.c("zianutilities.quests.shared.state_active", "ACTIVA");
         int count = progress == null ? 0 : progress.getCaptures().size();
         long minutes = Duration.ofMillis(Math.max(0,
             mission.getExpiresAtEpochMs() - System.currentTimeMillis())).toMinutes();
         String resetTime = Instant.ofEpochMilli(mission.getExpiresAtEpochMs())
             .atZone(SCHEDULE_ZONE).format(TIME_FORMAT);
-        source.sendSuccess(() -> Component.literal("Misión global " + mission.getMissionId() + ": "
-            + mission.getObjective().getDescription() + "; tu avance " + count + "/"
-            + SharedCaptureMission.GOAL + " " + state + "; cambia a las " + resetTime
-            + " (Ecuador), quedan " + minutes + " min; sin recompensa."
-            + (progress == null ? " Usa /ZianUtilities quest shared accept." : "")), false);
+        source.sendSuccess(() -> Tr.c("zianutilities.quests.shared.status", "Misión global %s: %s; tu avance %s/%s %s; cambia a las %s (Ecuador), quedan %s min; sin recompensa.%s",
+            String.valueOf(mission.getMissionId()), String.valueOf(mission.getObjective().getDescription()), String.valueOf(count),
+            String.valueOf(SharedCaptureMission.GOAL), state, resetTime, String.valueOf(minutes),
+            progress == null ? Tr.c("zianutilities.quests.shared.accept_hint", " Usa /ZianUtilities quest shared accept.") : Component.empty()), false);
     }
 }
 

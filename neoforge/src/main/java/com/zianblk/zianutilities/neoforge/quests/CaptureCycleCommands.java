@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.quests;
+import com.zianblk.zianutilities.neoforge.Tr;
 
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 
@@ -51,7 +52,7 @@ public final class CaptureCycleCommands {
 
     private static int start(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("Inicia tu ciclo desde el juego o asígnalo a un jugador."));
+            source.sendFailure(Tr.c("zianutilities.quests.cycle.inicia_tu_ciclo_desde_el", "Inicia tu ciclo desde el juego o asígnalo a un jugador."));
             return 0;
         }
         return assign(source, player);
@@ -62,28 +63,27 @@ public final class CaptureCycleCommands {
             Set<Generation> enabled = activeGenerations(source);
             var service = CaptureCycleRuntime.service(source.getServer());
             if (service.inspect(player.getUUID(), enabled) == null && enabled.isEmpty()) {
-                source.sendFailure(Component.literal("No hay generaciones activas; no se asignó el ciclo."));
+                source.sendFailure(Tr.c("zianutilities.quests.cycle.no_hay_generaciones_activas_no", "No hay generaciones activas; no se asignó el ciclo."));
                 return 0;
             }
             CaptureCycle cycle = service.assign(player.getUUID(), enabled);
             LOGGER.info("[ZIAN-QUEST-CYCLE] action=assign actor={} playerUuid={} cycleId={} progress={}",
                 source.getTextName(), player.getUUID(), cycle.getCycleId(), cycle.getCaptures().size());
             if (source.getEntity() != player) {
-                source.sendSuccess(() -> Component.literal("Ciclo de captura de "
-                    + player.getGameProfile().getName() + ":"), false);
+                source.sendSuccess(() -> Tr.c("zianutilities.quests.cycle.ciclo_de_captura_de", "Ciclo de captura de %s:", String.valueOf(player.getGameProfile().getName())), false);
             }
             show(source, cycle, enabled);
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
             LOGGER.error("[ZIAN-QUEST-CYCLE] action=assign result=error", error);
-            source.sendFailure(Component.literal("No se pudo guardar el ciclo; no captures para probarlo."));
+            source.sendFailure(Tr.c("zianutilities.quests.cycle.no_se_pudo_guardar_el", "No se pudo guardar el ciclo; no captures para probarlo."));
             return 0;
         }
     }
 
     private static int status(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("Consulta tu ciclo desde el juego."));
+            source.sendFailure(Tr.c("zianutilities.quests.cycle.consulta_tu_ciclo_desde_el", "Consulta tu ciclo desde el juego."));
             return 0;
         }
         try {
@@ -91,14 +91,14 @@ public final class CaptureCycleCommands {
             CaptureCycle cycle = CaptureCycleRuntime.service(source.getServer())
                 .inspect(player.getUUID(), enabled);
             if (cycle == null) {
-                source.sendSuccess(() -> Component.literal("Ciclo captura: no asignado."), false);
+                source.sendSuccess(() -> Tr.c("zianutilities.quests.cycle.ciclo_captura_no_asignado", "Ciclo captura: no asignado."), false);
             } else {
                 show(source, cycle, enabled);
             }
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
             LOGGER.error("[ZIAN-QUEST-CYCLE] action=status result=error", error);
-            source.sendFailure(Component.literal("No se pudo leer el ciclo; no lo reinicies."));
+            source.sendFailure(Tr.c("zianutilities.quests.cycle.no_se_pudo_leer_el", "No se pudo leer el ciclo; no lo reinicies."));
             return 0;
         }
     }
@@ -112,12 +112,10 @@ public final class CaptureCycleCommands {
         long minutes = Duration.ofMillis(remainingMs).toMinutes();
         String resetTime = Instant.ofEpochMilli(cycle.getExpiresAtEpochMs())
             .atZone(SCHEDULE_ZONE).format(TIME_FORMAT);
-        String state = enabled.isEmpty() ? "PAUSADO (sin generaciones activas)"
-            : cycle.getCompleted() ? "COMPLETADO" : "ACTIVO";
-        source.sendSuccess(() -> Component.literal("Ciclo captura " + cycle.getCycleId() + ": "
-            + cycle.getCaptures().size() + "/" + CaptureCycle.GOAL + " " + state
-            + "; reinicia a las " + resetTime + " (Ecuador), quedan " + minutes
-            + " min; sin recompensa."), false);
+        Component state = enabled.isEmpty() ? Tr.c("zianutilities.quests.state.paused_no_gen", "PAUSADO (sin generaciones activas)")
+            : cycle.getCompleted() ? Tr.c("zianutilities.quests.state.completed_caps", "COMPLETADO") : Tr.c("zianutilities.quests.state.active_caps", "ACTIVO");
+        source.sendSuccess(() -> Tr.c("zianutilities.quests.cycle.status", "Ciclo captura %s: %s/%s %s; reinicia a las %s (Ecuador), quedan %s min; sin recompensa.",
+            String.valueOf(cycle.getCycleId()), String.valueOf(cycle.getCaptures().size()), String.valueOf(CaptureCycle.GOAL), state, resetTime, String.valueOf(minutes)), false);
     }
 }
 

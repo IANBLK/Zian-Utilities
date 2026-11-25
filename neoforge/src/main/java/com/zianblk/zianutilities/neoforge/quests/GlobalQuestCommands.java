@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.quests;
+import com.zianblk.zianutilities.neoforge.Tr;
 
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 
@@ -31,16 +32,15 @@ public final class GlobalQuestCommands {
                 .executes(context -> {
                     // Other Zian modules register the same parent literal; Brigadier merges its children.
                     if (!GlobalQuestRuntime.moduleEnabled()) {
-                        context.getSource().sendFailure(Component.literal("La misión global está desactivada."));
+                        context.getSource().sendFailure(Tr.c("zianutilities.quests.cmd.la_mision_global_esta_desactivada", "La misión global está desactivada."));
                         return 0;
                     }
                     if (!(context.getSource().getEntity() instanceof ServerPlayer player)) {
-                        context.getSource().sendFailure(Component.literal("Abre la misión desde el juego."));
+                        context.getSource().sendFailure(Tr.c("zianutilities.quests.cmd.abre_la_mision_desde_el", "Abre la misión desde el juego."));
                         return 0;
                     }
                     if (!GlobalQuestNetwork.hasVisualClient(player)) {
-                        context.getSource().sendFailure(Component.literal(
-                            "Instala la misma versión de Zian Utilities en tu cliente."));
+                        context.getSource().sendFailure(Tr.c("zianutilities.gacha.cmd.instala_la_misma_version_de", "Instala la misma versión de Zian Utilities en tu cliente."));
                         return 0;
                     }
                     GlobalQuestNetwork.send(player, true);
@@ -54,15 +54,12 @@ public final class GlobalQuestCommands {
             for (ServerPlayer player : source.getServer().getPlayerList().getPlayers()) {
                 GlobalQuestNetwork.send(player, false);
             }
-            source.sendSuccess(() -> Component.literal("Objetivo cambiado a " + offer.getTargetSpecies()
-                + ". Acepta de nuevo. Esta rotación de prueba no paga recompensas; "
-                + "el horario real de reinicio no cambió."), false);
+            source.sendSuccess(() -> Tr.c("zianutilities.quests.cmd.objetivo_cambiado_acepta_de_nuevo", "Objetivo cambiado a %s. Acepta de nuevo. Esta rotación de prueba no paga recompensas; el horario real de reinicio no cambió.", String.valueOf(offer.getTargetSpecies())), false);
             return Command.SINGLE_SUCCESS;
         } catch (IllegalStateException error) {
-            source.sendFailure(Component.literal("No se puede rotar: se necesitan dos especies válidas "
-                + "para las generaciones activas."));
+            source.sendFailure(Tr.c("zianutilities.quests.cmd.no_se_puede_rotar_se", "No se puede rotar: se necesitan dos especies válidas para las generaciones activas."));
         } catch (IOException error) {
-            source.sendFailure(Component.literal("No se pudo guardar la rotación; revisa la consola."));
+            source.sendFailure(Tr.c("zianutilities.quests.cmd.no_se_pudo_guardar_la", "No se pudo guardar la rotación; revisa la consola."));
         }
         return 0;
     }
@@ -70,11 +67,10 @@ public final class GlobalQuestCommands {
     private static int showPool(net.minecraft.commands.CommandSourceStack source) {
         try {
             int count = GlobalQuestRuntime.eligibleSpeciesCount(source.getServer());
-            source.sendSuccess(() -> Component.literal("Especies elegibles para la misión de captura: "
-                + count + ". El sorteo usa las generaciones activas y apariciones naturales de Cobblemon."), false);
+            source.sendSuccess(() -> Tr.c("zianutilities.quests.cmd.especies_elegibles_para_la_mision", "Especies elegibles para la misión de captura: %s. El sorteo usa las generaciones activas y apariciones naturales de Cobblemon.", String.valueOf(count)), false);
             return Command.SINGLE_SUCCESS;
         } catch (IOException error) {
-            source.sendFailure(Component.literal("No se pudo consultar el grupo de especies; revisa la consola."));
+            source.sendFailure(Tr.c("zianutilities.quests.cmd.no_se_pudo_consultar_el", "No se pudo consultar el grupo de especies; revisa la consola."));
             return 0;
         }
     }
@@ -85,11 +81,10 @@ public final class GlobalQuestCommands {
             for (ServerPlayer player : source.getServer().getPlayerList().getPlayers()) {
                 ProgressionQuestNetwork.send(player, false);
             }
-            source.sendSuccess(() -> Component.literal("Semana de prueba iniciada. El progreso semanal vuelve a cero; "
-                + "esta rotación no paga recompensas y el horario real no cambia."), false);
+            source.sendSuccess(() -> Tr.c("zianutilities.quests.cmd.semana_de_prueba_iniciada_el", "Semana de prueba iniciada. El progreso semanal vuelve a cero; esta rotación no paga recompensas y el horario real no cambia."), false);
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
-            source.sendFailure(Component.literal("No se pudo iniciar la semana de prueba; revisa la consola."));
+            source.sendFailure(Tr.c("zianutilities.quests.cmd.no_se_pudo_iniciar_la", "No se pudo iniciar la semana de prueba; revisa la consola."));
             return 0;
         }
     }

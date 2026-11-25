@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.riding;
+import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.commands.*;
@@ -31,7 +32,7 @@ public final class RidingCommands {
    .then(Commands.literal("recargar").executes(c->{try{RidingPolicy.load();broadcast(c.getSource());return status(c.getSource());}catch(Exception e){c.getSource().sendFailure(Component.literal(e.getMessage()));return 0;}}));
   node.executes(c->status(c.getSource()));event.getDispatcher().register(Commands.literal(ZianUtilitiesMod.COMMAND_ROOT).requires(s->true).then(node));
  }
- private static int status(CommandSourceStack source){var s=RidingPolicy.server();source.sendSuccess(()->Component.literal("✦ Vuelo Pokémon » "+(s.enabled()?"activo":"desactivado")+" · velocidad "+s.speedPercent()+"% · estamina máxima "+s.staminaPercent()+"%"),false);return 1;}
+ private static int status(CommandSourceStack source){var s=RidingPolicy.server();source.sendSuccess(()->Tr.c("zianutilities.riding.cmd.status","✦ Vuelo Pokémon » %s · velocidad %s%% · estamina máxima %s%%",s.enabled()?Tr.c("zianutilities.riding.cmd.on","activo"):Tr.c("zianutilities.riding.cmd.off","desactivado"),String.valueOf(s.speedPercent()),String.valueOf(s.staminaPercent())),false);return 1;}
  private static void broadcast(CommandSourceStack source){source.getServer().getPlayerList().getPlayers().forEach(RidingNetwork::send);}
  private static int update(CommandSourceStack source,Boolean enabled,Integer speed,Integer stamina){try{var s=RidingPolicy.server();RidingPolicy.save(new RidingPolicy.Settings(enabled==null?s.enabled():enabled,speed==null?s.speedPercent():speed,stamina==null?s.staminaPercent():stamina));broadcast(source);return status(source);}catch(Exception e){source.sendFailure(Component.literal(e.getMessage()));return 0;}}
 }

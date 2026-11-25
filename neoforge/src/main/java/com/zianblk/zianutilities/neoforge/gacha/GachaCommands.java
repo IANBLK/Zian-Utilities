@@ -49,15 +49,15 @@ public final class GachaCommands {
 
     private static int open(CommandContext<CommandSourceStack> context) {
         if (!GachaRuntime.enabled()) {
-            context.getSource().sendFailure(Component.literal("Gachas desactivados."));
+            context.getSource().sendFailure(Tr.c("zianutilities.gacha.cmd.gachas_desactivados", "Gachas desactivados."));
             return 0;
         }
         if (!(context.getSource().getEntity() instanceof ServerPlayer player)) {
-            context.getSource().sendFailure(Component.literal("Abre Gachas desde el juego."));
+            context.getSource().sendFailure(Tr.c("zianutilities.gacha.cmd.abre_gachas_desde_el_juego", "Abre Gachas desde el juego."));
             return 0;
         }
         if (!GachaNetwork.hasClient(player)) {
-            context.getSource().sendFailure(Component.literal("Instala la misma versión de Zian Utilities en tu cliente."));
+            context.getSource().sendFailure(Tr.c("zianutilities.gacha.cmd.instala_la_misma_version_de", "Instala la misma versión de Zian Utilities en tu cliente."));
             return 0;
         }
         GachaNetwork.send(player, true);
@@ -68,13 +68,8 @@ public final class GachaCommands {
         try {
             ServerPlayer target = EntityArgument.getPlayer(context, "player");
             var pending = GachaRuntime.review(target);
-            if (pending.isEmpty()) context.getSource().sendSuccess(() -> Component.literal(
-                "No hay tiradas pendientes para " + target.getGameProfile().getName()), false);
-            for (var operation : pending) context.getSource().sendSuccess(() -> Component.literal(
-                com.zianblk.zianutilities.neoforge.references.References.label(target.server,target.getUUID(),operation.id()) + " | " + operation.phase() + " | " + operation.poolName()
-                    + " | " + operation.cost() + " " + operation.ticket()
-                    + " | premio: " + operation.prize().getHoverName().getString()
-                    + " x" + operation.prize().getCount() + " | motivo: " + operation.reason()), false);
+            if (pending.isEmpty()) context.getSource().sendSuccess(() -> Tr.c("zianutilities.gacha.cmd.no_hay_tiradas_pendientes_para", "No hay tiradas pendientes para %s", String.valueOf(target.getGameProfile().getName())), false);
+            for (var operation : pending) context.getSource().sendSuccess(() -> Tr.c("zianutilities.gacha.cmd.premio_motivo", "%s | %s | %s | %s %s | premio: %s x%s | motivo: %s", String.valueOf(com.zianblk.zianutilities.neoforge.references.References.label(target.server,target.getUUID(),operation.id())), String.valueOf(operation.phase()), String.valueOf(operation.poolName()), String.valueOf(operation.cost()), String.valueOf(operation.ticket()), operation.prize().getHoverName().getString(), String.valueOf(operation.prize().getCount()), String.valueOf(operation.reason())), false);
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
             context.getSource().sendFailure(Tr.err(error));
@@ -87,8 +82,7 @@ public final class GachaCommands {
             ServerPlayer target = EntityArgument.getPlayer(context, "player");
             UUID id = operationId(context);
             GachaRuntime.confirmDelivered(target, id, admin(context));
-            context.getSource().sendSuccess(() -> Component.literal(
-                "Entrega verificada. La tirada " + id + " quedó cerrada."), true);
+            context.getSource().sendSuccess(() -> Tr.c("zianutilities.gacha.cmd.entrega_verificada_la_tirada_quedo", "Entrega verificada. La tirada %s quedó cerrada.", String.valueOf(id)), true);
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
             context.getSource().sendFailure(Tr.err(error));
@@ -102,9 +96,7 @@ public final class GachaCommands {
             UUID id = operationId(context);
             GachaRuntime.resolveDebit(target, id, admin(context), charged,
                 StringArgumentType.getString(context, "evidence"));
-            context.getSource().sendSuccess(() -> Component.literal(
-                "Cobro " + (charged ? "confirmado; premio listo para reclamar" : "descartado")
-                    + " en tirada " + id + "."), true);
+            context.getSource().sendSuccess(() -> Tr.c("zianutilities.gacha.cmd.debit_resolved", "Cobro %s en tirada %s.", charged ? Tr.c("zianutilities.gacha.cmd.debit_charged", "confirmado; premio listo para reclamar") : Tr.c("zianutilities.gacha.cmd.debit_discarded", "descartado"), String.valueOf(id)), true);
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
             context.getSource().sendFailure(Tr.err(error));
@@ -118,8 +110,7 @@ public final class GachaCommands {
             UUID id = operationId(context);
             GachaRuntime.confirmCompensated(target, id, admin(context),
                 StringArgumentType.getString(context, "evidence"));
-            context.getSource().sendSuccess(() -> Component.literal(
-                "Compensación confirmada. La tirada " + id + " quedó cerrada."), true);
+            context.getSource().sendSuccess(() -> Tr.c("zianutilities.gacha.cmd.compensacion_confirmada_la_tirada_quedo", "Compensación confirmada. La tirada %s quedó cerrada.", String.valueOf(id)), true);
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
             context.getSource().sendFailure(Tr.err(error));

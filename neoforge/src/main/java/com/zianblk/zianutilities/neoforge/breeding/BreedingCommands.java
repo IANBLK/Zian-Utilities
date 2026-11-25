@@ -95,7 +95,7 @@ public final class BreedingCommands {
                                                   two.getUuid(),
                                                   UUID.randomUUID());
                                           p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(
-                                              Component.literal("Crianza reservada: " + j.id())));
+                                              Tr.c("zianutilities.breeding.cmd.crianza_reservada", "Crianza reservada: %s", String.valueOf(j.id()))));
                                         })))));
     for (String action : List.of("claim", "cancel"))
       root.then(
@@ -179,10 +179,7 @@ public final class BreedingCommands {
                                   c.getSource()
                                       .sendSuccess(
                                           () ->
-                                              Component.literal(
-                                                  "Crianza adelantada para prueba. La entrega"
-                                                      + " conserva las comprobaciones del PC y las"
-                                                      + " generaciones."),
+                                              Tr.c("zianutilities.breeding.cmd.crianza_adelantada_para_prueba_la", "Crianza adelantada para prueba. La entrega conserva las comprobaciones del PC y las generaciones."),
                                           true);
                                 }))));
     admin.then(
@@ -195,7 +192,7 @@ public final class BreedingCommands {
                           BreedingRuntime.reload();
                           c.getSource()
                               .sendSuccess(
-                                  () -> Component.literal("Configuración de crianza cargada"),
+                                  () -> Tr.c("zianutilities.breeding.cmd.configuracion_de_crianza_cargada", "Configuración de crianza cargada"),
                                   false);
                         })));
     admin.then(
@@ -213,16 +210,7 @@ public final class BreedingCommands {
                                   c.getSource()
                                       .sendSuccess(
                                           () ->
-                                              Component.literal(
-                                                  com.zianblk.zianutilities.neoforge.references.References.label(c.getSource().getServer(),j.owner(),j.id())
-                                                      + " owner="
-                                                      + j.owner()
-                                                      + " state="
-                                                      + j.status()
-                                                      + " reason="
-                                                      + j.reason()
-                                                      + " purchases="
-                                                      + j.purchases()),
+                                              Tr.c("zianutilities.breeding.cmd.owner_state_reason_purchases", "%s owner=%s state=%s reason=%s purchases=%s", String.valueOf(com.zianblk.zianutilities.neoforge.references.References.label(c.getSource().getServer(),j.owner(),j.id())), String.valueOf(j.owner()), String.valueOf(j.status()), String.valueOf(j.reason()), String.valueOf(j.purchases())),
                                           false);
                                 }))));
     admin.then(
@@ -263,10 +251,7 @@ public final class BreedingCommands {
                                                   c.getSource()
                                                       .sendSuccess(
                                                           () ->
-                                                              Component.literal(
-                                                                  "Revisión registrada; no se"
-                                                                      + " repitió ni devolvió el"
-                                                                      + " cobro"),
+                                                              Tr.c("zianutilities.breeding.cmd.revision_registrada_no_se_repitio", "Revisión registrada; no se repitió ni devolvió el cobro"),
                                                           true);
                                                 }))))));
     admin.then(
@@ -316,8 +301,7 @@ public final class BreedingCommands {
                                                   c.getSource()
                                                       .sendSuccess(
                                                           () ->
-                                                              Component.literal(
-                                                                  "Revisión de entrega registrada"),
+                                                              Tr.c("zianutilities.breeding.cmd.revision_de_entrega_registrada", "Revisión de entrega registrada"),
                                                           true);
                                                 }))))));
     e.getDispatcher()
