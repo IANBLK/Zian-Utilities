@@ -50,7 +50,7 @@ class LangFilesTest {
     /** Todo Tr.c/Tr.s/Tr.enc y translatableWithFallback del codigo tiene su clave en es_es con el mismo espanol de respaldo. */
     @Test void codeFallbacksMatchSpanishLang() throws Exception {
         var es = load("es_es.json");
-        var calls = Pattern.compile("(?:\\bTr\\.(?:c|s|enc)|translatableWithFallback)\\(\\s*" + STRING + ",\\s*" + STRING);
+        var calls = Pattern.compile("(?:\\bTr\\.(?:c|s|enc)|translatableWithFallback|LocalizedException\\.(?:State|Argument))\\(\\s*" + STRING + ",\\s*" + STRING);
         int checked = 0;
         try (Stream<Path> files = Files.walk(sources())) {
             for (Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {

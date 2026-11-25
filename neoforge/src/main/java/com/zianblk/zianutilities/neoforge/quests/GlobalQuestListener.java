@@ -86,10 +86,12 @@ public final class GlobalQuestListener {
                         GlobalQuestProgress progress = GlobalQuestRuntime.service(server).inspect(player.getUUID(), offer);
                         ClaimStatus claim = result == GlobalQuestEventResult.COMPLETE
                             ? GlobalQuestRuntime.pay(progress, "battle") : null;
-                        player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Component.literal("Batallas salvajes ganadas: "
-                            + progress.getBattleIds().size() + "/5"
-                            + (result == GlobalQuestEventResult.COMPLETE ? "; premio: "
-                            + (claim == null ? "desactivado" : claim) : ""))));
+                        player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Tr.c("zianutilities.quests.msg.battles_won", "Batallas salvajes ganadas: %s/5%s",
+                            String.valueOf(progress.getBattleIds().size()),
+                            result == GlobalQuestEventResult.COMPLETE
+                                ? Tr.c("zianutilities.quests.msg.battles_prize", "; premio: %s",
+                                    claim == null ? Tr.c("zianutilities.quests.msg.prize_disabled", "desactivado") : Component.literal(String.valueOf(claim)))
+                                : Component.empty())));
                         refresh(player);
                     }
                 } catch (Exception error) {

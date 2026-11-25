@@ -608,5 +608,18 @@
   "zianutilities.rewards.cmd.monedas_administradas": "Monedas administradas: %s",
   "zianutilities.generation.cmd.generacion_desconocida_usa_gen_gen": "Generación desconocida. Usa gen1, gen2, ... gen9.",
   "zianutilities.generation.cmd.generation_control_generaciones_activas": "Generation Control: %s/%s generaciones activas.",
-  "zianutilities.hub.cmd.abre_el_menu_desde_el": "Abre el menú desde el juego."
+  "zianutilities.hub.cmd.abre_el_menu_desde_el": "Abre el menú desde el juego.",
+  "zianutilities.gacha.msg.delivery_unconfirmed": "No se pudo confirmar la entrega; revisa Gachas o consulta al administrador.",
+  "zianutilities.gacha.msg.won": "Ganaste %s.",
+  "zianutilities.storage.msg.retention_saved": "Retención guardada para %s. La limpieza se ejecuta con el servidor detenido y respaldo.",
+  "zianutilities.quests.msg.battles_won": "Batallas salvajes ganadas: %s/5%s",
+  "zianutilities.quests.msg.battles_prize": "; premio: %s",
+  "zianutilities.quests.msg.prize_disabled": "desactivado",
+  "zianutilities.riding.err.range": "Velocidad: 25–100; estamina: 20–100",
+  "zianutilities.riding.err.empty_config": "Configuración vacía",
+  "zianutilities.references.err.unknown": "Referencia inexistente o ajena al jugador",
+  "zianutilities.breeding.err.payment_uncertain": "Cobro incierto: necesita revisión; no se repetirá",
+  "zianutilities.breeding.err.payment_rejected": "Saldo insuficiente o moneda rechazada",
+  "zianutilities.gacha.err.not_enough_tickets": "No tienes tickets suficientes",
+  "zianutilities.gacha.err.ticket_failed": "No se pudo usar ese ticket"
 }

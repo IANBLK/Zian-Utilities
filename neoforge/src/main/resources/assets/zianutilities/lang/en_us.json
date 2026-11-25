@@ -608,5 +608,18 @@
   "zianutilities.rewards.cmd.monedas_administradas": "Managed currencies: %s",
   "zianutilities.generation.cmd.generacion_desconocida_usa_gen_gen": "Unknown generation. Use gen1, gen2, ... gen9.",
   "zianutilities.generation.cmd.generation_control_generaciones_activas": "Generation Control: %s/%s generations active.",
-  "zianutilities.hub.cmd.abre_el_menu_desde_el": "Open the menu from the game."
+  "zianutilities.hub.cmd.abre_el_menu_desde_el": "Open the menu from the game.",
+  "zianutilities.gacha.msg.delivery_unconfirmed": "The delivery could not be confirmed; check Gachas or ask an administrator.",
+  "zianutilities.gacha.msg.won": "You won %s.",
+  "zianutilities.storage.msg.retention_saved": "Retention saved for %s. Cleanup runs with the server stopped and a backup.",
+  "zianutilities.quests.msg.battles_won": "Wild battles won: %s/5%s",
+  "zianutilities.quests.msg.battles_prize": "; prize: %s",
+  "zianutilities.quests.msg.prize_disabled": "disabled",
+  "zianutilities.riding.err.range": "Speed: 25-100; stamina: 20-100",
+  "zianutilities.riding.err.empty_config": "Empty configuration",
+  "zianutilities.references.err.unknown": "Reference does not exist or belongs to another player",
+  "zianutilities.breeding.err.payment_uncertain": "Uncertain charge: it needs review and will not be repeated",
+  "zianutilities.breeding.err.payment_rejected": "Insufficient balance or currency rejected",
+  "zianutilities.gacha.err.not_enough_tickets": "You do not have enough tickets",
+  "zianutilities.gacha.err.ticket_failed": "That ticket could not be used"
 }

@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.references;
+import com.zianblk.zianutilities.neoforge.LocalizedException;
 import com.google.gson.*;
 import java.nio.file.*;
 import java.nio.channels.FileChannel;
@@ -28,7 +29,7 @@ public final class HumanReferences {
  }
  public synchronized UUID resolve(String value,UUID owner){
   try{return UUID.fromString(value);}catch(IllegalArgumentException ignored){}
-  return state.entries().values().stream().filter(e->e.reference().equalsIgnoreCase(value)&&(owner==null||e.owner().equals(owner))).map(Entry::id).findFirst().orElseThrow(()->new IllegalArgumentException("Referencia inexistente o ajena al jugador"));
+  return state.entries().values().stream().filter(e->e.reference().equalsIgnoreCase(value)&&(owner==null||e.owner().equals(owner))).map(Entry::id).findFirst().orElseThrow(()->new LocalizedException.Argument("zianutilities.references.err.unknown","Referencia inexistente o ajena al jugador"));
  }
  public synchronized Entry entry(UUID id){return state.entries().get(id.toString());}
  private void save(State next)throws IOException{

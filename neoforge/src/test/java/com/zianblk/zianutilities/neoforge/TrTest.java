@@ -40,4 +40,12 @@ class TrTest {
         assertTrue(Tr.enc("k", "Grupo No descubierto: no puede criar").contains("descubierto"));
         assertEquals((char) 1, Tr.enc("k", "x").charAt(0));
     }
+
+    @Test void localizedExceptionKeepsSpanishMessageAndEncodesKey() {
+        var e = new LocalizedException.State("zianutilities.test.k", "Hola %s", "mundo");
+        assertEquals("Hola mundo", e.getMessage());
+        assertEquals(Tr.enc("zianutilities.test.k", "Hola %s", "mundo"), Tr.errEnc(e));
+        assertEquals("plano", Tr.errEnc(new IllegalStateException("plano")));
+        assertTrue(new LocalizedException.Argument("k", "x") instanceof IllegalArgumentException);
+    }
 }

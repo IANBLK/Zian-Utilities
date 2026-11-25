@@ -471,8 +471,7 @@ public final class GachaRuntime {
                 return;
             }
             claim(player, id);
-            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(net.minecraft.network.chat.Component.literal(
-                "Ganaste " + prize.getHoverName().getString() + ".")));
+            player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Tr.c("zianutilities.gacha.msg.won", "Ganaste %s.", prize.getHoverName().getString())));
             return;
         }
     }
