@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.breeding;
+import com.zianblk.zianutilities.neoforge.LocalizedException;
 import com.zianblk.zianutilities.core.storage.StorageFiles;
 
 import com.google.gson.*;
@@ -42,10 +43,10 @@ public final class BreedingConfig {
       reader.setLenient(false);
       uniqueKeys(reader);
       if (reader.peek() != com.google.gson.stream.JsonToken.END_DOCUMENT)
-        throw new IllegalArgumentException("JSON adicional");
+        throw new LocalizedException.Argument("zianutilities.breeding.err.extra_json", "JSON adicional");
     }
     var c = gson.fromJson(text, BreedingConfig.class);
-    if (c == null) throw new IllegalArgumentException("Configuración vacía");
+    if (c == null) throw new LocalizedException.Argument("zianutilities.breeding.err.empty_config", "Configuración vacía");
     c.validate();
     var raw=JsonParser.parseString(text).getAsJsonObject();
     if(!raw.has("balanceRevision")&&c.baseMinutes==1440&&c.currencyReductionsMinutes.equals(Map.of("avecoins:coppercoin",2L,"avecoins:diamondcoin",20L,"avecoins:netheriteticket",220L))){
@@ -64,7 +65,7 @@ public final class BreedingConfig {
         var keys = new HashSet<String>();
         while (r.hasNext()) {
           String key = r.nextName();
-          if (!keys.add(key)) throw new IllegalArgumentException("Clave duplicada: " + key);
+          if (!keys.add(key)) throw new LocalizedException.Argument("zianutilities.breeding.err.duplicate_key", "Clave duplicada: %s", key);
           uniqueKeys(r);
         }
         r.endObject();
@@ -100,6 +101,6 @@ public final class BreedingConfig {
                         || e.getValue() == null
                         || e.getValue() < 1
                         || e.getValue() > 525600))
-      throw new IllegalArgumentException("Configuración de crianza inválida");
+      throw new LocalizedException.Argument("zianutilities.breeding.err.invalid_config", "Configuración de crianza inválida");
   }
 }

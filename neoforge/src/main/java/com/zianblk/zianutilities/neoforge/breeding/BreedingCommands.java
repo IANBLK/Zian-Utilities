@@ -1,4 +1,6 @@
 package com.zianblk.zianutilities.neoforge.breeding;
+import com.zianblk.zianutilities.neoforge.LocalizedException;
+import com.zianblk.zianutilities.neoforge.Tr;
 
 import com.mojang.brigadier.arguments.*;
 import com.zianblk.zianutilities.core.breeding.*;
@@ -21,8 +23,7 @@ public final class BreedingCommands {
       return 1;
     } catch (Exception e) {
       s.sendFailure(
-          Component.literal(
-              e.getMessage() == null ? "No se pudo completar la acción" : e.getMessage()));
+          e.getMessage() == null ? Tr.c("zianutilities.breeding.err.failed", "No se pudo completar la acción") : Tr.err(e));
       return 0;
     }
   }
@@ -86,7 +87,7 @@ public final class BreedingCommands {
                                               party.get(
                                                   IntegerArgumentType.getInteger(c, "second") - 1);
                                           if (one == null || two == null)
-                                            throw new IllegalArgumentException("Ranura vacía");
+                                            throw new LocalizedException.Argument("zianutilities.breeding.err.empty_slot", "Ranura vacía");
                                           var j =
                                               BreedingRuntime.start(
                                                   p,
@@ -208,7 +209,7 @@ public final class BreedingCommands {
                                 c.getSource(),
                                 () -> {
                                   var j = BreedingRuntime.store.jobs.get(id(c));
-                                  if (j == null) throw new IllegalArgumentException("No existe");
+                                  if (j == null) throw new LocalizedException.Argument("zianutilities.breeding.err.not_found", "No existe");
                                   c.getSource()
                                       .sendSuccess(
                                           () ->
@@ -243,8 +244,7 @@ public final class BreedingCommands {
                                                   if (j == null
                                                       || j.status() != BreedingJob.Status.UNCERTAIN
                                                       || !j.reason().startsWith("PAYMENT"))
-                                                    throw new IllegalArgumentException(
-                                                        "No hay cobro incierto");
+                                                    throw new LocalizedException.Argument("zianutilities.breeding.err.no_uncertain_payment", "No hay cobro incierto");
                                                   var resolved =
                                                       j.payment(
                                                           BoolArgumentType.getBool(c, "charged")
@@ -288,26 +288,21 @@ public final class BreedingCommands {
                                                   if (j == null
                                                       || j.status() != BreedingJob.Status.UNCERTAIN
                                                       || !j.reason().startsWith("DELIVERY"))
-                                                    throw new IllegalArgumentException(
-                                                        "No hay entrega incierta");
+                                                    throw new LocalizedException.Argument("zianutilities.breeding.err.no_uncertain_delivery", "No hay entrega incierta");
                                                   if (!BoolArgumentType.getBool(c, "delivered")) {
                                                     var p =
                                                         BreedingRuntime.server
                                                             .getPlayerList()
                                                             .getPlayer(j.owner());
                                                     if (p == null)
-                                                      throw new IllegalArgumentException(
-                                                          "El dueño debe estar conectado para"
-                                                              + " comprobar ausencia");
+                                                      throw new LocalizedException.Argument("zianutilities.breeding.err.owner_offline", "El dueño debe estar conectado para comprobar ausencia");
                                                     var h = BreedingStorage.open(p);
                                                     if (BreedingStorage.live(h, j.child().uuid())
                                                             != null
                                                         || BreedingStorage.saved(
                                                                 h, p, j.child().uuid())
                                                             != null)
-                                                      throw new IllegalArgumentException(
-                                                          "El UUID ya está presente; no se permite"
-                                                              + " reintentar");
+                                                      throw new LocalizedException.Argument("zianutilities.breeding.err.uuid_present", "El UUID ya está presente; no se permite reintentar");
                                                   }
                                                   BreedingRuntime.store.put(
                                                       j.phase(
@@ -372,6 +367,6 @@ public final class BreedingCommands {
   private static void evidence(com.mojang.brigadier.context.CommandContext<CommandSourceStack> c) {
     String value = StringArgumentType.getString(c, "evidence");
     if (value.length() < 8 || value.length() > 256)
-      throw new IllegalArgumentException("Evidencia: 8–256 caracteres");
+      throw new LocalizedException.Argument("zianutilities.breeding.err.evidence_length", "Evidencia: 8–256 caracteres");
   }
 }

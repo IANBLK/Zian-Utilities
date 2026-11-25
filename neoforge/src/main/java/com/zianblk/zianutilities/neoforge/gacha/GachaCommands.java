@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.gacha;
+import com.zianblk.zianutilities.neoforge.Tr;
 
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 
@@ -76,7 +77,7 @@ public final class GachaCommands {
                     + " x" + operation.prize().getCount() + " | motivo: " + operation.reason()), false);
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
-            context.getSource().sendFailure(Component.literal(error.getMessage()));
+            context.getSource().sendFailure(Tr.err(error));
             return 0;
         }
     }
@@ -90,7 +91,7 @@ public final class GachaCommands {
                 "Entrega verificada. La tirada " + id + " quedó cerrada."), true);
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
-            context.getSource().sendFailure(Component.literal(error.getMessage()));
+            context.getSource().sendFailure(Tr.err(error));
             return 0;
         }
     }
@@ -106,7 +107,7 @@ public final class GachaCommands {
                     + " en tirada " + id + "."), true);
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
-            context.getSource().sendFailure(Component.literal(error.getMessage()));
+            context.getSource().sendFailure(Tr.err(error));
             return 0;
         }
     }
@@ -121,7 +122,7 @@ public final class GachaCommands {
                 "Compensación confirmada. La tirada " + id + " quedó cerrada."), true);
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
-            context.getSource().sendFailure(Component.literal(error.getMessage()));
+            context.getSource().sendFailure(Tr.err(error));
             return 0;
         }
     }

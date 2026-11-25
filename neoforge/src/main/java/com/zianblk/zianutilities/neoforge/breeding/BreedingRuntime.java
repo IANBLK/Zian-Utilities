@@ -1,4 +1,6 @@
 package com.zianblk.zianutilities.neoforge.breeding;
+import com.zianblk.zianutilities.neoforge.LocalizedException;
+import com.zianblk.zianutilities.neoforge.Tr;
 
 import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
@@ -98,7 +100,7 @@ public final class BreedingRuntime {
 
   static void check(ServerPlayer p) {
     if (!enabled() || !BreedingPermissions.allows(p, "use", false))
-      throw new IllegalStateException("Crianza no disponible o sin permiso");
+      throw new LocalizedException.State("zianutilities.breeding.err.unavailable_or_denied", "Crianza no disponible o sin permiso");
     if (!server.isSameThread()) throw new IllegalStateException("Server thread required");
   }
 
@@ -110,7 +112,7 @@ public final class BreedingRuntime {
     check(p);
     var j = store.jobs.get(id);
     if (j == null || !j.owner().equals(p.getUUID()))
-      throw new IllegalArgumentException("Crianza inexistente");
+      throw new LocalizedException.Argument("zianutilities.breeding.err.no_job", "Crianza inexistente");
     return j;
   }
 
@@ -125,14 +127,14 @@ public final class BreedingRuntime {
     check(p);
     if (store.jobs.containsKey(confirmation)) return owned(p, confirmation);
     if (store.pendingMine(p.getUUID()).size() >= BreedingPermissions.slots(p, config))
-      throw new IllegalStateException("Todas tus ranuras están ocupadas");
+      throw new LocalizedException.State("zianutilities.breeding.msg.slots_full", "Todas tus ranuras están ocupadas");
     if (store.parentBusy(one) || store.parentBusy(two))
-      throw new IllegalStateException("Un padre ya tiene una crianza activa");
+      throw new LocalizedException.State("zianutilities.breeding.err.parent_busy", "Un padre ya tiene una crianza activa");
     var party = Cobblemon.INSTANCE.getStorage().getParty(p);
     var first = party.get(one);
     var second = party.get(two);
     if (first == null || second == null || one.equals(two))
-      throw new IllegalArgumentException("Elige dos padres distintos de tu equipo");
+      throw new LocalizedException.Argument("zianutilities.breeding.err.pick_two_parents", "Elige dos padres distintos de tu equipo");
     var child =
         FrozenOffspring.generate(
             List.of(first, second),
@@ -173,9 +175,9 @@ public final class BreedingRuntime {
 
   static BreedingRules.Quote quote(BreedingJob j, String currency, long units) {
     if (j.readyAt() <= store.now())
-      throw new IllegalStateException("La crianza ya terminó; no necesita aceleración");
+      throw new LocalizedException.State("zianutilities.breeding.err.already_done", "La crianza ya terminó; no necesita aceleración");
     if (!currencies().contains(currency))
-      throw new IllegalArgumentException("Moneda desconocida o deshabilitada");
+      throw new LocalizedException.Argument("zianutilities.breeding.err.unknown_currency", "Moneda desconocida o deshabilitada");
     return BreedingRules.quote(
         j.startedAt(),
         j.baseMillis(),
@@ -190,7 +192,7 @@ public final class BreedingRuntime {
       throws Exception {
     var j = owned(p, id);
     if (j.status() != BreedingJob.Status.ACTIVE || store.purchaseExists(confirmation))
-      throw new IllegalStateException("Compra no disponible o ya procesada");
+      throw new LocalizedException.State("zianutilities.breeding.err.purchase_unavailable", "Compra no disponible o ya procesada");
     var q = quote(j, currency, units);
     var purchase =
         new BreedingJob.Purchase(
@@ -209,7 +211,7 @@ public final class BreedingRuntime {
               .debit(new EconomyOperation(confirmation, p.getUUID(), currency, units));
     } catch (Exception failure) {
       store.put(pending.payment(BreedingJob.Payment.UNCERTAIN, store.now()));
-      throw new IllegalStateException("Cobro incierto: necesita revisión; no se repetirá", failure);
+      throw new LocalizedException.State("zianutilities.breeding.err.payment_uncertain", "Cobro incierto: necesita revisión; no se repetirá").cause(failure);
     }
     var outcome =
         result instanceof EconomyMutationResult.Applied
@@ -225,16 +227,15 @@ public final class BreedingRuntime {
       throw error;
     }
     if (outcome != BreedingJob.Payment.APPLIED)
-      throw new IllegalStateException(
-          outcome == BreedingJob.Payment.UNCERTAIN
-              ? "Cobro incierto: necesita revisión; no se repetirá"
-              : "Saldo insuficiente o moneda rechazada");
+      throw outcome == BreedingJob.Payment.UNCERTAIN
+          ? new LocalizedException.State("zianutilities.breeding.err.payment_uncertain", "Cobro incierto: necesita revisión; no se repetirá")
+          : new LocalizedException.State("zianutilities.breeding.err.payment_rejected", "Saldo insuficiente o moneda rechazada");
   }
 
   static void completeNow(UUID id, String operator) throws Exception {
-    if (!enabled()) throw new IllegalStateException("Crianza no disponible");
+    if (!enabled()) throw new LocalizedException.State("zianutilities.breeding.err.unavailable", "Crianza no disponible");
     var job = store.jobs.get(id);
-    if (job == null) throw new IllegalArgumentException("Crianza inexistente");
+    if (job == null) throw new LocalizedException.Argument("zianutilities.breeding.err.no_job", "Crianza inexistente");
     var ready = job.completeNow(store.now(), operator);
     store.put(ready);
     LOG.info("Admin breeding completion operator={} owner={} job={}", operator, job.owner(), id);
@@ -248,15 +249,15 @@ public final class BreedingRuntime {
         || j.status() == BreedingJob.Status.ACCELERATING
         || j.status() == BreedingJob.Status.UNCERTAIN
         || !j.occupiesSlot())
-      throw new IllegalStateException("No se puede cancelar esta operación");
+      throw new LocalizedException.State("zianutilities.breeding.err.cannot_cancel", "No se puede cancelar esta operación");
     store.put(j.phase(BreedingJob.Status.CANCELLED, "Sin reembolso de aceleraciones", store.now()));
   }
 
   static void claim(ServerPlayer p, UUID id) throws Exception {
     var j = owned(p, id);
     if (j.status() != BreedingJob.Status.ACTIVE && j.status() != BreedingJob.Status.BLOCKED)
-      throw new IllegalStateException("Entrega no disponible");
-    if (store.now() < j.readyAt()) throw new IllegalStateException("Todavía falta tiempo");
+      throw new LocalizedException.State("zianutilities.breeding.err.delivery_unavailable", "Entrega no disponible");
+    if (store.now() < j.readyAt()) throw new LocalizedException.State("zianutilities.breeding.err.not_ready", "Todavía falta tiempo");
     deliver(p, j);
   }
 
@@ -317,7 +318,7 @@ public final class BreedingRuntime {
     try {
       Cobblemon.INSTANCE.getPlayerDataManager().getPokedexData(p.getUUID()).obtain(found);
       p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(
-          Component.literal("§aCrianza completada: tu Pokémon está guardado en el PC.")));
+          Tr.c("zianutilities.breeding.msg.child_in_pc", "§aCrianza completada: tu Pokémon está guardado en el PC.")));
     } catch (Exception notificationFailure) {
       LOG.warn(
           "Child delivered; optional Pokedex/chat notification failed job={}",

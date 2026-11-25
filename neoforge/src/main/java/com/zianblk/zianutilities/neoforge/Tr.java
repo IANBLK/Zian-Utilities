@@ -43,4 +43,14 @@ public final class Tr {
     public static String decS(String text) {
         return dec(text).getString();
     }
+
+    /** Texto de un error para viajar por red: con clave si es un LocalizedException, si no su mensaje de siempre. */
+    public static String errEnc(Throwable error) {
+        return error instanceof LocalizedException.Info info ? enc(info.key(), info.es(), info.args()) : error.getMessage();
+    }
+
+    /** Componente de un error para el chat del que lo provoca. */
+    public static MutableComponent err(Throwable error) {
+        return dec(errEnc(error));
+    }
 }

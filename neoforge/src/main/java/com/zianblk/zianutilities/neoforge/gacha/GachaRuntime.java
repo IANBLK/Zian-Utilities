@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.gacha;
+import com.zianblk.zianutilities.neoforge.LocalizedException;
 import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.core.config.ConfigHistory;
 import com.zianblk.zianutilities.core.storage.StorageFiles;
@@ -53,7 +54,7 @@ public final class GachaRuntime {
     }
     public record Pool(int id, String name, String ticket, int cost, boolean enabled, List<Prize> prizes, ItemStack icon, String description) {
         public Pool(int id,String name,String ticket,int cost,boolean enabled,List<Prize> prizes){this(id,name,ticket,cost,enabled,prizes,ItemStack.EMPTY,"");}
-        public Pool { prizes = List.copyOf(prizes);icon=icon.copyWithCount(1);if(description.length()>160)throw new IllegalArgumentException("Descripción demasiado larga"); }
+        public Pool { prizes = List.copyOf(prizes);icon=icon.copyWithCount(1);if(description.length()>160)throw new LocalizedException.Argument("zianutilities.gacha.err.desc_too_long", "Descripción demasiado larga"); }
     }
     public record Pending(UUID id, ItemStack item, String poolName, String phase) {
         public Pending { item = item.copy(); }
@@ -211,7 +212,7 @@ public final class GachaRuntime {
     public static synchronized void create(ServerPlayer player) throws IOException {
         requireAdmin(player);
         List<Pool> pools = pools(player);
-        if (pools.size() >= MAX_POOLS) throw new IllegalStateException("Máximo de gachas alcanzado");
+        if (pools.size() >= MAX_POOLS) throw new LocalizedException.State("zianutilities.gacha.err.max_pools", "Máximo de gachas alcanzado");
         int id = pools.stream().mapToInt(Pool::id).max().orElse(0) + 1;
         pools.add(new Pool(id, "Gacha " + id, TICKETS.getFirst(), 1, false, List.of()));
         savePools(player, pools, "crear gacha " + id);
@@ -222,9 +223,9 @@ public final class GachaRuntime {
         requireAdmin(player);
         List<Pool> pools = pools(player);
         Pool selected = pools.stream().filter(pool -> pool.id() == id).findFirst()
-            .orElseThrow(() -> new IllegalStateException("Gacha inexistente"));
+            .orElseThrow(() -> new LocalizedException.State("zianutilities.gacha.err.no_pool", "Gacha inexistente"));
         if (!selected.name().equals(expectedName))
-            throw new IllegalStateException("El gacha cambió; vuelve a abrirlo antes de eliminar");
+            throw new LocalizedException.State("zianutilities.gacha.err.pool_changed", "El gacha cambió; vuelve a abrirlo antes de eliminar");
         pools.removeIf(pool -> pool.id() == id);
         savePools(player, pools, "eliminar gacha " + id + " " + selected.name());
         // Player prize journals contain the awarded item and remain claimable after pool deletion.
@@ -238,7 +239,7 @@ public final class GachaRuntime {
         List<Pool> pools = pools(player);
         int pos = -1;
         for (int i = 0; i < pools.size(); i++) if (pools.get(i).id() == id) pos = i;
-        if (pos < 0) throw new IllegalStateException("Gacha inexistente");
+        if (pos < 0) throw new LocalizedException.State("zianutilities.gacha.err.no_pool", "Gacha inexistente");
         Pool old = pools.get(pos);
         String name = old.name();
         String ticket = old.ticket();
@@ -249,7 +250,7 @@ public final class GachaRuntime {
         switch (action) {
             case 2 -> {
                 String clean = text.trim();
-                if (clean.isEmpty() || clean.length() > 32) throw new IllegalStateException("Nombre inválido");
+                if (clean.isEmpty() || clean.length() > 32) throw new LocalizedException.State("zianutilities.gacha.err.invalid_name", "Nombre inválido");
                 name = clean;
             }
             case 3 -> ticket = TICKETS.get((TICKETS.indexOf(ticket) + 1) % TICKETS.size());
@@ -258,32 +259,32 @@ public final class GachaRuntime {
                 ItemStack held = player.getMainHandItem();
                 if (held.isEmpty() || prizes.size() >= MAX_PRIZES
                     || stackTag(player, held).toString().length() > 4096)
-                    throw new IllegalStateException("Sostén un objeto válido de hasta 4 KB");
+                    throw new LocalizedException.State("zianutilities.gacha.err.hold_valid_item", "Sostén un objeto válido de hasta 4 KB");
                 prizes.add(new Prize(held.copy(), 1));
             }
             case 6 -> {
-                if (index < 0 || index >= prizes.size()) throw new IllegalStateException("Premio inexistente");
+                if (index < 0 || index >= prizes.size()) throw new LocalizedException.State("zianutilities.gacha.err.no_prize", "Premio inexistente");
                 int delta = Integer.parseInt(text);
                 Prize prize = prizes.get(index);
                 prizes.set(index, new Prize(prize.item(), Math.max(1, Math.min(10000, prize.weight() + delta))));
             }
             case 7 -> {
-                if (index < 0 || index >= prizes.size()) throw new IllegalStateException("Premio inexistente");
+                if (index < 0 || index >= prizes.size()) throw new LocalizedException.State("zianutilities.gacha.err.no_prize", "Premio inexistente");
                 prizes.remove(index);
                 enabled = false;
             }
             case 8 -> {
                 if (!enabled && (prizes.isEmpty() || !TICKETS.contains(ticket) || cost < 1))
-                    throw new IllegalStateException("Añade al menos un premio y configura el ticket");
+                    throw new LocalizedException.State("zianutilities.gacha.err.need_prize_ticket", "Añade al menos un premio y configura el ticket");
                 enabled = !enabled;
             }
             case 12 -> {
                 ItemStack held=player.getMainHandItem();
-                if(held.isEmpty()||stackTag(player,held).toString().length()>4096)throw new IllegalStateException("Sostén el icono que quieras usar (máximo 4 KB)");
+                if(held.isEmpty()||stackTag(player,held).toString().length()>4096)throw new LocalizedException.State("zianutilities.gacha.err.hold_icon", "Sostén el icono que quieras usar (máximo 4 KB)");
                 icon=held.copyWithCount(1);
             }
-            case 13 -> {if(text.length()>160||text.codePoints().anyMatch(Character::isISOControl))throw new IllegalStateException("Descripción inválida (máximo 160 caracteres)");description=text.trim();}
-            default -> throw new IllegalStateException("Acción inválida");
+            case 13 -> {if(text.length()>160||text.codePoints().anyMatch(Character::isISOControl))throw new LocalizedException.State("zianutilities.gacha.err.invalid_desc", "Descripción inválida (máximo 160 caracteres)");description=text.trim();}
+            default -> throw new LocalizedException.State("zianutilities.gacha.err.invalid_action", "Acción inválida");
         }
         // Changes to a published pool take effect only after explicitly republishing it.
         if (action != 8 && action != 12 && action != 13) enabled = false;
@@ -296,13 +297,13 @@ public final class GachaRuntime {
     public static synchronized void undo(ServerPlayer player) throws IOException {
         requireAdmin(player);
         ConfigHistory history = history(player.getServer());
-        if (!history.undoLast()) throw new IllegalStateException("No hay cambios que deshacer");
+        if (!history.undoLast()) throw new LocalizedException.State("zianutilities.gacha.err.nothing_to_undo", "No hay cambios que deshacer");
         record(history, player, "deshacer último cambio");
         LOG.info("[ZIAN-AUDIT] action=gacha_undo admin={}", player.getUUID());
     }
 
     private static void requireAdmin(ServerPlayer player) {
-        if (!com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(player,"admin.gacha",true)) throw new IllegalStateException("Se requiere permiso de administrador");
+        if (!com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(player,"admin.gacha",true)) throw new LocalizedException.State("zianutilities.gacha.err.admin_required", "Se requiere permiso de administrador");
     }
 
     /** Read-only details for an operator to reconcile a stalled roll with the player's inventory. */
@@ -328,7 +329,7 @@ public final class GachaRuntime {
             CompoundTag op = ops.getCompound(i);
             if (!op.getUUID("id").equals(id)) continue;
             if (!GachaRecovery.isDeliveryReview(op.getString("phase"), op.getString("reason")))
-                throw new IllegalStateException("Solo se puede confirmar una entrega interrumpida");
+                throw new LocalizedException.State("zianutilities.gacha.err.confirm_interrupted", "Solo se puede confirmar una entrega interrumpida");
             op.putString("phase", "DELIVERED");
             op.putString("resolution", "operator_confirmed_delivery");
             saveOperations(player, ops);
@@ -336,7 +337,7 @@ public final class GachaRuntime {
                 admin, player.getUUID(), id);
             return;
         }
-        throw new IllegalStateException("Tirada inexistente");
+        throw new LocalizedException.State("zianutilities.gacha.err.no_roll", "Tirada inexistente");
     }
 
     /** The operator verifies the AVECOINS transaction externally; this never calls the wallet. */
@@ -348,7 +349,7 @@ public final class GachaRuntime {
             CompoundTag op = ops.getCompound(i);
             if (!op.getUUID("id").equals(id)) continue;
             if (!GachaRecovery.isDebitReview(op.getString("phase"), op.getString("reason")))
-                throw new IllegalStateException("La fase no permite resolver el cobro; revisa el historial");
+                throw new LocalizedException.State("zianutilities.gacha.err.phase_no_resolve", "La fase no permite resolver el cobro; revisa el historial");
             op.putString("phase", charged ? "READY" : "REJECTED");
             op.putString("resolution", charged ? "operator_confirmed_charged" : "operator_confirmed_not_charged");
             op.putString("evidence", note);
@@ -357,7 +358,7 @@ public final class GachaRuntime {
                 admin, player.getUUID(), id, charged, note);
             return;
         }
-        throw new IllegalStateException("Tirada inexistente");
+        throw new LocalizedException.State("zianutilities.gacha.err.no_roll", "Tirada inexistente");
     }
 
     /** Close only after the operator has actually delivered the missing prize or equivalent compensation. */
@@ -369,7 +370,7 @@ public final class GachaRuntime {
             CompoundTag op = ops.getCompound(i);
             if (!op.getUUID("id").equals(id)) continue;
             if (!GachaRecovery.isDeliveryReview(op.getString("phase"), op.getString("reason")))
-                throw new IllegalStateException("La fase no permite confirmar una compensación");
+                throw new LocalizedException.State("zianutilities.gacha.err.phase_no_compensation", "La fase no permite confirmar una compensación");
             op.putString("phase", "DELIVERED");
             op.putString("resolution", "operator_confirmed_compensated");
             op.putString("evidence", note);
@@ -378,21 +379,21 @@ public final class GachaRuntime {
                 admin, player.getUUID(), id, note);
             return;
         }
-        throw new IllegalStateException("Tirada inexistente");
+        throw new LocalizedException.State("zianutilities.gacha.err.no_roll", "Tirada inexistente");
     }
 
     private static String evidence(String text) {
         String note = text.trim().replaceAll("\\p{Cntrl}", " ");
         if (note.isEmpty() || note.length() > 160)
-            throw new IllegalStateException("Escribe una referencia de verificación de hasta 160 caracteres");
+            throw new LocalizedException.State("zianutilities.gacha.err.need_reference", "Escribe una referencia de verificación de hasta 160 caracteres");
         return note;
     }
 
     public static synchronized ItemStack roll(ServerPlayer player, int poolId) throws IOException {
-        if (!paymentsEnabled()) throw new IllegalStateException("Los pagos de gacha están desactivados");
-        if (!AvecoinsContractProbe.inspect().compatible()) throw new IllegalStateException("AVECOINS compatible no disponible");
+        if (!paymentsEnabled()) throw new LocalizedException.State("zianutilities.gacha.err.payments_off", "Los pagos de gacha están desactivados");
+        if (!AvecoinsContractProbe.inspect().compatible()) throw new LocalizedException.State("zianutilities.gacha.err.avecoins_unavailable", "AVECOINS compatible no disponible");
         Pool pool = pools(player).stream().filter(p -> p.id() == poolId && p.enabled()).findFirst()
-            .orElseThrow(() -> new IllegalStateException("Gacha no disponible"));
+            .orElseThrow(() -> new LocalizedException.State("zianutilities.gacha.err.pool_unavailable", "Gacha no disponible"));
         ListTag ops = operations(player);
         int waiting = 0;
         boolean rejectedPrepared = false;
@@ -408,17 +409,16 @@ public final class GachaRuntime {
                 continue;
             }
             if (GachaRecovery.isBlocking(phase))
-                throw new IllegalStateException("Tirada " + previous.getUUID("id")
-                    + " pendiente de revisión (" + phase + ")");
+                throw new LocalizedException.State("zianutilities.gacha.err.roll_pending_review", "Tirada %s pendiente de revisión (%s)", previous.getUUID("id"), phase);
             if (phase.equals("READY")) {
                 if (System.currentTimeMillis() < previous.getLong("claimAfter"))
-                    throw new IllegalStateException("Espera a que termine la tirada anterior");
+                    throw new LocalizedException.State("zianutilities.gacha.err.wait_previous", "Espera a que termine la tirada anterior");
                 waiting++;
             }
         }
         if (rejectedPrepared) saveOperations(player, ops);
-        if (waiting >= MAX_PENDING) throw new IllegalStateException("Reclama tus premios pendientes");
-        if (pool.prizes().isEmpty()) throw new IllegalStateException("Gacha sin premios");
+        if (waiting >= MAX_PENDING) throw new LocalizedException.State("zianutilities.gacha.err.claim_pending", "Reclama tus premios pendientes");
+        if (pool.prizes().isEmpty()) throw new LocalizedException.State("zianutilities.gacha.err.no_prizes", "Gacha sin premios");
         Prize winner = pool.prizes().get(GachaDraw.choose(
             pool.prizes().stream().map(Prize::weight).toList(), RANDOM));
         UUID id = UUID.randomUUID();
@@ -441,14 +441,15 @@ public final class GachaRuntime {
             op.putString("phase", "REJECTED");
             op.putString("reason", rejected.getReason());
             saveOperations(player, ops);
-            throw new IllegalStateException(rejected.getReason().equals("insufficient_funds")
-                ? "No tienes tickets suficientes" : "No se pudo usar ese ticket");
+            throw rejected.getReason().equals("insufficient_funds")
+                ? new LocalizedException.State("zianutilities.gacha.err.not_enough_tickets", "No tienes tickets suficientes")
+                : new LocalizedException.State("zianutilities.gacha.err.ticket_failed", "No se pudo usar ese ticket");
         }
         if (debit instanceof EconomyMutationResult.Uncertain uncertain) {
             op.putString("phase", "DEBIT_UNCERTAIN");
             op.putString("reason", uncertain.getReason());
             saveOperations(player, ops);
-            throw new IllegalStateException("Cobro incierto; un admin debe revisar la tirada " + id);
+            throw new LocalizedException.State("zianutilities.gacha.err.roll_uncertain", "Cobro incierto; un admin debe revisar la tirada %s", id);
         }
         op.putString("phase", "READY");
         op.putLong("claimAfter", System.currentTimeMillis() + GachaTiming.DELIVERY_MILLIS);
@@ -483,12 +484,12 @@ public final class GachaRuntime {
             if (ops.getCompound(i).getUUID("id").equals(id)) op = ops.getCompound(i);
         }
         if (op == null || !op.getString("phase").equals("READY"))
-            throw new IllegalStateException("Premio no disponible");
+            throw new LocalizedException.State("zianutilities.gacha.err.prize_unavailable", "Premio no disponible");
         if (System.currentTimeMillis() < op.getLong("claimAfter"))
-            throw new IllegalStateException("Espera a que termine la tirada");
+            throw new LocalizedException.State("zianutilities.gacha.err.wait_roll", "Espera a que termine la tirada");
         ItemStack prize = stack(player, op.getCompound("prize"));
-        if (prize.isEmpty()) throw new IllegalStateException("Premio inválido");
-        if (!fits(player, prize)) throw new IllegalStateException("Libera espacio en tu inventario");
+        if (prize.isEmpty()) throw new LocalizedException.State("zianutilities.gacha.err.prize_invalid", "Premio inválido");
+        if (!fits(player, prize)) throw new LocalizedException.State("zianutilities.gacha.err.free_space", "Libera espacio en tu inventario");
         op.putString("phase", "DELIVERING");
         saveOperations(player, ops);
         ItemStack copy = prize.copy();
@@ -496,7 +497,7 @@ public final class GachaRuntime {
         if (!copy.isEmpty()) {
             op.putString("phase", "DELIVERY_UNCERTAIN");
             saveOperations(player, ops);
-            throw new IllegalStateException("Entrega incierta; un admin debe revisar el premio " + id);
+            throw new LocalizedException.State("zianutilities.gacha.err.prize_uncertain", "Entrega incierta; un admin debe revisar el premio %s", id);
         }
         op.putString("phase", "DELIVERED");
         saveOperations(player, ops);
