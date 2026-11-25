@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.rewards;
+import com.zianblk.zianutilities.neoforge.Tr;
 
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 
@@ -70,11 +71,10 @@ public final class RewardCommands {
     private static int status(CommandSourceStack source) {
         var result = AvecoinsContractProbe.inspect();
         source.sendSuccess(
-            () -> Component.literal("Misiones: "
-                + (ZianFeatureSettings.get().quests() ? "activadas" : "desactivadas")
-                + "; pagos de misiones: "
-                + (ZianFeatureSettings.get().questRewardsActive() ? "activados" : "desactivados")
-                + "; prueba de crédito: " + (Boolean.getBoolean(TEST_FLAG) ? "activada" : "desactivada") + "."),
+            () -> Tr.c("zianutilities.rewards.cmd.status", "Misiones: %s; pagos de misiones: %s; prueba de crédito: %s.",
+                ZianFeatureSettings.get().quests() ? Tr.c("zianutilities.rewards.cmd.on_f", "activadas") : Tr.c("zianutilities.rewards.cmd.off_f", "desactivadas"),
+                ZianFeatureSettings.get().questRewardsActive() ? Tr.c("zianutilities.rewards.cmd.on_m", "activados") : Tr.c("zianutilities.rewards.cmd.off_m", "desactivados"),
+                Boolean.getBoolean(TEST_FLAG) ? Tr.c("zianutilities.rewards.cmd.on_s", "activada") : Tr.c("zianutilities.rewards.cmd.off_s", "desactivada")),
             false
         );
         source.sendSuccess(() -> Component.literal(result.detail()), false);
@@ -83,7 +83,7 @@ public final class RewardCommands {
                 ? "ninguna"
                 : String.join(", ", result.currencies());
             source.sendSuccess(
-                () -> Component.literal("Monedas administradas: " + currencies),
+                () -> Tr.c("zianutilities.rewards.cmd.monedas_administradas", "Monedas administradas: %s", String.valueOf(currencies)),
                 false
             );
         }
@@ -92,29 +92,29 @@ public final class RewardCommands {
 
     private static int balance(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("Ejecuta este diagnóstico como jugador operador."));
+            source.sendFailure(Tr.c("zianutilities.rewards.cmd.ejecuta_este_diagnostico_como_jugador", "Ejecuta este diagnóstico como jugador operador."));
             return 0;
         }
         try {
             var result = new AvecoinsEconomyPort().balance(player.getUUID(), TEST_CURRENCY);
             if (result instanceof com.zianblk.zianutilities.core.economy.EconomyBalanceResult.Available known) {
                 source.sendSuccess(
-                    () -> Component.literal("Saldo de " + TEST_CURRENCY + ": " + known.getAmount()),
+                    () -> Tr.c("zianutilities.rewards.cmd.saldo_de", "Saldo de %s: %s", String.valueOf(TEST_CURRENCY), String.valueOf(known.getAmount())),
                     false
                 );
                 return Command.SINGLE_SUCCESS;
             }
-            source.sendFailure(Component.literal("No se pudo leer el saldo AVECOINS."));
+            source.sendFailure(Tr.c("zianutilities.rewards.cmd.no_se_pudo_leer_el_2", "No se pudo leer el saldo AVECOINS."));
             return 0;
         } catch (RuntimeException error) {
-            source.sendFailure(Component.literal("AVECOINS no disponible: " + error.getMessage()));
+            source.sendFailure(Tr.c("zianutilities.rewards.cmd.avecoins_no_disponible", "AVECOINS no disponible: %s", String.valueOf(error.getMessage())));
             return 0;
         }
     }
 
     private static int testCredit(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("La prueba solo puede ejecutarla un jugador operador."));
+            source.sendFailure(Tr.c("zianutilities.rewards.cmd.la_prueba_solo_puede_ejecutarla", "La prueba solo puede ejecutarla un jugador operador."));
             return 0;
         }
         UUID claimId = UUID.nameUUIDFromBytes(
@@ -135,22 +135,19 @@ public final class RewardCommands {
             );
             if (state == ClaimStatus.CLAIMED) {
                 source.sendSuccess(
-                    () -> Component.literal("Prueba de 1 coppercoin confirmada. Reclamación "
-                        + claimId + ". Repetir este comando no vuelve a acreditarla."),
+                    () -> Tr.c("zianutilities.rewards.cmd.prueba_de_coppercoin_confirmada_reclamacion", "Prueba de 1 coppercoin confirmada. Reclamación %s. Repetir este comando no vuelve a acreditarla.", String.valueOf(claimId)),
                     true
                 );
                 return Command.SINGLE_SUCCESS;
             }
-            source.sendFailure(Component.literal("Reclamación " + claimId + ": " + state
-                + ". No crees otra prueba si el resultado es incierto."));
+            source.sendFailure(Tr.c("zianutilities.rewards.cmd.reclamacion_no_crees_otra_prueba", "Reclamación %s: %s. No crees otra prueba si el resultado es incierto.", String.valueOf(claimId), String.valueOf(state)));
             return 0;
         } catch (Exception error) {
             LOGGER.error(
                 "[ZIAN-AUDIT] action=reward_test_credit actorUuid={} claimId={} result=error",
                 player.getUUID(), claimId, error
             );
-            source.sendFailure(Component.literal("Prueba detenida; revisa /ZianUtilities reward inspect "
-                + claimId + " antes de cualquier otro intento."));
+            source.sendFailure(Tr.c("zianutilities.rewards.cmd.prueba_detenida_revisa_zianutilities_reward", "Prueba detenida; revisa /ZianUtilities reward inspect %s antes de cualquier otro intento.", String.valueOf(claimId)));
             return 0;
         }
     }
@@ -160,14 +157,14 @@ public final class RewardCommands {
         try {
             claimId = UUID.fromString(rawId);
         } catch (IllegalArgumentException error) {
-            source.sendFailure(Component.literal("ID de reclamación inválido."));
+            source.sendFailure(Tr.c("zianutilities.rewards.cmd.id_de_reclamacion_invalido", "ID de reclamación inválido."));
             return 0;
         }
 
         try {
             RewardClaimRecord record = store(source.getServer()).load(claimId);
             if (record == null) {
-                source.sendFailure(Component.literal("Reclamación no encontrada."));
+                source.sendFailure(Tr.c("zianutilities.rewards.cmd.reclamacion_no_encontrada", "Reclamación no encontrada."));
                 return 0;
             }
             ClaimStatus state = record.status();
@@ -176,15 +173,12 @@ public final class RewardCommands {
                 .sorted()
                 .collect(Collectors.joining(", "));
             source.sendSuccess(
-                () -> Component.literal("Reclamación " + claimId + ": " + state.name()
-                    + " [" + components + "]"),
+                () -> Tr.c("zianutilities.rewards.cmd.reclamacion", "Reclamación %s: %s [%s]", String.valueOf(claimId), String.valueOf(state.name()), String.valueOf(components)),
                 false
             );
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
-            source.sendFailure(Component.literal(
-                "No se pudo leer el registro: " + error.getClass().getSimpleName()
-            ));
+            source.sendFailure(Tr.c("zianutilities.rewards.cmd.no_se_pudo_leer_el", "No se pudo leer el registro: %s", String.valueOf(error.getClass().getSimpleName())));
             return 0;
         }
     }

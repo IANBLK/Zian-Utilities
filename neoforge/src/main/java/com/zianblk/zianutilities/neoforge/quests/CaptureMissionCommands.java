@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.quests;
+import com.zianblk.zianutilities.neoforge.Tr;
 
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 
@@ -53,7 +54,7 @@ public final class CaptureMissionCommands {
 
     private static int accept(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("La misión debe aceptarla un jugador operador."));
+            source.sendFailure(Tr.c("zianutilities.quests.mission.la_mision_debe_aceptarla_un", "La misión debe aceptarla un jugador operador."));
             return 0;
         }
         return assign(source, player);
@@ -65,9 +66,7 @@ public final class CaptureMissionCommands {
             var service = CaptureMissionRuntime.service(source.getServer());
             CaptureMission existing = service.inspect(player.getUUID());
             if (existing == null && enabled.isEmpty()) {
-                source.sendFailure(Component.literal(
-                    "No hay generaciones activas; no se asignó la misión."
-                ));
+                source.sendFailure(Tr.c("zianutilities.quests.mission.no_hay_generaciones_activas_no", "No hay generaciones activas; no se asignó la misión."));
                 return 0;
             }
             CaptureMission mission = service.accept(player.getUUID(), enabled);
@@ -76,36 +75,34 @@ public final class CaptureMissionCommands {
                 source.getTextName(), player.getUUID(), mission.getAssignmentId(), mission.getCompleted()
             );
             if (source.getEntity() != player) {
-                source.sendSuccess(() -> Component.literal(
-                    "Asignación de captura para " + player.getGameProfile().getName() + ":"
-                ), false);
+                source.sendSuccess(() -> Tr.c("zianutilities.quests.mission.asignacion_de_captura_para", "Asignación de captura para %s:", String.valueOf(player.getGameProfile().getName())), false);
             }
             show(source, mission, enabled);
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
             LOGGER.error("[ZIAN-QUEST] action=capture_assign result=error", error);
-            source.sendFailure(Component.literal("No se pudo guardar la misión; no captures para probarla."));
+            source.sendFailure(Tr.c("zianutilities.quests.mission.no_se_pudo_guardar_la", "No se pudo guardar la misión; no captures para probarla."));
             return 0;
         }
     }
 
     private static int status(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("Consulta tu misión desde el juego."));
+            source.sendFailure(Tr.c("zianutilities.quests.mission.consulta_tu_mision_desde_el", "Consulta tu misión desde el juego."));
             return 0;
         }
         try {
             CaptureMission mission = CaptureMissionRuntime.service(source.getServer())
                 .inspect(player.getUUID());
             if (mission == null) {
-                source.sendSuccess(() -> Component.literal("Misión captura: no asignada."), false);
+                source.sendSuccess(() -> Tr.c("zianutilities.quests.mission.mision_captura_no_asignada", "Misión captura: no asignada."), false);
             } else {
                 show(source, mission, activeGenerations(source));
             }
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
             LOGGER.error("[ZIAN-QUEST] action=capture_status result=error", error);
-            source.sendFailure(Component.literal("No se pudo leer la misión; no la reinicies."));
+            source.sendFailure(Tr.c("zianutilities.quests.mission.no_se_pudo_leer_la", "No se pudo leer la misión; no la reinicies."));
             return 0;
         }
     }
@@ -119,22 +116,21 @@ public final class CaptureMissionCommands {
         CaptureMission mission,
         Set<Generation> enabled
     ) {
-        String detail;
+        Component detail;
         if (mission.getCompleted()) {
-            detail = "1/1 COMPLETADA especie=" + mission.getCapturedSpeciesId()
-                + " generación=" + mission.getCapturedGeneration().getId();
+            detail = Tr.c("zianutilities.quests.mission.detail_done", "1/1 COMPLETADA especie=%s generación=%s",
+                String.valueOf(mission.getCapturedSpeciesId()), mission.getCapturedGeneration().getId());
         } else {
             CaptureEligibilityPlan plan = new CaptureEligibilityPlan(enabled);
             String generations = plan.generationCandidates().stream()
                 .map(Generation::getId)
                 .collect(Collectors.joining(","));
             detail = plan.getAssignable()
-                ? "0/1 ACTIVA generaciones=" + generations
-                : "0/1 PAUSADA sin generaciones activas";
+                ? Tr.c("zianutilities.quests.mission.detail_active", "0/1 ACTIVA generaciones=%s", generations)
+                : Tr.c("zianutilities.quests.mission.detail_paused", "0/1 PAUSADA sin generaciones activas");
         }
         source.sendSuccess(
-            () -> Component.literal("Misión captura " + mission.getAssignmentId()
-                + ": " + detail + "; sin recompensa."),
+            () -> Tr.c("zianutilities.quests.mission.status", "Misión captura %s: %s; sin recompensa.", String.valueOf(mission.getAssignmentId()), detail),
             false
         );
     }

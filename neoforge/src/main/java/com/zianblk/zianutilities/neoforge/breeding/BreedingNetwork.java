@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.breeding;
+import com.zianblk.zianutilities.neoforge.LocalizedException;
 
 import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.pokemon.stats.Stats;
@@ -303,7 +304,7 @@ public final class BreedingNetwork {
     try {
       BreedingRuntime.check(p);
       if (!NetworkRegistry.hasChannel(p.connection, State.TYPE.id()))
-        throw new IllegalStateException(Tr.enc("zianutilities.breeding.msg.client_missing", "Instala Zian Utilities beta.14 también en el cliente"));
+        throw new LocalizedException.State("zianutilities.breeding.msg.client_missing", "Instala Zian Utilities beta.14 también en el cliente");
       sessions
           .entrySet()
           .removeIf(e -> BreedingRuntime.server.getPlayerList().getPlayer(e.getKey()) == null);
@@ -313,7 +314,7 @@ public final class BreedingNetwork {
       p.closeContainer();
       send(p, s, true);
     } catch (Exception e) {
-      p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Tr.dec(e.getMessage())));
+      p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(Tr.err(e)));
     }
   }
 
@@ -324,7 +325,7 @@ public final class BreedingNetwork {
       var s = sessions.get(p.getUUID());
       long now = BreedingRuntime.store.now();
       if (s == null || !s.token.toString().equals(a.session) || now - s.seen > 120000)
-        throw new IllegalStateException(Tr.enc("zianutilities.breeding.msg.session_expired", "La sesión venció; abre de nuevo Crianza"));
+        throw new LocalizedException.State("zianutilities.breeding.msg.session_expired", "La sesión venció; abre de nuevo Crianza");
       s.seen = now;
       if (a.kind == 0) {
         if (now - s.lastPoll < 1000) return;
@@ -338,14 +339,14 @@ public final class BreedingNetwork {
         case 12, 13 -> {
           UUID selected = UUID.fromString(a.target);
           if (party.get(selected) == null)
-            throw new IllegalArgumentException(Tr.enc("zianutilities.breeding.msg.not_in_team", "Este Pokémon ya no está en tu equipo"));
+            throw new LocalizedException.Argument("zianutilities.breeding.msg.not_in_team", "Este Pokémon ya no está en tu equipo");
           s.select(selected, a.kind == 12 ? 1 : 2);
         }
         case 1 -> {
           UUID selected = UUID.fromString(a.target);
           var pokemon = party.get(selected);
           if (pokemon == null)
-            throw new IllegalArgumentException(Tr.enc("zianutilities.breeding.msg.not_in_team", "Este Pokémon ya no está en tu equipo"));
+            throw new LocalizedException.Argument("zianutilities.breeding.msg.not_in_team", "Este Pokémon ya no está en tu equipo");
           s.pending = null;
           s.job = null;
           if (selected.equals(s.first)) s.first = null;
@@ -365,7 +366,7 @@ public final class BreedingNetwork {
           if (!why.isEmpty()) throw new IllegalStateException(why);
           if (BreedingRuntime.store.pendingMine(p.getUUID()).size()
               >= BreedingPermissions.slots(p, BreedingRuntime.config))
-            throw new IllegalStateException(Tr.enc("zianutilities.breeding.msg.slots_full", "Todas tus ranuras están ocupadas"));
+            throw new LocalizedException.State("zianutilities.breeding.msg.slots_full", "Todas tus ranuras están ocupadas");
           s.pending = new Pending("start", UUID.randomUUID(), null, null, 0, 0, 0);
         }
         case 4 -> {
@@ -375,13 +376,13 @@ public final class BreedingNetwork {
         }
         case 5 -> {
           if (!BreedingRuntime.currencies().contains(a.target))
-            throw new IllegalArgumentException(Tr.enc("zianutilities.breeding.msg.currency_disabled", "Moneda deshabilitada"));
+            throw new LocalizedException.Argument("zianutilities.breeding.msg.currency_disabled", "Moneda deshabilitada");
           s.currency = a.target;
           s.pending = null;
         }
         case 6 -> {
           if (s.job == null || s.currency == null)
-            throw new IllegalStateException(Tr.enc("zianutilities.breeding.msg.pick_job_currency", "Selecciona una crianza y una moneda"));
+            throw new LocalizedException.State("zianutilities.breeding.msg.pick_job_currency", "Selecciona una crianza y una moneda");
           var j = BreedingRuntime.owned(p, s.job);
           long rate =
               Math.multiplyExact(
@@ -422,7 +423,7 @@ public final class BreedingNetwork {
               if (!Objects.equals(
                   BreedingRuntime.config.currencyReductionsMinutes.get(pending.currency),
                   pending.rate / 60000))
-                throw new IllegalStateException(Tr.enc("zianutilities.breeding.msg.rate_changed", "La tarifa cambió; prepara de nuevo la compra"));
+                throw new LocalizedException.State("zianutilities.breeding.msg.rate_changed", "La tarifa cambió; prepara de nuevo la compra");
               BreedingRuntime.accelerate(
                   p, pending.job, pending.currency, pending.units, pending.nonce);
               s.message = Tr.enc("zianutilities.breeding.msg.accelerated", "Aceleración aplicada");
@@ -432,7 +433,7 @@ public final class BreedingNetwork {
               s.job = null;
               s.message = Tr.enc("zianutilities.breeding.msg.cancelled", "Crianza cancelada; los padres quedaron libres");
             }
-            default -> throw new IllegalStateException(Tr.enc("zianutilities.breeding.msg.invalid_confirm", "Confirmación inválida"));
+            default -> throw new LocalizedException.State("zianutilities.breeding.msg.invalid_confirm", "Confirmación inválida");
           }
         }
         case 10 -> {
@@ -442,7 +443,7 @@ public final class BreedingNetwork {
           sessions.remove(p.getUUID());
           return;
         }
-        default -> throw new IllegalArgumentException(Tr.enc("zianutilities.breeding.msg.invalid_action", "Acción inválida"));
+        default -> throw new LocalizedException.Argument("zianutilities.breeding.msg.invalid_action", "Acción inválida");
       }
       send(p, s, false);
     } catch (Exception error) {
@@ -450,7 +451,7 @@ public final class BreedingNetwork {
       if (s != null) {
         s.pending = null;
         s.message =
-            error.getMessage() == null ? Tr.enc("zianutilities.breeding.msg.failed", "No se pudo completar la acción") : error.getMessage();
+            error.getMessage() == null ? Tr.enc("zianutilities.breeding.msg.failed", "No se pudo completar la acción") : Tr.errEnc(error);
         try {
           send(p, s, false);
         } catch (Exception ignored) {

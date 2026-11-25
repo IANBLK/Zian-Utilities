@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.gacha;
+import com.zianblk.zianutilities.neoforge.LocalizedException;
 
 import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
@@ -70,7 +71,7 @@ public final class GachaNetwork {
             || !GachaRuntime.enabled()
             || action.kind() == 0 && !READS.tryAcquire(player.getUUID())) return;
         try {
-            if(!com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(player,"gacha.use",false))throw new IllegalStateException("No tienes acceso a Gachas");
+            if(!com.zianblk.zianutilities.neoforge.UtilitiesPermissions.allows(player,"gacha.use",false))throw new LocalizedException.State("zianutilities.gacha.err.no_access", "No tienes acceso a Gachas");
             switch (action.kind()) {
                 case 0 -> { }
                 case 1 -> GachaRuntime.create(player);
@@ -85,7 +86,7 @@ public final class GachaNetwork {
                 case 10 -> GachaRuntime.claim(player, UUID.fromString(action.text()));
                 case 11 -> GachaRuntime.delete(player, action.poolId(), action.text());
                 case 14 -> GachaRuntime.undo(player);
-                default -> throw new IllegalStateException("Acción inválida");
+                default -> throw new LocalizedException.State("zianutilities.gacha.err.invalid_action", "Acción inválida");
             }
             send(player, false);
         } catch (Exception error) {
@@ -102,7 +103,7 @@ public final class GachaNetwork {
                     action.kind(), player.getUUID(), error);
             }
             player.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(error instanceof IllegalStateException
-                ? Component.literal(error.getMessage()) : Tr.c("zianutilities.gacha.msg.save_failed", "No se pudo guardar la operación de gacha; revisa la consola.")));
+                ? Tr.err(error) : Tr.c("zianutilities.gacha.msg.save_failed", "No se pudo guardar la operación de gacha; revisa la consola.")));
             send(player, false);
             if (action.kind() == 9 && hasClient(player))
                 PacketDistributor.sendToPlayer(player, new RollResult(action.poolId(), ItemStack.EMPTY));

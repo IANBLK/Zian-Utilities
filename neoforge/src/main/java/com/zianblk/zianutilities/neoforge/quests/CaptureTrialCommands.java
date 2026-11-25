@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.quests;
+import com.zianblk.zianutilities.neoforge.Tr;
 
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 
@@ -53,37 +54,34 @@ public final class CaptureTrialCommands {
             CaptureEligibilityPlan capturePlan = new CaptureEligibilityPlan(enabled);
             if (!capturePlan.getAssignable()) {
                 source.sendSuccess(
-                    () -> Component.literal("Vista previa de captura: PAUSADA; no hay generaciones activas."),
+                    () -> Tr.c("zianutilities.quests.trial.vista_previa_de_captura_pausada", "Vista previa de captura: PAUSADA; no hay generaciones activas."),
                     false
                 );
                 return Command.SINGLE_SUCCESS;
             }
             String generations = generationIds(capturePlan.getEnabledGenerations());
             source.sendSuccess(
-                () -> Component.literal(
-                    "Vista previa (sin asignar): captura 1 Pokémon de cualquier generación activa ("
-                        + generations + "). Objetivos por tipo: desactivados."
-                ),
+                () -> Tr.c("zianutilities.quests.trial.vista_previa_sin_asignar_captura", "Vista previa (sin asignar): captura 1 Pokémon de cualquier generación activa (%s). Objetivos por tipo: desactivados.", String.valueOf(generations)),
                 false
             );
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
             LOGGER.error("[ZIAN-QUEST-PLAN] result=error", error);
-            source.sendFailure(Component.literal("No se pudo leer el plan de captura."));
+            source.sendFailure(Tr.c("zianutilities.quests.trial.no_se_pudo_leer_el_2", "No se pudo leer el plan de captura."));
             return 0;
         }
     }
 
     private static int start(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("El ensayo debe iniciarlo un jugador operador."));
+            source.sendFailure(Tr.c("zianutilities.quests.trial.el_ensayo_debe_iniciarlo_un", "El ensayo debe iniciarlo un jugador operador."));
             return 0;
         }
         try {
             Set<Generation> enabled = new NeoForgeGenerationStateStore(source.getServer())
                 .load().getEnabled();
             if (enabled.isEmpty()) {
-                source.sendFailure(Component.literal("Activa una generación antes de iniciar el ensayo."));
+                source.sendFailure(Tr.c("zianutilities.quests.trial.activa_una_generacion_antes_de", "Activa una generación antes de iniciar el ensayo."));
                 return 0;
             }
             CaptureTrial trial = CaptureTrialRuntime.service(source.getServer())
@@ -96,14 +94,14 @@ public final class CaptureTrialCommands {
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
             LOGGER.error("[ZIAN-QUEST-TRIAL] action=start result=error", error);
-            source.sendFailure(Component.literal("No se pudo guardar el ensayo; no captures para probarlo."));
+            source.sendFailure(Tr.c("zianutilities.quests.trial.no_se_pudo_guardar_el", "No se pudo guardar el ensayo; no captures para probarlo."));
             return 0;
         }
     }
 
     private static int status(CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("Consulta el ensayo como jugador operador."));
+            source.sendFailure(Tr.c("zianutilities.quests.trial.consulta_el_ensayo_como_jugador", "Consulta el ensayo como jugador operador."));
             return 0;
         }
         try {
@@ -112,14 +110,14 @@ public final class CaptureTrialCommands {
             CaptureTrial trial = CaptureTrialRuntime.service(source.getServer())
                 .synchronize(player.getUUID(), enabled);
             if (trial == null) {
-                source.sendSuccess(() -> Component.literal("Ensayo de captura: no iniciado."), false);
+                source.sendSuccess(() -> Tr.c("zianutilities.quests.trial.ensayo_de_captura_no_iniciado", "Ensayo de captura: no iniciado."), false);
             } else {
                 showTrial(source, trial, enabled);
             }
             return Command.SINGLE_SUCCESS;
         } catch (Exception error) {
             LOGGER.error("[ZIAN-QUEST-TRIAL] action=status result=error", error);
-            source.sendFailure(Component.literal("No se pudo leer el ensayo; no lo reinicies."));
+            source.sendFailure(Tr.c("zianutilities.quests.trial.no_se_pudo_leer_el", "No se pudo leer el ensayo; no lo reinicies."));
             return 0;
         }
     }
@@ -142,18 +140,17 @@ public final class CaptureTrialCommands {
         CaptureTrial trial,
         Set<Generation> currentlyEnabled
     ) {
-        String generations = trial.getCapturedSpeciesId() == null && currentlyEnabled.isEmpty()
-            ? "ninguna"
-            : generationIds(trial.getTargetGenerations());
-        String progress = trial.getCapturedSpeciesId() != null
-            ? "1/1 COMPLETADO"
-            : currentlyEnabled.isEmpty() ? "0/1 PAUSADO" : "0/1 ACTIVO";
-        String species = trial.getCapturedSpeciesId() == null
-            ? "" : " especie=" + trial.getCapturedSpeciesId();
+        Component generations = trial.getCapturedSpeciesId() == null && currentlyEnabled.isEmpty()
+            ? Tr.c("zianutilities.quests.trial.generations_none", "ninguna")
+            : Component.literal(generationIds(trial.getTargetGenerations()));
+        Component progress = trial.getCapturedSpeciesId() != null
+            ? Tr.c("zianutilities.quests.trial.progress_done", "1/1 COMPLETADO")
+            : currentlyEnabled.isEmpty() ? Tr.c("zianutilities.quests.trial.progress_paused", "0/1 PAUSADO") : Tr.c("zianutilities.quests.trial.progress_active", "0/1 ACTIVO");
+        Component species = trial.getCapturedSpeciesId() == null
+            ? Component.empty() : Tr.c("zianutilities.quests.trial.species", " especie=%s", trial.getCapturedSpeciesId());
         source.sendSuccess(
-            () -> Component.literal("Ensayo captura " + trial.getAssignmentId()
-                + ": " + progress + " generaciones=" + generations + species
-                + "; sin recompensa."),
+            () -> Tr.c("zianutilities.quests.trial.status", "Ensayo captura %s: %s generaciones=%s%s; sin recompensa.",
+                String.valueOf(trial.getAssignmentId()), progress, generations, species),
             false
         );
     }

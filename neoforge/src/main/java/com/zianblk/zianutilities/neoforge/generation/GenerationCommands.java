@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.generation;
+import com.zianblk.zianutilities.neoforge.Tr;
 
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 
@@ -100,9 +101,7 @@ public final class GenerationCommands {
 
         if (generation == null) {
             source.sendFailure(
-                Component.literal(
-                    "Generación desconocida. Usa gen1, gen2, ... gen9."
-                )
+                Tr.c("zianutilities.generation.cmd.generacion_desconocida_usa_gen_gen", "Generación desconocida. Usa gen1, gen2, ... gen9.")
             );
             return 0;
         }
@@ -114,11 +113,9 @@ public final class GenerationCommands {
             : service.disable(generation);
 
         if (result == GenerationMutationResult.CHANGED) {
-            String action = enabled ? "habilitada" : "deshabilitada";
+            Component action = enabled ? Tr.c("zianutilities.generation.cmd.enabled", "habilitada") : Tr.c("zianutilities.generation.cmd.disabled", "deshabilitada");
             source.sendSuccess(
-                () -> Component.literal(
-                    "Generación " + generation.getId() + " " + action + "."
-                ),
+                () -> Tr.c("zianutilities.generation.cmd.changed", "Generación %s %s.", generation.getId(), action),
                 true
             );
             audit(source, enabled ? "generation_enable" : "generation_disable",
@@ -126,11 +123,9 @@ public final class GenerationCommands {
             return Command.SINGLE_SUCCESS;
         }
 
-        String state = enabled ? "ya estaba habilitada" : "ya estaba deshabilitada";
+        Component state = enabled ? Tr.c("zianutilities.generation.cmd.already_enabled", "ya estaba habilitada") : Tr.c("zianutilities.generation.cmd.already_disabled", "ya estaba deshabilitada");
         source.sendSuccess(
-            () -> Component.literal(
-                "Generación " + generation.getId() + " " + state + "."
-            ),
+            () -> Tr.c("zianutilities.generation.cmd.changed", "Generación %s %s.", generation.getId(), state),
             false
         );
         audit(source, enabled ? "generation_enable" : "generation_disable",
@@ -151,9 +146,9 @@ public final class GenerationCommands {
             active = "ninguna";
         }
 
-        String finalActive = active;
+        Component finalActive = active.equals("ninguna") ? Tr.c("zianutilities.generation.cmd.none", "ninguna") : Component.literal(active);
         source.sendSuccess(
-            () -> Component.literal("Generaciones activas: " + finalActive),
+            () -> Tr.c("zianutilities.generation.cmd.active", "Generaciones activas: %s", finalActive),
             false
         );
         return Command.SINGLE_SUCCESS;
@@ -164,13 +159,7 @@ public final class GenerationCommands {
         GenerationState state = service(source).snapshot();
 
         source.sendSuccess(
-            () -> Component.literal(
-                "Generation Control: "
-                    + state.getEnabled().size()
-                    + "/"
-                    + Generation.values().length
-                    + " generaciones activas."
-            ),
+            () -> Tr.c("zianutilities.generation.cmd.generation_control_generaciones_activas", "Generation Control: %s/%s generaciones activas.", String.valueOf(state.getEnabled().size()), String.valueOf(Generation.values().length)),
             false
         );
 
@@ -183,9 +172,7 @@ public final class GenerationCommands {
 
         if (generation == null) {
             source.sendFailure(
-                Component.literal(
-                    "Generación desconocida. Usa gen1, gen2, ... gen9."
-                )
+                Tr.c("zianutilities.generation.cmd.generacion_desconocida_usa_gen_gen", "Generación desconocida. Usa gen1, gen2, ... gen9.")
             );
             return 0;
         }

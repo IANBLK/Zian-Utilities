@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.storage;
+import com.zianblk.zianutilities.neoforge.Tr;
 
 import com.zianblk.zianutilities.core.storage.StorageFiles;
 import java.nio.file.*;
@@ -40,7 +41,7 @@ public final class StorageHooks {
       properties.setProperty(StorageFiles.MOD+".inactive-days",Integer.toString(IntegerArgumentType.getInteger(c,"inactiveDays")));
       Path temporary=Files.createTempFile(directory,"retention-",".tmp");
       try{try(var writer=Files.newBufferedWriter(temporary)){properties.store(writer,"Zian retention; pending receipts and progression are protected");}try(var channel=FileChannel.open(temporary,StandardOpenOption.WRITE)){channel.force(true);}Files.move(temporary,file,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);}finally{Files.deleteIfExists(temporary);}
-      c.getSource().sendSuccess(()->Component.literal("Retención guardada para "+StorageFiles.MOD+". La limpieza se ejecuta con el servidor detenido y respaldo."),false);return 1;
+      c.getSource().sendSuccess(()->Tr.c("zianutilities.storage.msg.retention_saved", "Retención guardada para %s. La limpieza se ejecuta con el servidor detenido y respaldo.", String.valueOf(StorageFiles.MOD)),false);return 1;
     }catch(Exception error){c.getSource().sendFailure(Component.literal(error.getMessage()==null?"Storage configuration failed":error.getMessage()));return 0;}}))));
     event.getDispatcher().register(Commands.literal("zianstorage").requires(source->source.hasPermission(3)).then(command));
   }

@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.hub;
+import com.zianblk.zianutilities.neoforge.Tr;
 
 import com.zianblk.zianutilities.neoforge.ZianUtilitiesMod;
 
@@ -22,12 +23,11 @@ public final class ZianHubCommands {
 
     private static int open(net.minecraft.commands.CommandSourceStack source) {
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(Component.literal("Abre el menú desde el juego."));
+            source.sendFailure(Tr.c("zianutilities.hub.cmd.abre_el_menu_desde_el", "Abre el menú desde el juego."));
             return 0;
         }
         if (!ZianHubNetwork.hasClient(player)) {
-            source.sendFailure(Component.literal(
-                "Instala la misma versión de Zian Utilities en tu cliente."));
+            source.sendFailure(Tr.c("zianutilities.gacha.cmd.instala_la_misma_version_de", "Instala la misma versión de Zian Utilities en tu cliente."));
             return 0;
         }
         ZianHubNetwork.open(player);

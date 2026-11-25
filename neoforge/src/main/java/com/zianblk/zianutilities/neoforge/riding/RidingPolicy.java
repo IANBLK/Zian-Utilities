@@ -1,4 +1,5 @@
 package com.zianblk.zianutilities.neoforge.riding;
+import com.zianblk.zianutilities.neoforge.LocalizedException;
 
 import com.google.gson.*;
 import java.nio.file.*;
@@ -10,7 +11,7 @@ import net.neoforged.fml.loading.FMLPaths;
 /** Server-owned policy, mirrored to clients for the same riding physics. */
 public final class RidingPolicy {
  public record Settings(boolean enabled,int speedPercent,int staminaPercent){
-  public Settings{if(speedPercent<25||speedPercent>100||staminaPercent<20||staminaPercent>100)throw new IllegalArgumentException("Velocidad: 25–100; estamina: 20–100");}
+  public Settings{if(speedPercent<25||speedPercent>100||staminaPercent<20||staminaPercent>100)throw new LocalizedException.Argument("zianutilities.riding.err.range","Velocidad: 25–100; estamina: 20–100");}
  }
  private static final Gson GSON=new GsonBuilder().setPrettyPrinting().create();
  private static final Path FILE=FMLPaths.CONFIGDIR.get().resolve("zianutilities-riding.json");
@@ -18,7 +19,7 @@ public final class RidingPolicy {
  private RidingPolicy(){}
  public static Settings server(){return server;}
  public static void client(Settings settings){client=settings;}
- public static void load()throws Exception{if(Files.exists(FILE)){var s=GSON.fromJson(Files.readString(FILE),Settings.class);if(s==null)throw new IllegalArgumentException("Configuración vacía");server=s;}else save(server);}
+ public static void load()throws Exception{if(Files.exists(FILE)){var s=GSON.fromJson(Files.readString(FILE),Settings.class);if(s==null)throw new LocalizedException.Argument("zianutilities.riding.err.empty_config","Configuración vacía");server=s;}else save(server);}
  public static void save(Settings next)throws Exception{
   Files.createDirectories(FILE.getParent());var temp=FILE.resolveSibling(FILE.getFileName()+".tmp");Files.writeString(temp,GSON.toJson(next));
   Files.move(temp,FILE,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);server=next;
