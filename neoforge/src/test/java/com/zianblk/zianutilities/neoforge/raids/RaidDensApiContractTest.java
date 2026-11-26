@@ -68,4 +68,31 @@ class RaidDensApiContractTest {
         assertNotNull(cls("registry.CustomRaidRegistries").getField("RAID_REGISTRY"));
         method("registry.custom.RaidRegistry", "getCache");
     }
+
+    /** The weekly raid builds its boss from JSON, places it like /crd spawnboss and registers it in the registry cache. */
+    @Test void weeklyRaidApi() throws Exception {
+        var session = cls("raids.RaidSession");
+        assertNotNull(session.getConstructor(java.util.UUID.class, java.util.UUID.class, cls("data.raid.RaidBoss"), net.minecraft.world.phys.Vec3.class, net.minecraft.server.level.ServerLevel.class));
+        method("raids.RaidSession", "setFlags", boolean.class, boolean.class, boolean.class);
+        method("raids.RaidSession", "start", net.minecraft.server.MinecraftServer.class);
+        method("raids.RaidSession", "stopRaid", boolean.class);
+        method("raids.RaidSession", "closeRaid", net.minecraft.server.MinecraftServer.class);
+        method("raids.RaidSession", "isFinished");
+        method("raids.RaidInstance", "getBossEntity");
+        method("raids.RaidInstance", "isFinished");
+        method("data.raid.RaidBoss", "setId", net.minecraft.resources.ResourceLocation.class);
+        method("data.raid.RaidBoss", "applyDefaults");
+        method("data.raid.RaidBoss", "getId");
+        org.junit.jupiter.api.Assertions.assertTrue(Modifier.isStatic(cls("data.raid.RaidBoss").getField("GSON").getModifiers()));
+        method("registry.custom.RaidRegistry", "cacheHas", net.minecraft.resources.ResourceLocation.class);
+        var cache = cls("registry.custom.RaidRegistry").getDeclaredField("cache");
+        org.junit.jupiter.api.Assertions.assertEquals(cls("registry.store.RegistryCache"), cache.getType());
+        method("registry.store.RegistryCache", "currentEpoch");
+        method("registry.store.RegistryCache", "putIfCurrent", Object.class, Object.class, long.class);
+        method("events.RaidEndEvent", "raidBoss");
+        method("events.RaidEndEvent", "isWin");
+        method("events.RaidBattleEndEvent", "player");
+        method("events.RaidBattleEndEvent", "isWin");
+        method("events.RaidBattleStartEvent", "getPlayer");
+    }
 }

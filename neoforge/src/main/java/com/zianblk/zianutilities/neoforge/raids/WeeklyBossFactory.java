@@ -2,6 +2,9 @@ package com.zianblk.zianutilities.neoforge.raids;
 
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.necro.raid.dens.common.data.raid.RaidBoss;
+import com.necro.raid.dens.common.registry.CustomRaidRegistries;
+import com.necro.raid.dens.common.registry.custom.RaidRegistry;
+import com.necro.raid.dens.common.registry.store.RegistryCache;
 import net.minecraft.resources.ResourceLocation;
 
 /** The only place where the JSON of a weekly raid becomes a Raid Dens RaidBoss (RaidBoss.GSON, same keys as its datapack). */
@@ -26,6 +29,21 @@ final class WeeklyBossFactory {
     if (id == null || PokemonSpecies.INSTANCE.getByIdentifier(id) == null)
       throw new IllegalArgumentException("raid " + raid.id() + ": la especie " + species + " no existe en Cobblemon");
     return boss;
+  }
+
+  /**
+   * RaidInstance finds its boss again by id in the Raid Dens registry, which only knows the datapack bosses on disk.
+   * The weekly boss is put straight into the registry cache (there is no public call for one boss); the runtime checks
+   * it every second because the cache lets idle entries expire. Without this Raid Dens throws when the raid starts.
+   */
+  @SuppressWarnings("unchecked")
+  static void ensureRegistered(RaidBoss boss) throws ReflectiveOperationException {
+    RaidRegistry registry = CustomRaidRegistries.RAID_REGISTRY;
+    if (registry.cacheHas(boss.getId())) return;
+    var field = RaidRegistry.class.getDeclaredField("cache");
+    field.setAccessible(true);
+    var cache = (RegistryCache<ResourceLocation, RaidBoss>) field.get(registry);
+    cache.putIfCurrent(boss.getId(), boss, cache.currentEpoch());
   }
 
   static boolean isWeekly(RaidBoss boss) {

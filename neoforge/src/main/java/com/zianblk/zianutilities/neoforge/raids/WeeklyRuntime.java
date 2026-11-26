@@ -59,14 +59,16 @@ final class WeeklyRuntime {
 
   private static final class Live {
     final RaidSession session;
+    final RaidBoss raidBoss;
     final UUID raidId;
     final long weekNumber;
     final int spawnedTick;
     PokemonEntity boss;
     int retireAt = -1;
 
-    Live(RaidSession session, UUID raidId, long weekNumber, int spawnedTick) {
+    Live(RaidSession session, RaidBoss raidBoss, UUID raidId, long weekNumber, int spawnedTick) {
       this.session = session;
+      this.raidBoss = raidBoss;
       this.raidId = raidId;
       this.weekNumber = weekNumber;
       this.spawnedTick = spawnedTick;
@@ -432,6 +434,7 @@ final class WeeklyRuntime {
     BlockPos pos = BlockPos.containing(e.x(), e.y(), e.z());
     if (!level.isLoaded(pos)) return;
     if (live != null) {
+      keepRegistered();
       if (busy()) return;
       adoptBoss();
       if (live.retireAt >= 0 && ticks >= live.retireAt) retire();
@@ -444,6 +447,14 @@ final class WeeklyRuntime {
     }
     sweepOrphans(level, pos);
     if (ticks >= spawnNotBefore) spawn(level);
+  }
+
+  private static void keepRegistered() {
+    try {
+      WeeklyBossFactory.ensureRegistered(live.raidBoss);
+    } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) {
+      RaidsModule.LOG.error("Weekly boss could not be kept in the Raid Dens registry", failure);
+    }
   }
 
   private static void adoptBoss() {
@@ -462,7 +473,8 @@ final class WeeklyRuntime {
       var e = config.entrance();
       UUID raidId = UUID.randomUUID();
       RaidSession session = new RaidSession(null, raidId, boss, new Vec3(e.x(), e.y(), e.z()), level);
-      made = new Live(session, raidId, state.week.weekNumber(), ticks);
+      made = new Live(session, boss, raidId, state.week.weekNumber(), ticks);
+      WeeklyBossFactory.ensureRegistered(boss);
       RaidHelper.ACTIVE_RAIDS.put(raidId, session);
       live = made;
       session.setFlags(true, true, true);

@@ -73,16 +73,22 @@ public final class RaidsModule {
     RaidDuelRuntime.install();
   }
 
-  private static boolean smokeChecked, smokeOn;
+  private static boolean smokeChecked;
+  private static String smokeClass;
 
   /** Local-only fixture: present in the server copy built with -PkeepRaidSmoke, absent from the release jar. */
   private static void smokeTick() {
-    if (!smokeChecked) { smokeChecked = true; smokeOn = "true".equals(System.getenv("ZIANUTILITIES_RAIDS_SMOKE")); }
-    if (!smokeOn) return;
+    if (!smokeChecked) {
+      smokeChecked = true;
+      String mode = System.getenv("ZIANUTILITIES_RAIDS_SMOKE");
+      if ("true".equals(mode)) smokeClass = "com.zianblk.zianutilities.neoforge.raids.RaidSmoke";
+      else if (mode != null && mode.startsWith("weekly")) smokeClass = "com.zianblk.zianutilities.neoforge.raids.RaidSmokeWeekly";
+    }
+    if (smokeClass == null) return;
     try {
-      Class.forName("com.zianblk.zianutilities.neoforge.raids.RaidSmoke").getDeclaredMethod("tick").invoke(null);
+      Class.forName(smokeClass).getDeclaredMethod("tick").invoke(null);
     } catch (ReflectiveOperationException unavailable) {
-      smokeOn = false;
+      smokeClass = null;
       LOG.error("Raid smoke fixture unavailable", unavailable);
     }
   }
