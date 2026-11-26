@@ -44,13 +44,14 @@ class RaidCooldownsTest {
 
     @Test fun `the duel log reports duels that never ended and forgets finished ones`() {
         val path = dir.resolve("duels.wal")
-        val open = UUID.randomUUID(); val done = UUID.randomUUID()
+        val open = UUID.randomUUID(); val done = UUID.randomUUID(); val bossId = UUID.randomUUID()
         DuelLog(path).use {
-            it.started(open, a, 5, "raid-1", "boss", 1L); it.started(done, b, 6, "raid-2", "boss", 1L)
+            it.started(open, a, 5, "raid-1", "boss", 1L, bossId, true); it.started(done, b, 6, "raid-2", "boss", 1L, UUID.randomUUID(), false)
             it.ended(done, DuelResult.WON, 1.0)
         }
         DuelLog(path).use {
             assertEquals(setOf(open), it.unfinished().keys); assertEquals(a, it.unfinished()[open]!!.player)
+            assertEquals(bossId, it.unfinished()[open]!!.bossEntity); assertTrue(it.unfinished()[open]!!.bossWasInvulnerable)
             it.ended(open, DuelResult.ABORTED, 0.0)
         }
         DuelLog(path).use { assertTrue(it.unfinished().isEmpty()) }

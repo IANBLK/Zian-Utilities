@@ -85,9 +85,14 @@ public final class DuelEngine {
      * applied, the duel ends as a defeat and the runtime withdraws the player alive. Returns true when the hit
      * must be cancelled.
      */
+    /** The one rule for "this hit would leave the player at WITHDRAW_AT health or less", also used by the post-duel grace window. */
+    public static boolean isLethal(double playerHealthPlusAbsorption, double damage) {
+        return playerHealthPlusAbsorption - damage <= WITHDRAW_AT;
+    }
+
     public boolean incomingDamage(double playerHealthPlusAbsorption, double damage) {
         if (state != State.ACTIVE) return false;
-        if (playerHealthPlusAbsorption - damage <= WITHDRAW_AT) { lethalCapped = true; end(DuelResult.LOST); return true; }
+        if (isLethal(playerHealthPlusAbsorption, damage)) { lethalCapped = true; end(DuelResult.LOST); return true; }
         return false;
     }
 

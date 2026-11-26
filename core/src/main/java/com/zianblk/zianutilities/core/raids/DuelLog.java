@@ -13,7 +13,7 @@ import java.util.UUID;
  * Lines are "TYPE|id|a|b|c...". A STARTED without ENDED at startup was cut by a crash.
  */
 public final class DuelLog implements AutoCloseable {
-    public record Open(UUID duelId, UUID player, int tier, String raidId) {}
+    public record Open(UUID duelId, UUID player, int tier, String raidId, UUID bossEntity, boolean bossWasInvulnerable) {}
 
     private final BreedingJournal journal;
     private final Map<UUID, Open> open = new LinkedHashMap<>();
@@ -27,7 +27,8 @@ public final class DuelLog implements AutoCloseable {
         if (f.length < 2) throw new IllegalArgumentException("Bad duel log line");
         UUID id = UUID.fromString(f[1]);
         switch (f[0]) {
-            case "STARTED" -> open.put(id, new Open(id, UUID.fromString(f[2]), Integer.parseInt(f[3]), f[4]));
+            case "STARTED" -> open.put(id, new Open(id, UUID.fromString(f[2]), Integer.parseInt(f[3]), f[4],
+                f.length > 8 ? UUID.fromString(f[7]) : null, f.length > 8 && Boolean.parseBoolean(f[8])));
             case "ENDED" -> open.remove(id);
             default -> { }
         }
@@ -36,9 +37,10 @@ public final class DuelLog implements AutoCloseable {
     /** Duels begun and never ended: the server died in the middle of them. */
     public Map<UUID, Open> unfinished() { return Map.copyOf(open); }
 
-    public void started(UUID duelId, UUID player, int tier, String raidId, String boss, long deadline) throws IOException {
-        append("STARTED", duelId, player, tier, clean(raidId), clean(boss), deadline);
-        open.put(duelId, new Open(duelId, player, tier, raidId));
+    public void started(UUID duelId, UUID player, int tier, String raidId, String boss, long deadline,
+                        UUID bossEntity, boolean bossWasInvulnerable) throws IOException {
+        append("STARTED", duelId, player, tier, clean(raidId), clean(boss), deadline, bossEntity, bossWasInvulnerable);
+        open.put(duelId, new Open(duelId, player, tier, raidId, bossEntity, bossWasInvulnerable));
     }
 
     public void ended(UUID duelId, DuelResult result, double ratio) throws IOException {

@@ -17,9 +17,11 @@ import com.zianblk.zianutilities.core.raids.DuelParams;
 import com.zianblk.zianutilities.core.raids.DuelResult;
 import com.zianblk.zianutilities.core.raids.RaidRewardPolicy;
 import com.zianblk.zianutilities.core.raids.RaidTierPolicy;
+import com.zianblk.zianutilities.core.raids.SafeSteps;
 import com.zianblk.zianutilities.neoforge.Messages;
 import com.zianblk.zianutilities.neoforge.Tr;
 import com.zianblk.zianutilities.neoforge.UtilitiesPermissions;
+import com.zianblk.zianutilities.neoforge.breeding.LuckPermsLookup;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,6 +41,8 @@ import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
@@ -70,6 +74,8 @@ public final class RaidDuelRuntime {
     final Vec3 entryPos;
     final float yRot, xRot;
     final boolean bossWasInvulnerable;
+    final Vec3 bossHome;
+    final float bossYRot;
     final ServerBossEvent bar;
     final float maxHealth;
     Vec3 strikeCenter;
@@ -93,6 +99,8 @@ public final class RaidDuelRuntime {
       this.yRot = p.getYRot();
       this.xRot = p.getXRot();
       this.bossWasInvulnerable = boss.isInvulnerable();
+      this.bossHome = boss.position();
+      this.bossYRot = boss.getYRot();
       this.maxHealth = instance.getMaxHealth();
       this.bar = new ServerBossEvent(Component.literal(boss.getDisplayName().getString()), BossEvent.BossBarColor.RED, BossEvent.BossBarOverlay.PROGRESS);
     }
@@ -100,6 +108,8 @@ public final class RaidDuelRuntime {
 
   private static final Map<UUID, Duel> BY_PLAYER = new HashMap<>();
   private static final Map<UUID, Duel> BY_RAID = new HashMap<>();
+  private static final Map<UUID, Integer> GRACE = new HashMap<>();
+  private static final int GRACE_TICKS = 100;
   private static int ticks;
 
   private RaidDuelRuntime() {}
@@ -108,7 +118,7 @@ public final class RaidDuelRuntime {
 
   public static void install() {
     NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, RaidDuelRuntime::onIncoming);
-    NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, RaidDuelRuntime::onPre);
+    NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RaidDuelRuntime::onPre);
     NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true, RaidDuelRuntime::onDeath);
     NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent e) -> {
       if (e.getEntity() instanceof ServerPlayer p && BY_PLAYER.get(p.getUUID()) instanceof Duel d) finish(d, DuelResult.SURRENDERED, false);
@@ -132,8 +142,12 @@ public final class RaidDuelRuntime {
     LivingEntity victim = e.getEntity();
     if (victim instanceof ServerPlayer sp) {
       Duel d = BY_PLAYER.get(sp.getUUID());
-      if (d == null) return;
-      if (d.withdrawing || d.finished) { e.setCanceled(true); return; }
+      if (d == null) {
+        if (inGrace(sp) && !e.getSource().is(DamageTypes.GENERIC_KILL) && e.getSource().is(DamageTypeTags.BYPASSES_ARMOR)
+            && DuelEngine.isLethal(sp.getHealth() + sp.getAbsorptionAmount(), e.getAmount())) e.setCanceled(true);
+        return;
+      }
+      if (protectedUntilFinish(d)) { e.setCanceled(true); return; }
       DamageSource s = e.getSource();
       if (s.is(DamageTypes.GENERIC_KILL)) return;
       if (s.is(DamageTypeTags.BYPASSES_ARMOR) && d.engine.incomingDamage(sp.getHealth() + sp.getAbsorptionAmount(), e.getAmount())) {
@@ -155,12 +169,36 @@ public final class RaidDuelRuntime {
   private static void onPre(LivingDamageEvent.Pre e) {
     if (!(e.getEntity() instanceof ServerPlayer sp)) return;
     Duel d = BY_PLAYER.get(sp.getUUID());
-    if (d == null) return;
-    if (d.withdrawing || d.finished) { e.setNewDamage(0); return; }
+    if (d == null) {
+      if (inGrace(sp) && !e.getSource().is(DamageTypes.GENERIC_KILL) && DuelEngine.isLethal(sp.getHealth() + sp.getAbsorptionAmount(), e.getNewDamage())) e.setNewDamage(0);
+      return;
+    }
+    if (protectedUntilFinish(d)) { e.setNewDamage(0); return; }
     if (e.getSource().is(DamageTypes.GENERIC_KILL)) return;
     if (d.engine.incomingDamage(sp.getHealth() + sp.getAbsorptionAmount(), e.getNewDamage())) {
       d.withdrawing = true;
       e.setNewDamage(0);
+    }
+  }
+
+  /** Once the duel is decided (lost, won, withdrawing) the player takes no damage until finish() has moved them out. */
+  private static boolean protectedUntilFinish(Duel d) {
+    return d.withdrawing || d.finished || d.engine.state() == DuelEngine.State.ENDED;
+  }
+
+  private static boolean inGrace(ServerPlayer p) {
+    Integer until = GRACE.get(p.getUUID());
+    if (until == null) return false;
+    if (RaidsModule.server == null || RaidsModule.server.getTickCount() > until) { GRACE.remove(p.getUUID()); return false; }
+    return true;
+  }
+
+  /** Cooldown bypass only with an explicit LuckPerms TRUE: no default for OPs. */
+  private static boolean bypassesCooldown(ServerPlayer p) {
+    try {
+      return LuckPermsLookup.lookup(p, "zianutilities.raid.bypass_cooldown") == LuckPermsLookup.Decision.TRUE;
+    } catch (Exception | LinkageError unavailable) {
+      return false;
     }
   }
 
@@ -225,7 +263,7 @@ public final class RaidDuelRuntime {
     if (RaidGenerationFilter.denied(session.boss()))
       return Tr.enc("zianutilities.raids.err.generation_denied", "§cEste jefe pertenece a una generación desactivada.");
     long left = RaidsModule.cooldowns.remainingMillis(p.getUUID(), tier, System.currentTimeMillis());
-    if (left > 0 && !UtilitiesPermissions.allows(p, "raid.bypass_cooldown", true))
+    if (left > 0 && !bypassesCooldown(p))
       return Tr.enc("zianutilities.raids.err.cooldown", "§cDebes esperar %s para volver a intentar este tier.", RaidCommands.duration(left));
     return null;
   }
@@ -234,27 +272,50 @@ public final class RaidDuelRuntime {
     DuelParams params = RaidsModule.config.paramsFor(tier);
     long now = System.currentTimeMillis();
     var log = RaidsModule.log;
-    if (!session.isPlayerIn(p)) session.addPlayer(p);
-    Duel d = new Duel(p, tier, params, session, session.getActive(), boss, raidId);
-    log.started(d.id, p.getUUID(), tier, raidId.toString(), String.valueOf(session.boss().getId()), now + params.timeLimitSeconds() * 1000L);
+    Duel d = null;
+    boolean logged = false;
     try {
-      if (params.cooldownMinutes() > 0 && !UtilitiesPermissions.allows(p, "raid.bypass_cooldown", true))
+      if (!session.isPlayerIn(p)) session.addPlayer(p);
+      d = new Duel(p, tier, params, session, session.getActive(), boss, raidId);
+      log.started(d.id, p.getUUID(), tier, raidId.toString(), String.valueOf(session.boss().getId()), now + params.timeLimitSeconds() * 1000L, boss.getUUID(), d.bossWasInvulnerable);
+      logged = true;
+      if (params.cooldownMinutes() > 0 && !bypassesCooldown(p))
         RaidsModule.cooldowns.start(p.getUUID(), tier, now + params.cooldownMinutes() * 60_000L);
-    } catch (Exception failure) {
-      log.ended(d.id, DuelResult.ABORTED, 0);
+      d.instance.removeFromBossEvent(p);
+      boss.setInvulnerable(false);
+      d.engine.start();
+      d.bar.addPlayer(p);
+      BY_PLAYER.put(p.getUUID(), d);
+      BY_RAID.put(raidId, d);
+      p.connection.send(new ClientboundSetTitlesAnimationPacket(5, 40, 10));
+      p.connection.send(new ClientboundSetTitleTextPacket(Tr.c("zianutilities.raids.title.start", "§6¡Duelo!")));
+      p.connection.send(new ClientboundSetSubtitleTextPacket(Tr.c("zianutilities.raids.subtitle.start", "§7Esquiva los ataques y golpea al jefe con tu equipo")));
+      p.sendSystemMessage(Messages.format(Tr.c("zianutilities.raids.msg.start", "§6Duelo iniciado: esquiva las zonas marcadas y golpea al jefe. Tienes %s segundos.", params.timeLimitSeconds())));
+      RaidsModule.LOG.info("[ZIAN-AUDIT] raid duel started duel={} player={} tier={} raid={}", d.id, p.getUUID(), tier, raidId);
+    } catch (Exception | LinkageError failure) {
+      rollbackStart(d, logged, p, tier, raidId);
       throw failure;
     }
-    d.instance.removeFromBossEvent(p);
-    boss.setInvulnerable(false);
-    d.engine.start();
-    d.bar.addPlayer(p);
-    BY_PLAYER.put(p.getUUID(), d);
-    BY_RAID.put(raidId, d);
-    p.connection.send(new ClientboundSetTitlesAnimationPacket(5, 40, 10));
-    p.connection.send(new ClientboundSetTitleTextPacket(Tr.c("zianutilities.raids.title.start", "§6¡Duelo!")));
-    p.connection.send(new ClientboundSetSubtitleTextPacket(Tr.c("zianutilities.raids.subtitle.start", "§7Esquiva los ataques y golpea al jefe con tu equipo")));
-    p.sendSystemMessage(Messages.format(Tr.c("zianutilities.raids.msg.start", "§6Duelo iniciado: esquiva las zonas marcadas y golpea al jefe. Tienes %s segundos.", params.timeLimitSeconds())));
-    RaidsModule.LOG.info("[ZIAN-AUDIT] raid duel started duel={} player={} tier={} raid={}", d.id, p.getUUID(), tier, raidId);
+  }
+
+  /** A start that failed half way is closed ABORTED: journal ended, cooldown released, boss restored, nobody left registered. */
+  private static void rollbackStart(Duel d, boolean logged, ServerPlayer p, int tier, UUID raidId) {
+    BY_PLAYER.remove(p.getUUID());
+    BY_RAID.remove(raidId);
+    if (d == null) return;
+    d.finished = true;
+    var failures = SafeSteps.runAll(
+        () -> d.bar.removeAllPlayers(),
+        () -> restoreBoss(d),
+        () -> { if (logged) RaidsModule.log.ended(d.id, DuelResult.ABORTED, 0); },
+        () -> RaidsModule.cooldowns.reset(p.getUUID(), tier));
+    failures.forEach(f -> RaidsModule.LOG.error("Duel start rollback step failed duel={}", d.id, f));
+  }
+
+  /** Boss goes back to the exact state and place it had before the duel. */
+  private static void restoreBoss(Duel d) {
+    d.boss.setInvulnerable(d.bossWasInvulnerable);
+    if (d.boss.isAlive() && !d.boss.isRemoved()) d.boss.moveTo(d.bossHome.x, d.bossHome.y, d.bossHome.z, d.bossYRot, 0);
   }
 
   // ---------------------------------------------------------------- tick
@@ -264,22 +325,29 @@ public final class RaidDuelRuntime {
     ticks++;
     for (Duel d : new ArrayList<>(BY_PLAYER.values())) {
       if (d.finished) continue;
-      ServerPlayer p = RaidsModule.server.getPlayerList().getPlayer(d.player);
-      if (p == null) { finish(d, DuelResult.SURRENDERED, false); continue; }
-      if (d.engine.state() == DuelEngine.State.ENDED) { finish(d, d.engine.result(), false); continue; }
-      if (d.boss.isRemoved() || !d.boss.isAlive()) { finish(d, DuelResult.ABORTED, true); continue; }
-      if (p.level().dimension() != d.entryDim || p.distanceTo(d.boss) > 64) { finish(d, DuelResult.SURRENDERED, false); continue; }
-      for (var event : d.engine.tick()) {
-        if (event instanceof DuelEngine.Telegraph t) telegraph(d, p, t);
-        else if (event instanceof DuelEngine.Strike s) strike(d, p, s);
-      }
-      if (d.telegraphLeft > 0) {
-        d.telegraphLeft--;
-        if (ticks % 3 == 0) ring(d);
-      }
-      if (ticks % 10 == 0) updateBar(d);
-      if (d.engine.state() == DuelEngine.State.ENDED) finish(d, d.engine.result(), false);
+      SafeSteps.guard(() -> tickOne(d), failure -> {
+        RaidsModule.LOG.error("Duel tick failed; closing it as ABORTED without spending the attempt duel={}", d.id, failure);
+        finish(d, DuelResult.ABORTED, true);
+      });
     }
+  }
+
+  private static void tickOne(Duel d) {
+    ServerPlayer p = RaidsModule.server.getPlayerList().getPlayer(d.player);
+    if (p == null) { finish(d, DuelResult.SURRENDERED, false); return; }
+    if (d.engine.state() == DuelEngine.State.ENDED) { finish(d, d.engine.result(), false); return; }
+    if (d.boss.isRemoved() || !d.boss.isAlive()) { finish(d, DuelResult.ABORTED, true); return; }
+    if (p.level().dimension() != d.entryDim || p.distanceTo(d.boss) > 64) { finish(d, DuelResult.SURRENDERED, false); return; }
+    for (var event : d.engine.tick()) {
+      if (event instanceof DuelEngine.Telegraph t) telegraph(d, p, t);
+      else if (event instanceof DuelEngine.Strike s) strike(d, p, s);
+    }
+    if (d.telegraphLeft > 0) {
+      d.telegraphLeft--;
+      if (ticks % 3 == 0) ring(d);
+    }
+    if (ticks % 10 == 0) updateBar(d);
+    if (d.engine.state() == DuelEngine.State.ENDED) finish(d, d.engine.result(), false);
   }
 
   private static void telegraph(Duel d, ServerPlayer p, DuelEngine.Telegraph t) {
@@ -335,42 +403,52 @@ public final class RaidDuelRuntime {
 
   // ---------------------------------------------------------------- finish
 
-  /** Closes a duel. refund releases the cooldown (server crash, admin cancel); otherwise the attempt stays spent. */
+  /**
+   * Closes a duel. refund releases the cooldown (server crash, admin cancel); otherwise the attempt stays spent.
+   * Every step runs in its own try, boss first, so one failure never leaves the boss changed or the raid open.
+   */
   static void finish(Duel d, DuelResult result, boolean refund) {
     if (d.finished) return;
     d.finished = true;
     BY_PLAYER.remove(d.player);
     BY_RAID.remove(d.raidId);
-    d.bar.removeAllPlayers();
     ServerPlayer p = RaidsModule.server == null ? null : RaidsModule.server.getPlayerList().getPlayer(d.player);
     double ratio = d.engine.dealtRatio();
-    Float required = d.session.boss().getRequiredDamage();
-    double need = required == null ? 0 : required;
-    boolean success = RaidRewardPolicy.closeAsSuccess(result, ratio, need);
+    double need = 0;
     try {
-      RaidsModule.log.ended(d.id, result, ratio);
-      if (refund) RaidsModule.cooldowns.reset(d.player, d.tier);
-    } catch (Exception failure) {
-      RaidsModule.LOG.error("Duel journal write failed duel={}", d.id, failure);
+      Float required = d.session.boss().getRequiredDamage();
+      need = required == null ? 0 : required;
+    } catch (Throwable unreadable) {
+      RaidsModule.LOG.error("requiredDamage unreadable duel={}", d.id, unreadable);
     }
-    try {
-      if (success && p != null && result == DuelResult.WON) {
-        double missing = Math.max(0, 1.0 - d.recorded);
-        if (missing > 0) d.session.getDamageRecord(p).addDamage((float) (missing * d.maxHealth));
-      }
-      d.boss.setInvulnerable(d.bossWasInvulnerable);
-      d.instance.queueStopInstance(success);
-    } catch (Exception | LinkageError failure) {
-      RaidsModule.LOG.error("Raid close failed duel={}", d.id, failure);
-    }
-    RaidsModule.LOG.info("[ZIAN-AUDIT] raid duel ended duel={} player={} result={} ratio={} required={} success={} refund={}", d.id, d.player, result, ratio, need, success, refund);
-    if (p != null) notifyEnd(d, p, result, success);
+    final double required = need;
+    boolean success = RaidRewardPolicy.closeAsSuccess(result, ratio, required);
+    var failures = SafeSteps.runAll(
+        () -> restoreBoss(d),
+        () -> d.bar.removeAllPlayers(),
+        () -> RaidsModule.log.ended(d.id, result, ratio),
+        () -> { if (refund) RaidsModule.cooldowns.reset(d.player, d.tier); },
+        () -> {
+          if (success && p != null && result == DuelResult.WON) {
+            double missing = Math.max(0, 1.0 - d.recorded);
+            if (missing > 0) d.session.getDamageRecord(p).addDamage((float) (missing * d.maxHealth));
+          }
+        },
+        () -> d.instance.queueStopInstance(success),
+        () -> { if (p != null) notifyEnd(d, p, result, success); });
+    failures.forEach(f -> RaidsModule.LOG.error("Duel close step failed duel={}", d.id, f));
+    RaidsModule.LOG.info("[ZIAN-AUDIT] raid duel ended duel={} player={} result={} ratio={} required={} success={} refund={} failures={}", d.id, d.player, result, ratio, required, success, refund, failures.size());
   }
 
   private static void notifyEnd(Duel d, ServerPlayer p, DuelResult result, boolean success) {
     if (d.engine.lethalCapped()) {
       ServerLevel home = RaidsModule.server.getLevel(d.entryDim);
       if (home != null && p.isAlive()) p.teleportTo(home, d.entryPos.x, d.entryPos.y, d.entryPos.z, d.yRot, d.xRot);
+      p.clearFire();
+      p.resetFallDistance();
+      for (MobEffectInstance effect : new ArrayList<>(p.getActiveEffects()))
+        if (effect.getEffect().value().getCategory() == MobEffectCategory.HARMFUL) p.removeEffect(effect.getEffect());
+      GRACE.put(p.getUUID(), RaidsModule.server.getTickCount() + GRACE_TICKS);
       p.connection.send(new ClientboundSetTitlesAnimationPacket(10, 70, 20));
       p.connection.send(new ClientboundSetTitleTextPacket(Tr.c("zianutilities.raids.title.withdraw", "§cTu derrota era inminente...")));
       p.connection.send(new ClientboundSetSubtitleTextPacket(Tr.c("zianutilities.raids.subtitle.withdraw", "§7Te retiras del combate para luchar otro día")));
@@ -402,29 +480,34 @@ public final class RaidDuelRuntime {
 
   // ---------------------------------------------------------------- recovery and admin
 
-  /** Duels still open in the journal were cut by a crash: they close as ABORTED and the cooldown is released. */
+  /** Duels still open in the journal were cut by a crash: they close as ABORTED, the cooldown is released and the boss shield is put back if the boss is loaded. */
   static void recover() throws Exception {
     for (var open : RaidsModule.log.unfinished().values()) {
       RaidsModule.log.ended(open.duelId(), DuelResult.ABORTED, 0);
       RaidsModule.cooldowns.reset(open.player(), open.tier());
-      RaidsModule.LOG.warn("[ZIAN-AUDIT] raid duel {} of {} was cut by a shutdown: closed as ABORTED, cooldown released", open.duelId(), open.player());
+      boolean restored = false;
+      if (open.bossEntity() != null)
+        for (ServerLevel level : RaidsModule.server.getAllLevels()) {
+          Entity boss = level.getEntity(open.bossEntity());
+          if (boss != null) { boss.setInvulnerable(open.bossWasInvulnerable()); restored = true; }
+        }
+      RaidsModule.LOG.warn("[ZIAN-AUDIT] raid duel {} of {} was cut by a shutdown: closed as ABORTED, cooldown released, boss restored={}", open.duelId(), open.player(), restored);
     }
   }
 
   static void abortAll() {
     for (Duel d : new ArrayList<>(BY_PLAYER.values())) {
       d.finished = true;
-      d.bar.removeAllPlayers();
-      d.boss.setInvulnerable(d.bossWasInvulnerable);
-      try {
-        RaidsModule.log.ended(d.id, DuelResult.ABORTED, d.engine.dealtRatio());
-        RaidsModule.cooldowns.reset(d.player, d.tier);
-      } catch (Exception failure) {
-        RaidsModule.LOG.error("Duel abort on shutdown failed duel={}", d.id, failure);
-      }
+      var failures = SafeSteps.runAll(
+          () -> d.bar.removeAllPlayers(),
+          () -> restoreBoss(d),
+          () -> RaidsModule.log.ended(d.id, DuelResult.ABORTED, d.engine.dealtRatio()),
+          () -> RaidsModule.cooldowns.reset(d.player, d.tier));
+      failures.forEach(f -> RaidsModule.LOG.error("Duel abort on shutdown failed duel={}", d.id, f));
     }
     BY_PLAYER.clear();
     BY_RAID.clear();
+    GRACE.clear();
   }
 
   static boolean cancel(UUID player) {
