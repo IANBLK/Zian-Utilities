@@ -5,6 +5,9 @@ license="MIT (original code); separate artwork permissions - see META-INF/THIRD_
 [[mixins]]
 config="zianutilities-riding.mixins.json"
 
+[[mixins]]
+config="zianutilities-raids.mixins.json"
+
 issueTrackerURL="https://github.com/IANBLK/Zian-Utilities/issues"
 
 [[mods]]
@@ -35,5 +38,12 @@ side="BOTH"
 modId="cobblemon"
 type="required"
 versionRange="[1.8.2,1.9)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="cobblemonraiddens"
+type="optional"
+versionRange="[0.14.3,0.15)"
 ordering="AFTER"
 side="BOTH"

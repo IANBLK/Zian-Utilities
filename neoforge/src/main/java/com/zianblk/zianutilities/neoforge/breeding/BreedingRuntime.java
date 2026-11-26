@@ -10,6 +10,7 @@ import com.zianblk.zianutilities.core.economy.*;
 import com.zianblk.zianutilities.core.generation.SpawnDecision;
 import com.zianblk.zianutilities.neoforge.breeding.genetics.FrozenOffspring;
 import com.zianblk.zianutilities.neoforge.cobblemon.CobblemonGenerationResolver;
+import com.zianblk.zianutilities.neoforge.delivery.PokemonDelivery;
 import com.zianblk.zianutilities.neoforge.economy.*;
 import com.zianblk.zianutilities.neoforge.generation.*;
 import java.util.*;
@@ -274,56 +275,60 @@ public final class BreedingRuntime {
       store.put(j.phase(BreedingJob.Status.BLOCKED, "PARENTS_NOT_OWNED", store.now()));
       return;
     }
-    if (BreedingStorage.live(h, j.child().uuid()) != null) {
-      store.put(j.phase(BreedingJob.Status.DELIVERING, "EXISTING_UUID", store.now()));
-      verifying.put(j.id(), store.now());
-      return;
-    }
-    if (h.pc().getFirstAvailablePosition() == null) {
-      store.put(j.phase(BreedingJob.Status.BLOCKED, "PC_FULL", store.now()));
-      return;
-    }
-    var child = FrozenOffspring.materialize(j.child());
-    child.setOriginalTrainer(p.getUUID());
-    store.put(j.phase(BreedingJob.Status.DELIVERING, "", store.now()));
-    try {
-      if (!h.pc().add(child)) throw new IllegalStateException("PC insertion unconfirmed");
-      h.factory().save(h.pc(), p.registryAccess());
-      verifying.put(j.id(), store.now());
-    } catch (Exception error) {
-      store.put(j.phase(BreedingJob.Status.UNCERTAIN, "DELIVERY", store.now()));
-      throw error;
-    }
+    var step =
+        PokemonDelivery.deliver(
+            p,
+            j.child().uuid(),
+            () -> {
+              var child = FrozenOffspring.materialize(j.child());
+              child.setOriginalTrainer(p.getUUID());
+              return child;
+            },
+            sink(j));
+    if (step == PokemonDelivery.Step.AWAITING_PROOF) verifying.put(j.id(), store.now());
+  }
+
+  /** Maps the shared delivery phases onto this job journal, with the same status and reason as before. */
+  private static PokemonDelivery.Sink sink(BreedingJob j) {
+    return (phase, reason) ->
+        store.put(
+            j.phase(
+                switch (phase) {
+                  case DELIVERING -> BreedingJob.Status.DELIVERING;
+                  case DELIVERED -> BreedingJob.Status.DELIVERED;
+                  case UNCERTAIN -> BreedingJob.Status.UNCERTAIN;
+                  case BLOCKED -> BreedingJob.Status.BLOCKED;
+                },
+                reason,
+                store.now()));
   }
 
   static void verify(ServerPlayer p, BreedingJob j) throws Exception {
-    var h = BreedingStorage.open(p);
-    var found = BreedingStorage.saved(h, p, j.child().uuid());
-    if (found == null) {
-      if (recovering.remove(j.id()) || store.now() - verifying.getOrDefault(j.id(), 0L) > 30000) {
-        store.put(j.phase(BreedingJob.Status.UNCERTAIN, "DELIVERY_NOT_PROVEN", store.now()));
-        verifying.remove(j.id());
-      }
-      return;
-    }
-    if (!FrozenOffspring.matches(found, j.child())) {
-      store.put(j.phase(BreedingJob.Status.UNCERTAIN, "DELIVERY_MISMATCH", store.now()));
+    boolean timedOut = recovering.remove(j.id()) || store.now() - verifying.getOrDefault(j.id(), 0L) > 30000;
+    var proof =
+        PokemonDelivery.verify(
+            p,
+            j.child().uuid(),
+            found -> FrozenOffspring.matches(found, j.child()),
+            timedOut,
+            sink(j),
+            found -> {
+              verifying.remove(j.id());
+              recovering.remove(j.id());
+              try {
+                Cobblemon.INSTANCE.getPlayerDataManager().getPokedexData(p.getUUID()).obtain(found);
+                p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(
+                    Tr.c("zianutilities.breeding.msg.child_in_pc", "§aCrianza completada: tu Pokémon está guardado en el PC.")));
+              } catch (Exception notificationFailure) {
+                LOG.warn(
+                    "Child delivered; optional Pokedex/chat notification failed job={}",
+                    j.id(),
+                    notificationFailure);
+              }
+            });
+    if (proof == PokemonDelivery.Proof.UNCERTAIN) {
       verifying.remove(j.id());
       recovering.remove(j.id());
-      return;
-    }
-    store.put(j.phase(BreedingJob.Status.DELIVERED, "", store.now()));
-    verifying.remove(j.id());
-    recovering.remove(j.id());
-    try {
-      Cobblemon.INSTANCE.getPlayerDataManager().getPokedexData(p.getUUID()).obtain(found);
-      p.sendSystemMessage(com.zianblk.zianutilities.neoforge.Messages.format(
-          Tr.c("zianutilities.breeding.msg.child_in_pc", "§aCrianza completada: tu Pokémon está guardado en el PC.")));
-    } catch (Exception notificationFailure) {
-      LOG.warn(
-          "Child delivered; optional Pokedex/chat notification failed job={}",
-          j.id(),
-          notificationFailure);
     }
   }
 

@@ -13,6 +13,10 @@ java {
 repositories {
     mavenCentral()
     maven("https://www.cursemaven.com")
+    exclusiveContent {
+        forRepository { maven("https://api.modrinth.com/maven") }
+        filter { includeGroup("maven.modrinth") }
+    }
     maven("https://artefacts.cobblemon.com/releases/")
     maven("https://thedarkcolour.github.io/KotlinForForge/")
     maven("https://maven.neoforged.net/releases/")
@@ -46,6 +50,9 @@ neoForge {
     }
 }
 
+// Not on the test runtime classpath: FML would load it as a mod and demand GeckoLib and Asymmetric Battles.
+val raidDensJar by configurations.creating { isTransitive = false }
+
 dependencies {
     implementation(project(":core"))
 
@@ -54,6 +61,11 @@ dependencies {
     }
 
     compileOnly("thedarkcolour:kotlinforforge-neoforge:${providers.gradleProperty("kotlin_for_forge_version").get()}")
+
+    // Cobblemon Raid Dens 0.14.3 (neoforge, MIT): optional module, compile and test only, never bundled.
+    compileOnly("maven.modrinth:cobblemonraiddens:${providers.gradleProperty("raiddens_version_id").get()}") { isTransitive = false }
+    testCompileOnly("maven.modrinth:cobblemonraiddens:${providers.gradleProperty("raiddens_version_id").get()}") { isTransitive = false }
+    add("raidDensJar", "maven.modrinth:cobblemonraiddens:${providers.gradleProperty("raiddens_version_id").get()}") { isTransitive = false }
 
     runtimeOnly("curse.maven:cobblemon-687131:${providers.gradleProperty("cobblemon_file_id").get()}") { isTransitive = false }
     runtimeOnly("thedarkcolour:kotlinforforge-neoforge:${providers.gradleProperty("kotlin_for_forge_version").get()}")
@@ -104,6 +116,7 @@ tasks.jar {
     from(rootProject.file("LICENSE")) { into("META-INF") }
     from(rootProject.file("THIRD_PARTY_LICENSES.md")) { into("META-INF") }
     exclude("com/zianblk/zianutilities/neoforge/breeding/BreedingSmoke*.class")
+    if (!project.hasProperty("keepRaidSmoke")) exclude("com/zianblk/zianutilities/neoforge/raids/RaidSmoke*.class")
     archiveFileName.set("Zian-Utilities-${providers.gradleProperty("mod_version").get()}-NeoForge-1.21.1.jar")
 
     // Core stays a separate Gradle module for architecture/testing, while the
@@ -117,6 +130,7 @@ tasks.jar {
 
 tasks.test {
     useJUnitPlatform()
+    systemProperty("zian.raiddens.jar", raidDensJar.incoming.artifacts.artifactFiles.asPath)
     if (System.getProperty("os.name").lowercase().contains("windows")) systemProperty("junit.jupiter.tempdir.cleanup.mode.default", "NEVER")
 }
 
