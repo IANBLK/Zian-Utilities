@@ -57,6 +57,8 @@ final class RaidCommands {
         .then(Commands.literal("revisar").executes(c -> rewardsReview(c.getSource())))
         .then(Commands.literal("confirmar-entregado").then(Commands.argument("id", StringArgumentType.word()).executes(c -> rewardsConfirm(c.getSource(), StringArgumentType.getString(c, "id"))))));
 
+    raid.then(WeeklyCommands.node());
+
     dispatcher.register(Commands.literal(ZianUtilitiesMod.COMMAND_ROOT).requires(s -> true).then(raid));
   }
 
@@ -162,7 +164,7 @@ final class RaidCommands {
     }
   }
 
-  private static void audit(CommandSourceStack s, String what) {
+  static void audit(CommandSourceStack s, String what) {
     RaidsModule.LOG.info("[ZIAN-AUDIT] raid admin {} by {}", what, s.getTextName());
     try {
       ServerPlayer p = s.getPlayer();

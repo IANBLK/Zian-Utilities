@@ -95,8 +95,14 @@ final class RaidPendingRewards {
    * cancelled by another mod), claiming again is cancelled as a duplicate; an admin checks the PC and clears it
    * with `raid premios confirmar-entregado`.
    */
+  /** Rewards are guarded when the duels are on with safe delivery, or when the weekly raid is on. */
+  private static boolean guarded() {
+    if (!RaidsModule.infraReady()) return false;
+    return WeeklyRuntime.ready() || (RaidsModule.active() && RaidsModule.config.safeRewardDelivery());
+  }
+
   static void onReward(RewardPokemonEvent event) {
-    if (!RaidsModule.active() || !RaidsModule.config.safeRewardDelivery()) return;
+    if (!guarded()) return;
     ServerPlayer player = event.getPlayer();
     Pokemon pokemon = event.getPokemon();
     UUID id = pokemon.getUuid();
@@ -144,7 +150,7 @@ final class RaidPendingRewards {
   }
 
   static void run() {
-    if (ENTRIES.isEmpty() || !RaidsModule.active()) return;
+    if (ENTRIES.isEmpty() || !RaidsModule.infraReady()) return;
     for (CompoundTag tag : new ArrayList<>(ENTRIES.values())) {
       if (!"DELIVERING".equals(tag.getString("phase"))) continue;
       ServerPlayer p = RaidsModule.server.getPlayerList().getPlayer(tag.getUUID("player"));

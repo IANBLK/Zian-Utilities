@@ -52,6 +52,11 @@ public final class RaidsModule {
     return server != null && config != null && config.enabled() && cooldowns != null && log != null && bosses != null && !log.locked();
   }
 
+  /** Journals and stores are healthy: what the weekly raid needs, whatever the duel config says. */
+  static boolean infraReady() {
+    return server != null && cooldowns != null && log != null && bosses != null && !log.locked();
+  }
+
   public static void install(IEventBus modBus) {
     if (!raidDensLoaded()) return;
     modBus.addListener((FMLCommonSetupEvent e) -> {
@@ -63,7 +68,7 @@ public final class RaidsModule {
     });
     NeoForge.EVENT_BUS.addListener((ServerStartedEvent e) -> start(e.getServer()));
     NeoForge.EVENT_BUS.addListener((ServerStoppingEvent e) -> stop());
-    NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post e) -> { if (server != null) { RaidDuelRuntime.tick(); RaidPendingRewards.tick(); smokeTick(); } });
+    NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post e) -> { if (server != null) { RaidDuelRuntime.tick(); RaidPendingRewards.tick(); WeeklyRuntime.tick(); smokeTick(); } });
     NeoForge.EVENT_BUS.addListener(RaidsModule::registerCommands);
     RaidDuelRuntime.install();
   }
@@ -91,8 +96,14 @@ public final class RaidsModule {
     log = null;
     bosses = null;
     try {
-      config = RaidsConfig.load(configPath());
-      problem = config.enabled() ? "" : "disabled in config";
+      try {
+        config = RaidsConfig.load(configPath());
+        problem = config.enabled() ? "" : "disabled in config";
+      } catch (Exception | LinkageError badConfig) {
+        config = null;
+        problem = String.valueOf(badConfig.getMessage());
+        LOG.error("Raid duel config unusable (duels stay off, the weekly raid does not depend on it): {}", badConfig.toString());
+      }
       Path dir = dataDir();
       cooldowns = RaidCooldowns.load(dir.resolve("cooldowns.properties"));
       log = new DuelLog(dir.resolve("duels.wal"));
@@ -100,16 +111,21 @@ public final class RaidsModule {
       RaidDuelRuntime.recover();
       RaidPendingRewards.load();
       if (!subscribed) { RaidDensEvents.install(); subscribed = true; }
-      LOG.info("Raids ready: enabled={} duelFromTier={}", config.enabled(), config.duelFromTier());
+      LOG.info("Raids ready: duels enabled={}", config != null && config.enabled());
     } catch (Exception | LinkageError failure) {
       config = null;
+      cooldowns = null;
+      log = null;
+      bosses = null;
       problem = String.valueOf(failure.getMessage());
       LOG.error("Raids unavailable (module stays off, Raid Dens runs untouched): {}", failure.toString(), failure);
     }
+    WeeklyRuntime.start();
   }
 
   static void stop() {
     try {
+      WeeklyRuntime.stop();
       RaidDuelRuntime.abortAll();
       if (log != null) log.close();
     } catch (Exception failure) {

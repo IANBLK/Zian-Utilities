@@ -80,6 +80,7 @@ public final class RaidDuelRuntime {
     final float bossYRot;
     final ServerBossEvent bar;
     final float maxHealth;
+    final boolean weekly;
     Vec3 strikeCenter;
     int telegraphLeft;
     double telegraphRadius;
@@ -87,7 +88,8 @@ public final class RaidDuelRuntime {
     boolean withdrawing;
     boolean finished;
 
-    Duel(ServerPlayer p, int tier, DuelParams params, RaidSession session, RaidInstance instance, PokemonEntity boss, UUID raidId) {
+    Duel(ServerPlayer p, int tier, DuelParams params, RaidSession session, RaidInstance instance, PokemonEntity boss, UUID raidId, boolean weekly) {
+      this.weekly = weekly;
       this.player = p.getUUID();
       this.tier = tier;
       this.params = params;
@@ -135,6 +137,7 @@ public final class RaidDuelRuntime {
     });
     NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent e) -> {
       if (e.getEntity() instanceof ServerPlayer p && BY_PLAYER.get(p.getUUID()) instanceof Duel d) finish(d, DuelResult.SURRENDERED, false);
+      if (e.getEntity() instanceof ServerPlayer p) WeeklyRuntime.onLogout(p.getUUID());
     });
     NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerChangedDimensionEvent e) -> {
       if (e.getEntity() instanceof ServerPlayer p && BY_PLAYER.get(p.getUUID()) instanceof Duel d && !d.withdrawing && e.getTo() != d.entryDim)
@@ -234,10 +237,12 @@ public final class RaidDuelRuntime {
 
   /** Called from the mixin at the head of RaidChallengePacket.handleServer. True means the packet is handled here. */
   public static boolean intercept(RaidChallengePacket packet, ServerPlayer player) {
-    if (!RaidsModule.active()) return false;
     try {
       if (!(player.level().getEntity(packet.targetedEntityId()) instanceof PokemonEntity boss)) return pass("target is not a Pokemon entity");
-      if (!(boss instanceof IRaidAccessor acc) || !acc.crd_isRaidBoss() || acc.crd_getRaidState() == RaidState.FAILED) return pass("not a live raid boss, state=" + (boss instanceof IRaidAccessor a ? a.crd_getRaidState() : null));
+      if (!(boss instanceof IRaidAccessor acc) || !acc.crd_isRaidBoss()) return pass("not a raid boss");
+      if (WeeklyRuntime.owns(acc.crd_getRaidId())) return weekly(player, boss, acc.crd_getRaidId());
+      if (!RaidsModule.active()) return false;
+      if (acc.crd_getRaidState() == RaidState.FAILED) return pass("state=FAILED");
       if (!RaidJoinHelper.isParticipating(player, false) && RaidUtils.isRaidDimension(player.level())) return pass("raid dimension without participation");
       RaidSession session = RaidHelper.ACTIVE_RAIDS.get(acc.crd_getRaidId());
       if (session == null || session.getActive() == null || session.hasFailed(player)) return pass("no session/instance or player failed");
@@ -249,9 +254,27 @@ public final class RaidDuelRuntime {
         player.sendSystemMessage(Messages.format(Tr.dec(refusal)));
         return true;
       }
-      start(player, session, boss, tier, acc.crd_getRaidId());
+      start(player, session, boss, tier, acc.crd_getRaidId(), RaidsModule.config.paramsFor(tier), false);
     } catch (Exception | LinkageError failure) {
       RaidsModule.LOG.error("Duel could not start; nothing was spent", failure);
+      player.sendSystemMessage(Messages.format(Tr.c("zianutilities.raids.err.start_failed", "§cNo se pudo iniciar el duelo; no se ha gastado el intento.")));
+    }
+    return true;
+  }
+
+  /** The fixed weekly raid on the pedestal: limits and the waiting line first, then the duel here or Raid Dens' own battle. */
+  private static boolean weekly(ServerPlayer player, PokemonEntity boss, UUID raidId) {
+    try {
+      RaidSession session = RaidHelper.ACTIVE_RAIDS.get(raidId);
+      if (session == null) return true;
+      switch (WeeklyRuntime.gate(player, session, boss)) {
+        case BATTLE -> { return false; }
+        case DUEL -> start(player, session, boss, WeeklyRuntime.tier(), raidId, WeeklyRuntime.duelParams(), true);
+        case HANDLED -> { }
+      }
+    } catch (Exception | LinkageError failure) {
+      RaidsModule.LOG.error("Weekly duel could not start; nothing was spent", failure);
+      SafeSteps.guard(() -> WeeklyRuntime.startFailed(player), f -> RaidsModule.LOG.error("Weekly queue release failed", f));
       player.sendSystemMessage(Messages.format(Tr.c("zianutilities.raids.err.start_failed", "§cNo se pudo iniciar el duelo; no se ha gastado el intento.")));
     }
     return true;
@@ -287,21 +310,20 @@ public final class RaidDuelRuntime {
     long previousCooldownMillis;
   }
 
-  private static void start(ServerPlayer p, RaidSession session, PokemonEntity boss, int tier, UUID raidId) throws Exception {
-    DuelParams params = RaidsModule.config.paramsFor(tier);
+  private static void start(ServerPlayer p, RaidSession session, PokemonEntity boss, int tier, UUID raidId, DuelParams params, boolean weekly) throws Exception {
     long now = System.currentTimeMillis();
     var log = RaidsModule.log;
     Duel d = null;
     Undo undo = new Undo();
     try {
       if (!session.isPlayerIn(p)) { session.addPlayer(p); undo.addedPlayer = true; }
-      d = new Duel(p, tier, params, session, session.getActive(), boss, raidId);
+      d = new Duel(p, tier, params, session, session.getActive(), boss, raidId, weekly);
       RaidsModule.bosses.put(boss.getUUID(), new PendingBossRestores.Entry(d.bossWasInvulnerable, d.bossHome.x, d.bossHome.y, d.bossHome.z, d.bossYRot));
       undo.bossEntry = true;
-      log.started(d.id, p.getUUID(), tier, raidId.toString(), String.valueOf(session.boss().getId()), now + params.timeLimitSeconds() * 1000L,
+      log.started(d.id, p.getUUID(), tier, weekly ? WeeklyRuntime.JOURNAL_PREFIX + raidId : raidId.toString(), String.valueOf(session.boss().getId()), now + params.timeLimitSeconds() * 1000L,
           boss.getUUID(), d.bossWasInvulnerable, d.bossHome.x, d.bossHome.y, d.bossHome.z);
       undo.logged = true;
-      if (params.cooldownMinutes() > 0 && !bypassesCooldown(p)) {
+      if (!weekly && params.cooldownMinutes() > 0 && !bypassesCooldown(p)) {
         undo.previousCooldownMillis = RaidsModule.cooldowns.remainingMillis(p.getUUID(), tier, now);
         undo.touchedCooldown = true;
         RaidsModule.cooldowns.start(p.getUUID(), tier, now + params.cooldownMinutes() * 60_000L);
@@ -478,7 +500,7 @@ public final class RaidDuelRuntime {
         () -> restoreBossAndEntry(d),
         () -> d.bar.removeAllPlayers(),
         () -> RaidsModule.log.ended(d.id, result, ratio),
-        () -> { if (refund) RaidsModule.cooldowns.reset(d.player, d.tier); },
+        () -> { if (refund && !d.weekly) RaidsModule.cooldowns.reset(d.player, d.tier); },
         () -> {
           if (success && p != null && result == DuelResult.WON) {
             double missing = Math.max(0, 1.0 - d.recorded);
@@ -486,6 +508,7 @@ public final class RaidDuelRuntime {
           }
         },
         () -> d.instance.queueStopInstance(success),
+        () -> { if (d.weekly) WeeklyRuntime.onDuelFinished(d.player, success, refund); },
         () -> { if (p != null) notifyEnd(d, p, result, success); });
     failures.forEach(f -> RaidsModule.LOG.error("Duel close step failed duel={}", d.id, f));
     RaidsModule.LOG.info("[ZIAN-AUDIT] raid duel ended duel={} player={} result={} ratio={} required={} success={} refund={} failures={}", d.id, d.player, result, ratio, required, success, refund, failures.size());
@@ -538,7 +561,7 @@ public final class RaidDuelRuntime {
   static void recover() throws Exception {
     for (var open : RaidsModule.log.unfinished().values()) {
       RaidsModule.log.ended(open.duelId(), DuelResult.ABORTED, 0);
-      RaidsModule.cooldowns.reset(open.player(), open.tier());
+      if (!open.raidId().startsWith(WeeklyRuntime.JOURNAL_PREFIX)) RaidsModule.cooldowns.reset(open.player(), open.tier());
       RaidsModule.LOG.warn("[ZIAN-AUDIT] raid duel {} of {} was cut by a shutdown: closed as ABORTED, cooldown released", open.duelId(), open.player());
     }
     for (var pending : RaidsModule.bosses.all().entrySet())
@@ -561,7 +584,7 @@ public final class RaidDuelRuntime {
           () -> d.bar.removeAllPlayers(),
           () -> restoreBossAndEntry(d),
           () -> RaidsModule.log.ended(d.id, DuelResult.ABORTED, d.engine.dealtRatio()),
-          () -> RaidsModule.cooldowns.reset(d.player, d.tier));
+          () -> { if (!d.weekly) RaidsModule.cooldowns.reset(d.player, d.tier); });
       failures.forEach(f -> RaidsModule.LOG.error("Duel abort on shutdown failed duel={}", d.id, f));
     }
     BY_PLAYER.clear();

@@ -21,6 +21,11 @@ public record DuelParams(
         if (phases.getFirst().hpBelow() < 1.0) throw new IllegalArgumentException("the first phase must start at hpBelow 1.0");
     }
 
+    /** The weekly raid has its own attempt limits, so the per-tier cooldown does not apply to it. */
+    public DuelParams withoutCooldown() {
+        return new DuelParams(timeLimitSeconds, bossHealth, bossDamage, attackIntervalTicks, telegraphTicks, maxDamagePerHitFraction, 0, phases);
+    }
+
     public static List<DuelPhase> defaultPhases() {
         return List.of(new DuelPhase(1.0, 1.0, 1.0, 3.5), new DuelPhase(0.66, 1.15, 0.8, 4.0), new DuelPhase(0.33, 1.3, 0.6, 4.5));
     }

@@ -23,12 +23,18 @@ public final class WeeklyQueue {
 
     public record Result(Entry entry, int position) {}
 
-    private final long turnMillis;
+    private long turnMillis;
     private final Set<UUID> waiting = new LinkedHashSet<>();
     private UUID playing, called;
     private long calledUntil;
 
     public WeeklyQueue(long turnMillis) {
+        if (turnMillis < 1000) throw new IllegalArgumentException("turnMillis must be at least 1000");
+        this.turnMillis = turnMillis;
+    }
+
+    /** A reload may change how long a called player has; the player being called keeps the old deadline. */
+    public void setTurnMillis(long turnMillis) {
         if (turnMillis < 1000) throw new IllegalArgumentException("turnMillis must be at least 1000");
         this.turnMillis = turnMillis;
     }

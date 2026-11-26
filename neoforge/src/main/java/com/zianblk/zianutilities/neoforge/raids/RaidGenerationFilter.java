@@ -12,7 +12,7 @@ final class RaidGenerationFilter {
 
   private RaidGenerationFilter() {}
 
-  static boolean enabled() { return RaidsModule.config != null && RaidsModule.config.respectGenerationFilter() && RaidsModule.server != null; }
+  static boolean enabled() { return RaidsModule.server != null && (RaidsModule.config == null || RaidsModule.config.respectGenerationFilter()); }
 
   static boolean deniedSpecies(String speciesId) {
     if (!enabled() || speciesId == null) return false;
