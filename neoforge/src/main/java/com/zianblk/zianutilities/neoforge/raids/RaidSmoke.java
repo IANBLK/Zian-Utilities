@@ -132,6 +132,7 @@ public final class RaidSmoke {
           pendingReward();
         }
         case 8 -> proveReward();
+        case 9 -> fullPcAndDuplicate();
         default -> { }
       }
     } catch (Throwable failure) {
@@ -198,13 +199,34 @@ public final class RaidSmoke {
 
   private static String rewardId;
 
+  /** Full PC: Raid Dens keeps the reward (event cancelled, no entry of ours). Same Pokemon twice: cancelled too. */
+  private static void fullPcAndDuplicate() throws Exception {
+    var pc = PokemonDelivery.open(player).pc();
+    int added = 0;
+    while (pc.getFirstAvailablePosition() != null && added < 3000) { pc.add(PokemonProperties.Companion.parse("rattata level=1", " ", "=").create()); added++; }
+    check(pc.getFirstAvailablePosition() == null, "PC filled with " + added + " Pokemon");
+    var extra = PokemonProperties.Companion.parse("pidgey level=5", " ", "=").create();
+    var full = new RewardPokemonEvent(player, extra);
+    RaidPendingRewards.onReward(full);
+    check(full.isCanceled(), "full PC cancels the Raid Dens reward event");
+    check(RaidPendingRewards.review().stream().noneMatch(l -> l.contains(extra.getUuid().toString())), "full PC creates no entry in our queue");
+    var already = PokemonProperties.Companion.parse("pidgey level=5", " ", "=").create();
+    pc.remove(pc.iterator().next());
+    pc.add(already);
+    var again = new RewardPokemonEvent(player, already);
+    RaidPendingRewards.onReward(again);
+    check(again.isCanceled(), "a Pokemon already in storage cancels the reward event");
+    check(RaidPendingRewards.review().stream().noneMatch(l -> l.contains(already.getUuid().toString())), "duplicate creates no entry");
+    finish(true);
+  }
+
   /** The PC save is asynchronous: the journal entry must clear within a few seconds, never instantly and never by guessing. */
   private static void proveReward() throws Exception {
     RaidPendingRewards.run();
     if (RaidPendingRewards.review().stream().noneMatch(l -> l.contains(rewardId))) {
       check(true, "reward proven by reading the saved PC back (DELIVERED) after " + waited + " tries");
       check(PokemonDelivery.live(PokemonDelivery.open(player), java.util.UUID.fromString(rewardId)) != null, "Pokemon in the PC");
-      finish(true);
+      step = 9;
       return;
     }
     wait = 10;
