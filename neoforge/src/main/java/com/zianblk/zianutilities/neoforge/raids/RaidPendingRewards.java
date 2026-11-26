@@ -121,7 +121,11 @@ final class RaidPendingRewards {
   // ---------------------------------------------------------------- retries and proof
 
   static void tick() {
-    if (++ticks % 20 != 0 || ENTRIES.isEmpty() || !RaidsModule.active()) return;
+    if (++ticks % 20 == 0) run();
+  }
+
+  static void run() {
+    if (ENTRIES.isEmpty() || !RaidsModule.active()) return;
     for (CompoundTag tag : new ArrayList<>(ENTRIES.values())) {
       ServerPlayer p = RaidsModule.server.getPlayerList().getPlayer(tag.getUUID("player"));
       if (p == null) continue;

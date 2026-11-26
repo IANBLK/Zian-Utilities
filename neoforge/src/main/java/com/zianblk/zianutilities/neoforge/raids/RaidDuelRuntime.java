@@ -185,15 +185,16 @@ public final class RaidDuelRuntime {
   public static boolean intercept(RaidChallengePacket packet, ServerPlayer player) {
     if (!RaidsModule.active()) return false;
     try {
-      if (!(player.level().getEntity(packet.targetedEntityId()) instanceof PokemonEntity boss)) return false;
-      if (!(boss instanceof IRaidAccessor acc) || !acc.crd_isRaidBoss() || acc.crd_getRaidState() == RaidState.FAILED) return false;
-      if (!RaidJoinHelper.isParticipating(player, false) && RaidUtils.isRaidDimension(player.level())) return false;
+      if (!(player.level().getEntity(packet.targetedEntityId()) instanceof PokemonEntity boss)) return pass("target is not a Pokemon entity");
+      if (!(boss instanceof IRaidAccessor acc) || !acc.crd_isRaidBoss() || acc.crd_getRaidState() == RaidState.FAILED) return pass("not a live raid boss, state=" + (boss instanceof IRaidAccessor a ? a.crd_getRaidState() : null));
+      if (!RaidJoinHelper.isParticipating(player, false) && RaidUtils.isRaidDimension(player.level())) return pass("raid dimension without participation");
       RaidSession session = RaidHelper.ACTIVE_RAIDS.get(acc.crd_getRaidId());
-      if (session == null || session.getActive() == null || session.hasFailed(player)) return false;
+      if (session == null || session.getActive() == null || session.hasFailed(player)) return pass("no session/instance or player failed");
       int tier = RaidTierPolicy.tierOfOrdinal(session.boss().getTier().ordinal());
-      if (!RaidTierPolicy.isDuel(tier, RaidsModule.config.duelFromTier())) return false;
+      if (!RaidTierPolicy.isDuel(tier, RaidsModule.config.duelFromTier())) return pass("tier " + tier + " is a normal battle");
       String refusal = refusal(player, session, boss, tier);
       if (refusal != null) {
+        RaidsModule.LOG.debug("Duel refused for {}: {}", player.getGameProfile().getName(), Tr.decS(refusal));
         player.sendSystemMessage(Messages.format(Tr.dec(refusal)));
         return true;
       }
@@ -203,6 +204,11 @@ public final class RaidDuelRuntime {
       player.sendSystemMessage(Messages.format(Tr.c("zianutilities.raids.err.start_failed", "§cNo se pudo iniciar el duelo; no se ha gastado el intento.")));
     }
     return true;
+  }
+
+  private static boolean pass(String why) {
+    RaidsModule.LOG.debug("Duel hook passes the challenge to Raid Dens: {}", why);
+    return false;
   }
 
   private static String refusal(ServerPlayer p, RaidSession session, PokemonEntity boss, int tier) {

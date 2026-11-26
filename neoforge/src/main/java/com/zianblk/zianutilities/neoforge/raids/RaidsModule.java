@@ -62,9 +62,23 @@ public final class RaidsModule {
     });
     NeoForge.EVENT_BUS.addListener((ServerStartedEvent e) -> start(e.getServer()));
     NeoForge.EVENT_BUS.addListener((ServerStoppingEvent e) -> stop());
-    NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post e) -> { if (server != null) { RaidDuelRuntime.tick(); RaidPendingRewards.tick(); } });
+    NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post e) -> { if (server != null) { RaidDuelRuntime.tick(); RaidPendingRewards.tick(); smokeTick(); } });
     NeoForge.EVENT_BUS.addListener(RaidsModule::registerCommands);
     RaidDuelRuntime.install();
+  }
+
+  private static boolean smokeChecked, smokeOn;
+
+  /** Local-only fixture: present in the server copy built with -PkeepRaidSmoke, absent from the release jar. */
+  private static void smokeTick() {
+    if (!smokeChecked) { smokeChecked = true; smokeOn = "true".equals(System.getenv("ZIANUTILITIES_RAIDS_SMOKE")); }
+    if (!smokeOn) return;
+    try {
+      Class.forName("com.zianblk.zianutilities.neoforge.raids.RaidSmoke").getDeclaredMethod("tick").invoke(null);
+    } catch (ReflectiveOperationException unavailable) {
+      smokeOn = false;
+      LOG.error("Raid smoke fixture unavailable", unavailable);
+    }
   }
 
   private static void registerCommands(RegisterCommandsEvent e) { RaidCommands.register(e.getDispatcher()); }

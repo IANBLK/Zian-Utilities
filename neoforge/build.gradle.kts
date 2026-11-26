@@ -116,6 +116,7 @@ tasks.jar {
     from(rootProject.file("LICENSE")) { into("META-INF") }
     from(rootProject.file("THIRD_PARTY_LICENSES.md")) { into("META-INF") }
     exclude("com/zianblk/zianutilities/neoforge/breeding/BreedingSmoke*.class")
+    if (!project.hasProperty("keepRaidSmoke")) exclude("com/zianblk/zianutilities/neoforge/raids/RaidSmoke*.class")
     archiveFileName.set("Zian-Utilities-${providers.gradleProperty("mod_version").get()}-NeoForge-1.21.1.jar")
 
     // Core stays a separate Gradle module for architecture/testing, while the
