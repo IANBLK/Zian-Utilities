@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.zianblk.zianutilities.neoforge.raids.mixin",
+  "plugin": "com.zianblk.zianutilities.neoforge.raids.RaidsMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "RaidChallengeMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

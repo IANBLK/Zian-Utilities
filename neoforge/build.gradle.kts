@@ -50,6 +50,9 @@ neoForge {
     }
 }
 
+// Not on the test runtime classpath: FML would load it as a mod and demand GeckoLib and Asymmetric Battles.
+val raidDensJar by configurations.creating { isTransitive = false }
+
 dependencies {
     implementation(project(":core"))
 
@@ -62,7 +65,7 @@ dependencies {
     // Cobblemon Raid Dens 0.14.3 (neoforge, MIT): optional module, compile and test only, never bundled.
     compileOnly("maven.modrinth:cobblemonraiddens:${providers.gradleProperty("raiddens_version_id").get()}") { isTransitive = false }
     testCompileOnly("maven.modrinth:cobblemonraiddens:${providers.gradleProperty("raiddens_version_id").get()}") { isTransitive = false }
-    testRuntimeOnly("maven.modrinth:cobblemonraiddens:${providers.gradleProperty("raiddens_version_id").get()}") { isTransitive = false }
+    add("raidDensJar", "maven.modrinth:cobblemonraiddens:${providers.gradleProperty("raiddens_version_id").get()}") { isTransitive = false }
 
     runtimeOnly("curse.maven:cobblemon-687131:${providers.gradleProperty("cobblemon_file_id").get()}") { isTransitive = false }
     runtimeOnly("thedarkcolour:kotlinforforge-neoforge:${providers.gradleProperty("kotlin_for_forge_version").get()}")
@@ -126,6 +129,7 @@ tasks.jar {
 
 tasks.test {
     useJUnitPlatform()
+    systemProperty("zian.raiddens.jar", raidDensJar.incoming.artifacts.artifactFiles.asPath)
     if (System.getProperty("os.name").lowercase().contains("windows")) systemProperty("junit.jupiter.tempdir.cleanup.mode.default", "NEVER")
 }
 
