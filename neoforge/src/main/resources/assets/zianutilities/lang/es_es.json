@@ -632,7 +632,6 @@
   "zianutilities.raids.admin.reload_failed": "§cConfiguración inválida, se conserva la anterior: %s",
   "zianutilities.raids.admin.reloaded": "§aConfiguración de raids recargada.",
   "zianutilities.raids.admin.reward_confirmed": "§aPremio marcado como entregado.",
-  "zianutilities.raids.admin.reward_requeued": "§aPremio en cola para entregarse de nuevo.",
   "zianutilities.raids.admin.reward_unknown": "§eNo existe ese premio pendiente.",
   "zianutilities.raids.admin.rewards_none": "§aNo hay premios pendientes.",
   "zianutilities.raids.cooldown.ready": "§7Tier %s: disponible.",
@@ -650,7 +649,7 @@
   "zianutilities.raids.msg.aborted": "§eEl duelo se ha cancelado.",
   "zianutilities.raids.msg.lost": "§cHas perdido el duelo.",
   "zianutilities.raids.msg.no_battle_in_duel": "§cNo puedes iniciar otra batalla mientras estás en un duelo de raid.",
-  "zianutilities.raids.msg.pc_full": "§eTu PC está lleno: el premio queda guardado y se entregará cuando liberes espacio.",
+  "zianutilities.raids.msg.pc_full": "§eTu PC está lleno: libera espacio y vuelve a reclamar tu recompensa.",
   "zianutilities.raids.msg.reward_in_pc": "§aTu Pokémon de premio está guardado en el PC.",
   "zianutilities.raids.msg.reward_note": "§aLlegaste al daño mínimo: ganas tu recompensa.",
   "zianutilities.raids.msg.start": "§6Duelo iniciado: esquiva las zonas marcadas y golpea al jefe. Tienes %s segundos.",
@@ -665,5 +664,6 @@
   "zianutilities.raids.subtitle.withdraw": "§7Te retiras del combate para luchar otro día",
   "zianutilities.raids.title.start": "§6¡Duelo!",
   "zianutilities.raids.title.withdraw": "§cTu derrota era inminente...",
-  "zianutilities.raids.title.won": "§a¡Victoria!"
+  "zianutilities.raids.title.won": "§a¡Victoria!",
+  "zianutilities.raids.err.reward_blocked": "§cNo se pudo entregar el premio ahora; vuelve a reclamarlo más tarde."
 }

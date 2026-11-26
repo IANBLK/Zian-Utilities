@@ -22,10 +22,11 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Raid Pokemon rewards with a journal. Every reward is written to pending-rewards/ before Raid Dens inserts it,
- * then proven by reading the saved copy back (PokemonDelivery). A full PC cancels the event instead of losing the
- * Pokemon: the reward waits here (also for offline players) and is delivered when there is room.
- * Phases: DELIVERING (waiting for proof), BLOCKED (PC_FULL, retried), UNCERTAIN (an admin must review).
+ * Journal and proof for the Pokemon rewards that Raid Dens itself inserts. Raid Dens is the only owner of a reward
+ * it could not deliver: when the PC is full, the species is denied, the Pokemon is already stored or anything fails,
+ * the event is cancelled and NO entry is created here, so Raid Dens keeps the reward and the Ball and the player claims again.
+ * A clean reward is written to pending-rewards/ before Raid Dens inserts it and proven by reading the saved PC back.
+ * Phases: DELIVERING (waiting for proof) and UNCERTAIN (an admin must review). Nothing is ever delivered twice.
  */
 final class RaidPendingRewards {
   static final int FORMAT_VERSION = 1;
@@ -88,37 +89,50 @@ final class RaidPendingRewards {
 
   // ---------------------------------------------------------------- the Raid Dens event
 
-  /** Fires before Raid Dens adds the Pokemon. Not cancelled unless the species is denied or the PC is full. */
+  /** Fires before Raid Dens adds the Pokemon. Anything but a clean go cancels and leaves the reward to Raid Dens. */
   static void onReward(RewardPokemonEvent event) {
     if (!RaidsModule.active() || !RaidsModule.config.safeRewardDelivery()) return;
     ServerPlayer player = event.getPlayer();
     Pokemon pokemon = event.getPokemon();
+    UUID id = pokemon.getUuid();
+    RaidRewardGate.Outcome outcome;
     try {
-      if (RaidGenerationFilter.deniedSpecies(pokemon.getSpecies().getResourceIdentifier().toString())) {
-        event.cancel();
-        note("REWARD_DENIED_GENERATION", pokemon.getUuid(), player.getUUID(), pokemon.getSpecies().getName());
-        player.sendSystemMessage(Messages.format(Tr.c("zianutilities.raids.err.reward_generation", "§cEl Pokémon de premio pertenece a una generación desactivada y no se entrega.")));
-        return;
+      var handle = PokemonDelivery.open(player);
+      outcome = RaidRewardGate.decide(new RaidRewardGate.Probe() {
+        public boolean deniedByGeneration() { return RaidGenerationFilter.deniedSpecies(pokemon.getSpecies().getResourceIdentifier().toString()); }
+        public boolean alreadyInStorage() { return PokemonDelivery.live(handle, id) != null; }
+        public boolean hasEntry() { return ENTRIES.containsKey(id); }
+        public boolean pcFull() { return handle.pc().getFirstAvailablePosition() == null; }
+      });
+      if (outcome == RaidRewardGate.Outcome.ALLOW) {
+        CompoundTag tag = new CompoundTag();
+        tag.putInt("formatVersion", FORMAT_VERSION);
+        tag.putUUID("id", id);
+        tag.putUUID("player", player.getUUID());
+        tag.putLong("createdAt", System.currentTimeMillis());
+        tag.put("pokemon", pokemon.saveToNBT(player.registryAccess(), new CompoundTag()));
+        phase(tag, "DELIVERING", "");
+        SINCE.put(id, System.currentTimeMillis());
       }
-      CompoundTag tag = new CompoundTag();
-      tag.putInt("formatVersion", FORMAT_VERSION);
-      tag.putUUID("id", pokemon.getUuid());
-      tag.putUUID("player", player.getUUID());
-      tag.putLong("createdAt", System.currentTimeMillis());
-      tag.put("pokemon", pokemon.saveToNBT(player.registryAccess(), new CompoundTag()));
-      boolean full = PokemonDelivery.open(player).pc().getFirstAvailablePosition() == null;
-      phase(tag, full ? "BLOCKED" : "DELIVERING", full ? "PC_FULL" : "");
-      SINCE.put(pokemon.getUuid(), System.currentTimeMillis());
-      if (full) {
-        event.cancel();
-        player.sendSystemMessage(Messages.format(Tr.c("zianutilities.raids.msg.pc_full", "§eTu PC está lleno: el premio queda guardado y se entregará cuando liberes espacio.")));
-      }
-    } catch (Exception | LinkageError failure) {
-      RaidsModule.LOG.error("Reward journal failed; Raid Dens delivers as usual", failure);
+    } catch (Throwable failure) {
+      RaidsModule.LOG.error("Reward check failed; the reward is not delivered blindly", failure);
+      outcome = RaidRewardGate.Outcome.ERROR;
+    }
+    if (!RaidRewardGate.cancels(outcome)) return;
+    event.cancel();
+    note("REWARD_CANCELLED", id, player.getUUID(), outcome);
+    try {
+      player.sendSystemMessage(Messages.format(switch (outcome) {
+        case PC_FULL -> Tr.c("zianutilities.raids.msg.pc_full", "§eTu PC está lleno: libera espacio y vuelve a reclamar tu recompensa.");
+        case DENIED_GENERATION -> Tr.c("zianutilities.raids.err.reward_generation", "§cEl Pokémon de premio pertenece a una generación desactivada y no se entrega.");
+        default -> Tr.c("zianutilities.raids.err.reward_blocked", "§cNo se pudo entregar el premio ahora; vuelve a reclamarlo más tarde.");
+      }));
+    } catch (Throwable ignored) {
+      // The player message is a courtesy; the cancel above is what protects the reward.
     }
   }
 
-  // ---------------------------------------------------------------- retries and proof
+  // ---------------------------------------------------------------- proof
 
   static void tick() {
     if (++ticks % 20 == 0) run();
@@ -127,21 +141,14 @@ final class RaidPendingRewards {
   static void run() {
     if (ENTRIES.isEmpty() || !RaidsModule.active()) return;
     for (CompoundTag tag : new ArrayList<>(ENTRIES.values())) {
+      if (!"DELIVERING".equals(tag.getString("phase"))) continue;
       ServerPlayer p = RaidsModule.server.getPlayerList().getPlayer(tag.getUUID("player"));
       if (p == null) continue;
-      UUID id = tag.getUUID("id");
       try {
-        switch (tag.getString("phase")) {
-          case "DELIVERING" -> prove(p, tag);
-          case "BLOCKED", "QUEUED" -> {
-            var step = PokemonDelivery.deliver(p, id, () -> pokemonOf(p, tag), (phase, reason) -> phase(tag, phase.name(), reason));
-            if (step == PokemonDelivery.Step.AWAITING_PROOF) SINCE.put(id, System.currentTimeMillis());
-          }
-          default -> { }
-        }
+        prove(p, tag);
       } catch (Exception failure) {
-        RaidsModule.LOG.error("Reward delivery needs review id={}", id, failure);
-        try { phase(tag, "UNCERTAIN", "TICK_FAILURE"); } catch (IOException ignored) { }
+        RaidsModule.LOG.error("Reward proof needs review id={}", tag.getUUID("id"), failure);
+        try { phase(tag, "UNCERTAIN", "PROOF_FAILURE"); } catch (IOException ignored) { }
       }
     }
   }
@@ -159,12 +166,6 @@ final class RaidPendingRewards {
     }
   }
 
-  private static Pokemon pokemonOf(ServerPlayer p, CompoundTag tag) {
-    Pokemon pokemon = new Pokemon().loadFromNBT(p.registryAccess(), tag.getCompound("pokemon"));
-    pokemon.setOriginalTrainer(p.getUUID());
-    return pokemon;
-  }
-
   // ---------------------------------------------------------------- admin
 
   static List<String> review() {
@@ -179,14 +180,6 @@ final class RaidPendingRewards {
     if (!ENTRIES.containsKey(id)) return false;
     note("REWARD_CONFIRMED_BY_ADMIN", id);
     remove(id);
-    return true;
-  }
-
-  /** Put an UNCERTAIN entry back in the queue so it is delivered again. */
-  static boolean requeue(UUID id) throws IOException {
-    CompoundTag tag = ENTRIES.get(id);
-    if (tag == null) return false;
-    phase(tag, "QUEUED", "ADMIN_REQUEUE");
     return true;
   }
 

@@ -55,8 +55,7 @@ final class RaidCommands {
         .then(Commands.literal("deshacer").executes(c -> configUndo(c.getSource()))));
     raid.then(Commands.literal("premios").requires(RaidCommands::admin)
         .then(Commands.literal("revisar").executes(c -> rewardsReview(c.getSource())))
-        .then(Commands.literal("confirmar-entregado").then(Commands.argument("id", StringArgumentType.word()).executes(c -> rewardsConfirm(c.getSource(), StringArgumentType.getString(c, "id")))))
-        .then(Commands.literal("reentregar").then(Commands.argument("id", StringArgumentType.word()).executes(c -> rewardsRequeue(c.getSource(), StringArgumentType.getString(c, "id"))))));
+        .then(Commands.literal("confirmar-entregado").then(Commands.argument("id", StringArgumentType.word()).executes(c -> rewardsConfirm(c.getSource(), StringArgumentType.getString(c, "id"))))));
 
     dispatcher.register(Commands.literal(ZianUtilitiesMod.COMMAND_ROOT).requires(s -> true).then(raid));
   }
@@ -155,19 +154,6 @@ final class RaidCommands {
       boolean ok = id != null && RaidPendingRewards.confirmDelivered(id);
       if (ok) audit(s, "reward confirmed " + id);
       say(s, ok ? Tr.c("zianutilities.raids.admin.reward_confirmed", "§aPremio marcado como entregado.") : Tr.c("zianutilities.raids.admin.reward_unknown", "§eNo existe ese premio pendiente."));
-      return ok ? 1 : 0;
-    } catch (Exception failure) {
-      s.sendFailure(Tr.c("zianutilities.raids.err.failed", "§cNo se pudo completar la acción: %s", String.valueOf(failure.getMessage())));
-      return 0;
-    }
-  }
-
-  private static int rewardsRequeue(CommandSourceStack s, String text) {
-    try {
-      UUID id = RaidPendingRewards.parse(text);
-      boolean ok = id != null && RaidPendingRewards.requeue(id);
-      if (ok) audit(s, "reward requeued " + id);
-      say(s, ok ? Tr.c("zianutilities.raids.admin.reward_requeued", "§aPremio en cola para entregarse de nuevo.") : Tr.c("zianutilities.raids.admin.reward_unknown", "§eNo existe ese premio pendiente."));
       return ok ? 1 : 0;
     } catch (Exception failure) {
       s.sendFailure(Tr.c("zianutilities.raids.err.failed", "§cNo se pudo completar la acción: %s", String.valueOf(failure.getMessage())));

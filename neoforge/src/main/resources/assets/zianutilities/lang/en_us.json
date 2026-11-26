@@ -632,7 +632,6 @@
   "zianutilities.raids.admin.reload_failed": "§cInvalid configuration, the previous one is kept: %s",
   "zianutilities.raids.admin.reloaded": "§aRaid configuration reloaded.",
   "zianutilities.raids.admin.reward_confirmed": "§aReward marked as delivered.",
-  "zianutilities.raids.admin.reward_requeued": "§aReward queued to be delivered again.",
   "zianutilities.raids.admin.reward_unknown": "§eThere is no such pending reward.",
   "zianutilities.raids.admin.rewards_none": "§aThere are no pending rewards.",
   "zianutilities.raids.cooldown.ready": "§7Tier %s: available.",
@@ -650,7 +649,7 @@
   "zianutilities.raids.msg.aborted": "§eThe duel was cancelled.",
   "zianutilities.raids.msg.lost": "§cYou lost the duel.",
   "zianutilities.raids.msg.no_battle_in_duel": "§cYou cannot start another battle while in a raid duel.",
-  "zianutilities.raids.msg.pc_full": "§eYour PC is full: the reward is kept and will be delivered when you free some space.",
+  "zianutilities.raids.msg.pc_full": "§eYour PC is full: free some space and claim your reward again.",
   "zianutilities.raids.msg.reward_in_pc": "§aYour reward Pokémon is saved in the PC.",
   "zianutilities.raids.msg.reward_note": "§aYou reached the minimum damage: you earn your reward.",
   "zianutilities.raids.msg.start": "§6Duel started: dodge the marked areas and hit the boss. You have %s seconds.",
@@ -665,5 +664,6 @@
   "zianutilities.raids.subtitle.withdraw": "§7You withdraw from the fight to battle another day",
   "zianutilities.raids.title.start": "§6Duel!",
   "zianutilities.raids.title.withdraw": "§cDefeat was imminent...",
-  "zianutilities.raids.title.won": "§aVictory!"
+  "zianutilities.raids.title.won": "§aVictory!",
+  "zianutilities.raids.err.reward_blocked": "§cThe reward could not be delivered right now; claim it again later."
 }
