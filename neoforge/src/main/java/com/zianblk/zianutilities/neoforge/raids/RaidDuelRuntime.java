@@ -15,6 +15,7 @@ import com.necro.raid.dens.common.util.RaidUtils;
 import com.zianblk.zianutilities.core.raids.DuelEngine;
 import com.zianblk.zianutilities.core.raids.DuelParams;
 import com.zianblk.zianutilities.core.raids.DuelResult;
+import com.zianblk.zianutilities.core.raids.PendingBossRestores;
 import com.zianblk.zianutilities.core.raids.RaidRewardPolicy;
 import com.zianblk.zianutilities.core.raids.RaidTierPolicy;
 import com.zianblk.zianutilities.core.raids.SafeSteps;
@@ -49,6 +50,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -120,6 +122,17 @@ public final class RaidDuelRuntime {
     NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, RaidDuelRuntime::onIncoming);
     NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RaidDuelRuntime::onPre);
     NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true, RaidDuelRuntime::onDeath);
+    NeoForge.EVENT_BUS.addListener((EntityJoinLevelEvent e) -> {
+      if (e.getLevel().isClientSide() || RaidsModule.bosses == null) return;
+      UUID id = e.getEntity().getUUID();
+      var entry = RaidsModule.bosses.get(id);
+      if (entry == null || isDuelBoss(id)) return;
+      SafeSteps.guard(() -> {
+        applyEntry(e.getEntity(), entry);
+        RaidsModule.bosses.remove(id);
+        RaidsModule.LOG.info("[ZIAN-AUDIT] raid boss {} restored when it loaded after a shutdown", id);
+      }, failure -> RaidsModule.LOG.error("Boss restore on join failed {}", id, failure));
+    });
     NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent e) -> {
       if (e.getEntity() instanceof ServerPlayer p && BY_PLAYER.get(p.getUUID()) instanceof Duel d) finish(d, DuelResult.SURRENDERED, false);
     });
@@ -268,20 +281,33 @@ public final class RaidDuelRuntime {
     return null;
   }
 
+  /** What start() changed, so a failed start can put exactly that back. */
+  private static final class Undo {
+    boolean addedPlayer, removedBar, touchedCooldown, logged, bossEntry;
+    long previousCooldownMillis;
+  }
+
   private static void start(ServerPlayer p, RaidSession session, PokemonEntity boss, int tier, UUID raidId) throws Exception {
     DuelParams params = RaidsModule.config.paramsFor(tier);
     long now = System.currentTimeMillis();
     var log = RaidsModule.log;
     Duel d = null;
-    boolean logged = false;
+    Undo undo = new Undo();
     try {
-      if (!session.isPlayerIn(p)) session.addPlayer(p);
+      if (!session.isPlayerIn(p)) { session.addPlayer(p); undo.addedPlayer = true; }
       d = new Duel(p, tier, params, session, session.getActive(), boss, raidId);
-      log.started(d.id, p.getUUID(), tier, raidId.toString(), String.valueOf(session.boss().getId()), now + params.timeLimitSeconds() * 1000L, boss.getUUID(), d.bossWasInvulnerable);
-      logged = true;
-      if (params.cooldownMinutes() > 0 && !bypassesCooldown(p))
+      RaidsModule.bosses.put(boss.getUUID(), new PendingBossRestores.Entry(d.bossWasInvulnerable, d.bossHome.x, d.bossHome.y, d.bossHome.z, d.bossYRot));
+      undo.bossEntry = true;
+      log.started(d.id, p.getUUID(), tier, raidId.toString(), String.valueOf(session.boss().getId()), now + params.timeLimitSeconds() * 1000L,
+          boss.getUUID(), d.bossWasInvulnerable, d.bossHome.x, d.bossHome.y, d.bossHome.z);
+      undo.logged = true;
+      if (params.cooldownMinutes() > 0 && !bypassesCooldown(p)) {
+        undo.previousCooldownMillis = RaidsModule.cooldowns.remainingMillis(p.getUUID(), tier, now);
+        undo.touchedCooldown = true;
         RaidsModule.cooldowns.start(p.getUUID(), tier, now + params.cooldownMinutes() * 60_000L);
+      }
       d.instance.removeFromBossEvent(p);
+      undo.removedBar = true;
       boss.setInvulnerable(false);
       d.engine.start();
       d.bar.addPlayer(p);
@@ -293,23 +319,48 @@ public final class RaidDuelRuntime {
       p.sendSystemMessage(Messages.format(Tr.c("zianutilities.raids.msg.start", "§6Duelo iniciado: esquiva las zonas marcadas y golpea al jefe. Tienes %s segundos.", params.timeLimitSeconds())));
       RaidsModule.LOG.info("[ZIAN-AUDIT] raid duel started duel={} player={} tier={} raid={}", d.id, p.getUUID(), tier, raidId);
     } catch (Exception | LinkageError failure) {
-      rollbackStart(d, logged, p, tier, raidId);
+      rollbackStart(d, undo, p, tier, raidId, session, now);
       throw failure;
     }
   }
 
-  /** A start that failed half way is closed ABORTED: journal ended, cooldown released, boss restored, nobody left registered. */
-  private static void rollbackStart(Duel d, boolean logged, ServerPlayer p, int tier, UUID raidId) {
+  /**
+   * A start that failed half way is closed ABORTED and put back as it was: journal ended, boss restored, the player
+   * removed from the Raid Dens session only if we added them, their Raid Dens bar returned, and the previous cooldown
+   * (not a blank one) restored.
+   */
+  private static void rollbackStart(Duel d, Undo undo, ServerPlayer p, int tier, UUID raidId, RaidSession session, long now) {
     BY_PLAYER.remove(p.getUUID());
     BY_RAID.remove(raidId);
-    if (d == null) return;
-    d.finished = true;
+    if (d != null) d.finished = true;
     var failures = SafeSteps.runAll(
-        () -> d.bar.removeAllPlayers(),
-        () -> restoreBoss(d),
-        () -> { if (logged) RaidsModule.log.ended(d.id, DuelResult.ABORTED, 0); },
-        () -> RaidsModule.cooldowns.reset(p.getUUID(), tier));
-    failures.forEach(f -> RaidsModule.LOG.error("Duel start rollback step failed duel={}", d.id, f));
+        () -> { if (d != null) d.bar.removeAllPlayers(); },
+        () -> { if (d != null) restoreBossAndEntry(d); },
+        () -> { if (d != null && undo.logged) RaidsModule.log.ended(d.id, DuelResult.ABORTED, 0); },
+        () -> {
+          if (!undo.touchedCooldown) return;
+          if (undo.previousCooldownMillis > 0) RaidsModule.cooldowns.start(p.getUUID(), tier, now + undo.previousCooldownMillis);
+          else RaidsModule.cooldowns.reset(p.getUUID(), tier);
+        },
+        () -> { if (undo.removedBar) session.getActive().addToBossEvent(p); },
+        () -> { if (undo.addedPlayer) session.removePlayer(p); });
+    failures.forEach(f -> RaidsModule.LOG.error("Duel start rollback step failed raid={}", raidId, f));
+  }
+
+  private static boolean isDuelBoss(UUID entity) {
+    for (Duel d : BY_PLAYER.values()) if (d.boss.getUUID().equals(entity)) return true;
+    return false;
+  }
+
+  private static void applyEntry(Entity boss, PendingBossRestores.Entry e) {
+    boss.setInvulnerable(e.invulnerable());
+    boss.moveTo(e.x(), e.y(), e.z(), e.yRot(), 0);
+  }
+
+  /** Boss goes back to the exact state and place it had before the duel, and its pending entry is closed. */
+  private static void restoreBossAndEntry(Duel d) throws java.io.IOException {
+    restoreBoss(d);
+    if (RaidsModule.bosses != null) RaidsModule.bosses.remove(d.boss.getUUID());
   }
 
   /** Boss goes back to the exact state and place it had before the duel. */
@@ -424,7 +475,7 @@ public final class RaidDuelRuntime {
     final double required = need;
     boolean success = RaidRewardPolicy.closeAsSuccess(result, ratio, required);
     var failures = SafeSteps.runAll(
-        () -> restoreBoss(d),
+        () -> restoreBossAndEntry(d),
         () -> d.bar.removeAllPlayers(),
         () -> RaidsModule.log.ended(d.id, result, ratio),
         () -> { if (refund) RaidsModule.cooldowns.reset(d.player, d.tier); },
@@ -480,19 +531,27 @@ public final class RaidDuelRuntime {
 
   // ---------------------------------------------------------------- recovery and admin
 
-  /** Duels still open in the journal were cut by a crash: they close as ABORTED, the cooldown is released and the boss shield is put back if the boss is loaded. */
+  /**
+   * Duels still open in the journal were cut by a crash: they close as ABORTED and the cooldown is released. Bosses
+   * still waiting in pending-bosses are restored now if loaded, and otherwise the moment they load (EntityJoinLevelEvent).
+   */
   static void recover() throws Exception {
     for (var open : RaidsModule.log.unfinished().values()) {
       RaidsModule.log.ended(open.duelId(), DuelResult.ABORTED, 0);
       RaidsModule.cooldowns.reset(open.player(), open.tier());
-      boolean restored = false;
-      if (open.bossEntity() != null)
-        for (ServerLevel level : RaidsModule.server.getAllLevels()) {
-          Entity boss = level.getEntity(open.bossEntity());
-          if (boss != null) { boss.setInvulnerable(open.bossWasInvulnerable()); restored = true; }
-        }
-      RaidsModule.LOG.warn("[ZIAN-AUDIT] raid duel {} of {} was cut by a shutdown: closed as ABORTED, cooldown released, boss restored={}", open.duelId(), open.player(), restored);
+      RaidsModule.LOG.warn("[ZIAN-AUDIT] raid duel {} of {} was cut by a shutdown: closed as ABORTED, cooldown released", open.duelId(), open.player());
     }
+    for (var pending : RaidsModule.bosses.all().entrySet())
+      for (ServerLevel level : RaidsModule.server.getAllLevels()) {
+        Entity boss = level.getEntity(pending.getKey());
+        if (boss == null) continue;
+        applyEntry(boss, pending.getValue());
+        RaidsModule.bosses.remove(pending.getKey());
+        RaidsModule.LOG.warn("[ZIAN-AUDIT] raid boss {} restored at startup", pending.getKey());
+        break;
+      }
+    if (!RaidsModule.bosses.all().isEmpty())
+      RaidsModule.LOG.warn("{} raid boss(es) not loaded yet: they are restored when they load", RaidsModule.bosses.all().size());
   }
 
   static void abortAll() {
@@ -500,7 +559,7 @@ public final class RaidDuelRuntime {
       d.finished = true;
       var failures = SafeSteps.runAll(
           () -> d.bar.removeAllPlayers(),
-          () -> restoreBoss(d),
+          () -> restoreBossAndEntry(d),
           () -> RaidsModule.log.ended(d.id, DuelResult.ABORTED, d.engine.dealtRatio()),
           () -> RaidsModule.cooldowns.reset(d.player, d.tier));
       failures.forEach(f -> RaidsModule.LOG.error("Duel abort on shutdown failed duel={}", d.id, f));

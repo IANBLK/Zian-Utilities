@@ -633,6 +633,7 @@
   "zianutilities.raids.admin.reloaded": "§aRaid configuration reloaded.",
   "zianutilities.raids.admin.reward_confirmed": "§aReward marked as delivered.",
   "zianutilities.raids.admin.reward_unknown": "§eThere is no such pending reward.",
+  "zianutilities.raids.admin.rewards_hint": "§7If a reward is still listed but the Pokémon is already in the PC, or Raid Dens never inserted it, check the PC and resolve it with confirmar-entregado.",
   "zianutilities.raids.admin.rewards_none": "§aThere are no pending rewards.",
   "zianutilities.raids.cooldown.ready": "§7Tier %s: available.",
   "zianutilities.raids.cooldown.waiting": "§7Tier %s: wait %s.",
@@ -643,6 +644,7 @@
   "zianutilities.raids.err.in_battle": "§cYou cannot start a duel during a battle.",
   "zianutilities.raids.err.no_permission": "§cYou do not have permission for raid duels.",
   "zianutilities.raids.err.raid_busy": "§cAnother player is dueling this boss. Wait for your turn.",
+  "zianutilities.raids.err.reward_blocked": "§cThe reward could not be delivered right now; claim it again later.",
   "zianutilities.raids.err.reward_generation": "§cThe reward Pokémon belongs to a disabled generation and is not delivered.",
   "zianutilities.raids.err.start_failed": "§cThe duel could not start; the attempt was not spent.",
   "zianutilities.raids.err.too_far": "§cYou are too far from the boss.",
@@ -664,6 +666,5 @@
   "zianutilities.raids.subtitle.withdraw": "§7You withdraw from the fight to battle another day",
   "zianutilities.raids.title.start": "§6Duel!",
   "zianutilities.raids.title.withdraw": "§cDefeat was imminent...",
-  "zianutilities.raids.title.won": "§aVictory!",
-  "zianutilities.raids.err.reward_blocked": "§cThe reward could not be delivered right now; claim it again later."
+  "zianutilities.raids.title.won": "§aVictory!"
 }

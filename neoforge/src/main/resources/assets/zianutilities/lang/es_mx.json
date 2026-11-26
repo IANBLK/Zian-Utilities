@@ -633,6 +633,7 @@
   "zianutilities.raids.admin.reloaded": "§aConfiguración de raids recargada.",
   "zianutilities.raids.admin.reward_confirmed": "§aPremio marcado como entregado.",
   "zianutilities.raids.admin.reward_unknown": "§eNo existe ese premio pendiente.",
+  "zianutilities.raids.admin.rewards_hint": "§7Si un premio sigue aquí pero el Pokémon ya está en el PC, o Raid Dens nunca llegó a insertarlo, comprueba el PC y resuélvelo con confirmar-entregado.",
   "zianutilities.raids.admin.rewards_none": "§aNo hay premios pendientes.",
   "zianutilities.raids.cooldown.ready": "§7Tier %s: disponible.",
   "zianutilities.raids.cooldown.waiting": "§7Tier %s: espera %s.",
@@ -643,6 +644,7 @@
   "zianutilities.raids.err.in_battle": "§cNo puedes iniciar un duelo durante una batalla.",
   "zianutilities.raids.err.no_permission": "§cNo tienes permiso para los duelos de raid.",
   "zianutilities.raids.err.raid_busy": "§cOtro jugador está en duelo con este jefe. Espera tu turno.",
+  "zianutilities.raids.err.reward_blocked": "§cNo se pudo entregar el premio ahora; vuelve a reclamarlo más tarde.",
   "zianutilities.raids.err.reward_generation": "§cEl Pokémon de premio pertenece a una generación desactivada y no se entrega.",
   "zianutilities.raids.err.start_failed": "§cNo se pudo iniciar el duelo; no se ha gastado el intento.",
   "zianutilities.raids.err.too_far": "§cEstás demasiado lejos del jefe.",
@@ -664,6 +666,5 @@
   "zianutilities.raids.subtitle.withdraw": "§7Te retiras del combate para luchar otro día",
   "zianutilities.raids.title.start": "§6¡Duelo!",
   "zianutilities.raids.title.withdraw": "§cTu derrota era inminente...",
-  "zianutilities.raids.title.won": "§a¡Victoria!",
-  "zianutilities.raids.err.reward_blocked": "§cNo se pudo entregar el premio ahora; vuelve a reclamarlo más tarde."
+  "zianutilities.raids.title.won": "§a¡Victoria!"
 }

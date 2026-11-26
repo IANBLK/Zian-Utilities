@@ -89,7 +89,12 @@ final class RaidPendingRewards {
 
   // ---------------------------------------------------------------- the Raid Dens event
 
-  /** Fires before Raid Dens adds the Pokemon. Anything but a clean go cancels and leaves the reward to Raid Dens. */
+  /**
+   * Fires before Raid Dens adds the Pokemon. Anything but a clean go cancels and leaves the reward to Raid Dens.
+   * DUPLICATE note: if an entry exists because of an earlier ALLOW but Raid Dens never inserted the Pokemon (crash,
+   * cancelled by another mod), claiming again is cancelled as a duplicate; an admin checks the PC and clears it
+   * with `raid premios confirmar-entregado`.
+   */
   static void onReward(RewardPokemonEvent event) {
     if (!RaidsModule.active() || !RaidsModule.config.safeRewardDelivery()) return;
     ServerPlayer player = event.getPlayer();

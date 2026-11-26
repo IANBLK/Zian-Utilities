@@ -13,7 +13,7 @@ import java.util.UUID;
  * Lines are "TYPE|id|a|b|c...". A STARTED without ENDED at startup was cut by a crash.
  */
 public final class DuelLog implements AutoCloseable {
-    public record Open(UUID duelId, UUID player, int tier, String raidId, UUID bossEntity, boolean bossWasInvulnerable) {}
+    public record Open(UUID duelId, UUID player, int tier, String raidId, UUID bossEntity, boolean bossWasInvulnerable, double bossX, double bossY, double bossZ) {}
 
     private final BreedingJournal journal;
     private final Map<UUID, Open> open = new LinkedHashMap<>();
@@ -28,7 +28,8 @@ public final class DuelLog implements AutoCloseable {
         UUID id = UUID.fromString(f[1]);
         switch (f[0]) {
             case "STARTED" -> open.put(id, new Open(id, UUID.fromString(f[2]), Integer.parseInt(f[3]), f[4],
-                f.length > 8 ? UUID.fromString(f[7]) : null, f.length > 8 && Boolean.parseBoolean(f[8])));
+                f.length > 8 ? UUID.fromString(f[7]) : null, f.length > 8 && Boolean.parseBoolean(f[8]),
+                f.length > 11 ? Double.parseDouble(f[9]) : 0, f.length > 11 ? Double.parseDouble(f[10]) : 0, f.length > 11 ? Double.parseDouble(f[11]) : 0));
             case "ENDED" -> open.remove(id);
             default -> { }
         }
@@ -38,9 +39,9 @@ public final class DuelLog implements AutoCloseable {
     public Map<UUID, Open> unfinished() { return Map.copyOf(open); }
 
     public void started(UUID duelId, UUID player, int tier, String raidId, String boss, long deadline,
-                        UUID bossEntity, boolean bossWasInvulnerable) throws IOException {
-        append("STARTED", duelId, player, tier, clean(raidId), clean(boss), deadline, bossEntity, bossWasInvulnerable);
-        open.put(duelId, new Open(duelId, player, tier, raidId, bossEntity, bossWasInvulnerable));
+                        UUID bossEntity, boolean bossWasInvulnerable, double bossX, double bossY, double bossZ) throws IOException {
+        append("STARTED", duelId, player, tier, clean(raidId), clean(boss), deadline, bossEntity, bossWasInvulnerable, bossX, bossY, bossZ);
+        open.put(duelId, new Open(duelId, player, tier, raidId, bossEntity, bossWasInvulnerable, bossX, bossY, bossZ));
     }
 
     public void ended(UUID duelId, DuelResult result, double ratio) throws IOException {

@@ -145,6 +145,7 @@ final class RaidCommands {
     var lines = RaidPendingRewards.review();
     if (lines.isEmpty()) { say(s, Tr.c("zianutilities.raids.admin.rewards_none", "§aNo hay premios pendientes.")); return 1; }
     lines.forEach(l -> say(s, Component.literal(l)));
+    say(s, Tr.c("zianutilities.raids.admin.rewards_hint", "§7Si un premio sigue aquí pero el Pokémon ya está en el PC, o Raid Dens nunca llegó a insertarlo, comprueba el PC y resuélvelo con confirmar-entregado."));
     return lines.size();
   }
 

@@ -30,6 +30,7 @@ public final class RaidsModule {
   static RaidsConfig config;
   static RaidCooldowns cooldowns;
   static DuelLog log;
+  static com.zianblk.zianutilities.core.raids.PendingBossRestores bosses;
   static String problem = "not started";
   private static boolean subscribed;
 
@@ -48,7 +49,7 @@ public final class RaidsModule {
 
   /** True only when Raid Dens is present, the config loaded, it says enabled, and the journals are healthy. */
   public static boolean active() {
-    return server != null && config != null && config.enabled() && cooldowns != null && log != null && !log.locked();
+    return server != null && config != null && config.enabled() && cooldowns != null && log != null && bosses != null && !log.locked();
   }
 
   public static void install(IEventBus modBus) {
@@ -88,12 +89,14 @@ public final class RaidsModule {
     config = null;
     cooldowns = null;
     log = null;
+    bosses = null;
     try {
       config = RaidsConfig.load(configPath());
       problem = config.enabled() ? "" : "disabled in config";
       Path dir = dataDir();
       cooldowns = RaidCooldowns.load(dir.resolve("cooldowns.properties"));
       log = new DuelLog(dir.resolve("duels.wal"));
+      bosses = com.zianblk.zianutilities.core.raids.PendingBossRestores.load(dir.resolve("pending-bosses.properties"));
       RaidDuelRuntime.recover();
       RaidPendingRewards.load();
       if (!subscribed) { RaidDensEvents.install(); subscribed = true; }

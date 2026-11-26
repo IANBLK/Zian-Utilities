@@ -79,17 +79,17 @@ public final class DuelEngine {
     /** Health at or below this after a hit means the hit is cancelled and the duel is lost (half a heart). */
     public static final double WITHDRAW_AT = 1.0;
 
+    /** The one rule for "this hit would leave the player at WITHDRAW_AT health or less", also used by the post-duel grace window. */
+    public static boolean isLethal(double playerHealthPlusAbsorption, double damage) {
+        return playerHealthPlusAbsorption - damage <= WITHDRAW_AT;
+    }
+
     /**
      * Any damage about to land on the dueling player, from the boss or from anything else. Nobody dies inside a
      * duel so no item or totem is ever spent: a hit that would leave the player at 1.0 health or less is not
      * applied, the duel ends as a defeat and the runtime withdraws the player alive. Returns true when the hit
      * must be cancelled.
      */
-    /** The one rule for "this hit would leave the player at WITHDRAW_AT health or less", also used by the post-duel grace window. */
-    public static boolean isLethal(double playerHealthPlusAbsorption, double damage) {
-        return playerHealthPlusAbsorption - damage <= WITHDRAW_AT;
-    }
-
     public boolean incomingDamage(double playerHealthPlusAbsorption, double damage) {
         if (state != State.ACTIVE) return false;
         if (isLethal(playerHealthPlusAbsorption, damage)) { lethalCapped = true; end(DuelResult.LOST); return true; }
