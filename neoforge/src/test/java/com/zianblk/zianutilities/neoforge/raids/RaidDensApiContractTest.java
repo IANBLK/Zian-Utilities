@@ -6,7 +6,7 @@ import java.lang.reflect.Modifier;
 import net.minecraft.server.level.ServerPlayer;
 import org.junit.jupiter.api.Test;
 
-/** Compatibility control against the real Raid Dens jar (0.14.3): every member the raids module calls must exist. */
+/** Compatibility control against the real Raid Dens jar (0.14.4): every member the raids module calls must exist. */
 class RaidDensApiContractTest {
     private static final String P = "com.necro.raid.dens.common.";
 
