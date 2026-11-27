@@ -30,5 +30,8 @@ final class RaidDensEvents {
       event.getPlayer().sendSystemMessage(Messages.format(Tr.c("zianutilities.raids.err.generation_denied", "§cEste jefe pertenece a una generación desactivada.")));
     });
     RaidEvents.REWARD_POKEMON.subscribe(Priority.HIGHEST, RaidPendingRewards::onReward);
+    RaidEvents.RAID_BATTLE_END.subscribe(Priority.NORMAL, event -> {
+      if (event.isWin() && !WeeklyBossFactory.isWeekly(event.raidBoss())) com.zianblk.zianutilities.neoforge.pase.PaseApi.raidWon(event.player().getUUID(), false);
+    });
   }
 }

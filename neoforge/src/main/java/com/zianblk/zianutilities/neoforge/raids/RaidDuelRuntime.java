@@ -508,7 +508,7 @@ public final class RaidDuelRuntime {
           }
         },
         () -> d.instance.queueStopInstance(success),
-        () -> { if (d.weekly) WeeklyRuntime.onDuelFinished(d.player, success, refund); },
+        () -> { if (d.weekly) WeeklyRuntime.onDuelFinished(d.player, success, refund); else if (result == DuelResult.WON) com.zianblk.zianutilities.neoforge.pase.PaseApi.raidWon(d.player, false); },
         () -> { if (p != null) notifyEnd(d, p, result, success); });
     failures.forEach(f -> RaidsModule.LOG.error("Duel close step failed duel={}", d.id, f));
     RaidsModule.LOG.info("[ZIAN-AUDIT] raid duel ended duel={} player={} result={} ratio={} required={} success={} refund={} failures={}", d.id, d.player, result, ratio, required, success, refund, failures.size());

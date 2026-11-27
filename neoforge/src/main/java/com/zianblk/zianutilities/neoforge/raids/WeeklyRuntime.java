@@ -440,6 +440,7 @@ final class WeeklyRuntime {
     if (state == null || !currentWeek()) return;
     state.counts.addReward(player);
     persist();
+    com.zianblk.zianutilities.neoforge.pase.PaseApi.raidWon(player, true);
   }
 
   private static void persist() {
