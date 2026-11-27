@@ -128,8 +128,23 @@ final class PaseDelivery implements PrizeClaimer.Gateway {
     return candidates.get(new SplittableRandom(seed).nextInt(candidates.size())).getResourceIdentifier().toString();
   }
 
-  private UUID pokemonId(Prize z) {
-    return UUID.nameUUIDFromBytes(("zian-pase-pokemon|" + player.getUUID() + "|" + z.id).getBytes(StandardCharsets.UTF_8));
+  /** Fixed per player and prize: delivering the same prize again can only ever find or insert this one Pokemon. */
+  static UUID pokemonId(UUID playerId, Prize z) {
+    return UUID.nameUUIDFromBytes(("zian-pase-pokemon|" + playerId + "|" + z.id).getBytes(StandardCharsets.UTF_8));
+  }
+
+  /** The claim of a coins prize: the id is fixed per player and prize, so the shared journal credits it at most once. */
+  static RewardClaim coinsClaim(UUID playerId, Prize z) {
+    UUID claimId = UUID.nameUUIDFromBytes(("zian-pase|" + playerId + "|" + z.id).getBytes(StandardCharsets.UTF_8));
+    return new RewardClaim(claimId, playerId, "pase", z.id, List.of(new RewardComponent("coins", new Reward.Currency(z.reward.currency(), z.reward.amount()))));
+  }
+
+  /** The Pokemon of a prize with its species already chosen (z.detail), at the level the cap allows. */
+  static Pokemon build(ServerPlayer player, Prize z, SeasonRewards season) {
+    var spec = z.reward.pokemon();
+    int level = spec.ignoreLevelCap() ? spec.level() : Math.min(spec.level(), season.levelCap());
+    long seed = com.zianblk.zianutilities.core.pase.LootTable.seed(player.getUUID(), z.id, 1);
+    return PaseMons.build(z.detail, level, spec.ivs(), spec.minPerfectIvs(), spec.alpha(), spec.shiny(), pokemonId(player.getUUID(), z), seed, player.getUUID());
   }
 
   // ---------------------------------------------------------------- Gateway
@@ -202,9 +217,7 @@ final class PaseDelivery implements PrizeClaimer.Gateway {
   // ---------------------------------------------------------------- coins
 
   private PrizeClaimer.Outcome giveCoins(Prize z) {
-    UUID claimId = UUID.nameUUIDFromBytes(("zian-pase|" + player.getUUID() + "|" + z.id).getBytes(StandardCharsets.UTF_8));
-    var claim = new RewardClaim(claimId, player.getUUID(), "pase", z.id, List.of(new RewardComponent("coins", new Reward.Currency(z.reward.currency(), z.reward.amount()))));
-    var record = PaseRewards.coins().claim(claim);
+    var record = PaseRewards.coins().claim(coinsClaim(player.getUUID(), z));
     if (record.status() == ClaimStatus.CLAIMED) return PrizeClaimer.Outcome.delivered();
     if (record.status() == ClaimStatus.REJECTED) {
       ComponentRecord c = record.getComponents().get("coins");
@@ -229,15 +242,8 @@ final class PaseDelivery implements PrizeClaimer.Gateway {
   // ---------------------------------------------------------------- Pokemon
 
   private PrizeClaimer.Outcome givePokemon(Prize z) throws Exception {
-    var spec = z.reward.pokemon();
     SeasonRewards season = PaseRewards.rewardsOf(z.seasonId);
-    int level = spec.ignoreLevelCap() ? spec.level() : Math.min(spec.level(), season.levelCap());
-    UUID id = pokemonId(z);
-    long seed = com.zianblk.zianutilities.core.pase.LootTable.seed(player.getUUID(), z.id, 1);
-    String[] uncertain = new String[1];
-    var step = PokemonDelivery.deliver(player, id,
-        () -> PaseMons.build(z.detail, level, spec.ivs(), spec.minPerfectIvs(), spec.alpha(), spec.shiny(), id, seed, player.getUUID()),
-        (phase, reason) -> { if (phase == PokemonDelivery.Phase.UNCERTAIN) uncertain[0] = reason; });
+    var step = PokemonDelivery.deliver(player, pokemonId(player.getUUID(), z), () -> build(player, z, season), (phase, reason) -> { });
     if (step == PokemonDelivery.Step.BLOCKED) return PrizeClaimer.Outcome.blocked("PC_FULL");
     SINCE.put(z.id, System.currentTimeMillis());
     return prove(player, z, false);
@@ -245,7 +251,7 @@ final class PaseDelivery implements PrizeClaimer.Gateway {
 
   /** Reads the saved copy back: DELIVERED, still waiting (DELIVERING) or UNCERTAIN. */
   static PrizeClaimer.Outcome prove(ServerPlayer p, Prize z, boolean timedOut) throws Exception {
-    UUID id = UUID.nameUUIDFromBytes(("zian-pase-pokemon|" + p.getUUID() + "|" + z.id).getBytes(StandardCharsets.UTF_8));
+    UUID id = pokemonId(p.getUUID(), z);
     String[] uncertain = new String[1];
     var proof = PokemonDelivery.verify(p, id, found -> id.equals(found.getUuid()) && z.detail.equals(found.getSpecies().getResourceIdentifier().toString()), timedOut,
         (phase, reason) -> { if (phase == PokemonDelivery.Phase.UNCERTAIN) uncertain[0] = reason; }, found -> { });

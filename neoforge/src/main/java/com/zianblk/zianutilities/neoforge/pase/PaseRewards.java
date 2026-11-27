@@ -239,20 +239,20 @@ final class PaseRewards {
     PlayerPase p = PaseModule.store.get(player.getUUID());
     sync(p);
     var report = PrizeClaimer.claim(p, new PaseDelivery(player), PaseModule.store::saveNow, PaseModule.LOG::warn, PaseModule.CLOCK.millis());
-    tell(player, report);
+    tell(player, report, p.prizes.values().stream().filter(z -> z.state == Prize.State.UNCERTAIN).count());
     return report;
   }
 
-  static void tell(ServerPlayer player, PrizeClaimer.Report r) {
-    String lang = PaseSources.lang(player);
+  /** {@code review} is every prize of the player under review, not only the ones this claim touched. */
+  static void tell(ServerPlayer player, PrizeClaimer.Report r, long review) {
     if (r.delivered().size() > 8) player.sendSystemMessage(Messages.format(PaseMessages.rewardsClaimed(r.delivered().size())));
     else for (Prize z : r.delivered()) player.sendSystemMessage(Messages.format(PaseMessages.rewardClaimed(PaseDelivery.describe(z, player.registryAccess()))));
     Map<String, Integer> blocked = new LinkedHashMap<>();
     for (Prize z : r.blocked()) blocked.merge(z.reason, 1, Integer::sum);
     blocked.forEach((reason, n) -> player.sendSystemMessage(Messages.format(PaseMessages.blocked(reason, n))));
-    if (!r.uncertain().isEmpty()) player.sendSystemMessage(Messages.format(PaseMessages.uncertain(r.uncertain().size())));
+    if (review > 0) player.sendSystemMessage(Messages.format(PaseMessages.uncertain(review)));
     if (!r.proving().isEmpty()) player.sendSystemMessage(Messages.format(PaseMessages.proof()));
-    if (r.empty()) player.sendSystemMessage(Messages.format(PaseMessages.rewardsNone()));
+    if (r.empty() && review == 0) player.sendSystemMessage(Messages.format(PaseMessages.rewardsNone()));
   }
 
   // ---------------------------------------------------------------- Tebex premium

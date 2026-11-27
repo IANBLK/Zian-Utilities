@@ -55,6 +55,10 @@ public final class PaseSmoke {
   public static void tick() {
     if (done || PaseModule.server == null) return;
     if (phase < 0) phase = Integer.parseInt(System.getenv().getOrDefault("ZIANUTILITIES_PASE_PHASE", "1"));
+    if (phase >= 3) {
+      if (++started >= 140) PaseSmokeRewards.tick(phase);
+      return;
+    }
     if (++started < 140) return;
     done = true;
     try {
@@ -69,13 +73,21 @@ public final class PaseSmoke {
 
   // ---------------------------------------------------------------- helpers
 
-  private static ServerPlayer fake(String name, UUID id) throws ReflectiveOperationException {
+  /** What the fake players were told in chat (system messages), in order; the rewards smoke checks it. */
+  static final java.util.List<String> CHAT = new java.util.ArrayList<>();
+
+  static ServerPlayer fake(String name, UUID id) throws ReflectiveOperationException {
     var server = PaseModule.server;
     GameProfile profile = new GameProfile(id, name);
     ServerPlayer player = new ServerPlayer(server, server.overworld(), profile, ClientInformation.createDefault());
     player.connection = new net.minecraft.server.network.ServerGamePacketListenerImpl(server, new Connection(PacketFlow.SERVERBOUND), player, CommonListenerCookie.createInitial(profile, false)) {
-      @Override public void send(net.minecraft.network.protocol.Packet<?> packet) {}
-      @Override public void send(net.minecraft.network.protocol.Packet<?> packet, net.minecraft.network.PacketSendListener listener) {}
+      @Override public void send(net.minecraft.network.protocol.Packet<?> packet) {
+        if (packet instanceof net.minecraft.network.protocol.game.ClientboundSystemChatPacket chat) CHAT.add(chat.content().getString());
+      }
+      @Override public void send(net.minecraft.network.protocol.Packet<?> packet, net.minecraft.network.PacketSendListener listener) { send(packet); }
+      /* Fake connections have no channel: the server's per-tick time sync would crash asking for one. */
+      @Override public boolean hasChannel(net.minecraft.resources.ResourceLocation id) { return false; }
+      @Override public boolean hasChannel(net.minecraft.network.protocol.common.custom.CustomPacketPayload.Type<?> type) { return false; }
     };
     online(player, true);
     player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
@@ -95,7 +107,7 @@ public final class PaseSmoke {
     if (on) { map.put(p.getUUID(), p); players.add(p); } else { map.remove(p.getUUID()); players.remove(p); }
   }
 
-  private static void forget(ServerPlayer p) throws ReflectiveOperationException {
+  static void forget(ServerPlayer p) throws ReflectiveOperationException {
     online(p, false);
   }
 
