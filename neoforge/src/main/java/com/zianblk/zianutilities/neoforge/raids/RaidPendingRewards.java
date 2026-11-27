@@ -95,8 +95,14 @@ final class RaidPendingRewards {
    * cancelled by another mod), claiming again is cancelled as a duplicate; an admin checks the PC and clears it
    * with `raid premios confirmar-entregado`.
    */
+  /** Rewards are guarded when the duels are on with safe delivery, or when the reward comes from the weekly boss. */
+  private static boolean guarded(ServerPlayer player) {
+    if (!RaidsModule.infraReady()) return false;
+    return (RaidsModule.active() && RaidsModule.config.safeRewardDelivery()) || WeeklyRuntime.rewardIsWeekly(player.getUUID());
+  }
+
   static void onReward(RewardPokemonEvent event) {
-    if (!RaidsModule.active() || !RaidsModule.config.safeRewardDelivery()) return;
+    if (!guarded(event.getPlayer())) return;
     ServerPlayer player = event.getPlayer();
     Pokemon pokemon = event.getPokemon();
     UUID id = pokemon.getUuid();
@@ -104,7 +110,10 @@ final class RaidPendingRewards {
     try {
       var handle = PokemonDelivery.open(player);
       outcome = RaidRewardGate.decide(new RaidRewardGate.Probe() {
-        public boolean deniedByGeneration() { return RaidGenerationFilter.deniedSpecies(pokemon.getSpecies().getResourceIdentifier().toString()); }
+        public boolean deniedByGeneration() {
+          String species = pokemon.getSpecies().getResourceIdentifier().toString();
+          return RaidGenerationFilter.deniedSpecies(species) || (WeeklyRuntime.rewardIsWeekly(player.getUUID()) && RaidGenerationFilter.deniedWeeklySpecies(species));
+        }
         public boolean alreadyInStorage() { return PokemonDelivery.live(handle, id) != null; }
         public boolean hasEntry() { return ENTRIES.containsKey(id); }
         public boolean pcFull() { return handle.pc().getFirstAvailablePosition() == null; }
@@ -144,7 +153,7 @@ final class RaidPendingRewards {
   }
 
   static void run() {
-    if (ENTRIES.isEmpty() || !RaidsModule.active()) return;
+    if (ENTRIES.isEmpty() || !RaidsModule.infraReady()) return;
     for (CompoundTag tag : new ArrayList<>(ENTRIES.values())) {
       if (!"DELIVERING".equals(tag.getString("phase"))) continue;
       ServerPlayer p = RaidsModule.server.getPlayerList().getPlayer(tag.getUUID("player"));

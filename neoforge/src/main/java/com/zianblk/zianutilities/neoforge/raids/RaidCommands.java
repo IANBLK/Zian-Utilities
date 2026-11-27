@@ -57,13 +57,15 @@ final class RaidCommands {
         .then(Commands.literal("revisar").executes(c -> rewardsReview(c.getSource())))
         .then(Commands.literal("confirmar-entregado").then(Commands.argument("id", StringArgumentType.word()).executes(c -> rewardsConfirm(c.getSource(), StringArgumentType.getString(c, "id"))))));
 
+    raid.then(WeeklyCommands.node());
+
     dispatcher.register(Commands.literal(ZianUtilitiesMod.COMMAND_ROOT).requires(s -> true).then(raid));
   }
 
   private static int status(CommandSourceStack s) {
     var cfg = RaidsModule.config;
     if (cfg == null || !cfg.enabled()) {
-      say(s, Tr.c("zianutilities.raids.status.off", "§eLos duelos de raid están desactivados (%s).", RaidsModule.problem));
+      say(s, Tr.c("zianutilities.raids.status.off", "§eLos duelos de raid están desactivados (%s).", WeeklyMessages.problem(RaidsModule.problem)));
       return 1;
     }
     say(s, Tr.c("zianutilities.raids.status.on", "§6Duelos de raid activos desde el tier %s. Los tiers inferiores usan la batalla normal de Raid Dens.", cfg.duelFromTier()));
@@ -120,7 +122,7 @@ final class RaidCommands {
   private static int configView(CommandSourceStack s) {
     var cfg = RaidsModule.config;
     if (cfg == null) {
-      s.sendFailure(Tr.c("zianutilities.raids.status.off", "§eLos duelos de raid están desactivados (%s).", RaidsModule.problem));
+      s.sendFailure(Tr.c("zianutilities.raids.status.off", "§eLos duelos de raid están desactivados (%s).", WeeklyMessages.problem(RaidsModule.problem)));
       return 0;
     }
     say(s, Tr.c("zianutilities.raids.admin.config_view", "§7enabled=%s duelFromTier=%s generationFilter=%s safeRewards=%s archivo=%s",
@@ -162,7 +164,7 @@ final class RaidCommands {
     }
   }
 
-  private static void audit(CommandSourceStack s, String what) {
+  static void audit(CommandSourceStack s, String what) {
     RaidsModule.LOG.info("[ZIAN-AUDIT] raid admin {} by {}", what, s.getTextName());
     try {
       ServerPlayer p = s.getPlayer();

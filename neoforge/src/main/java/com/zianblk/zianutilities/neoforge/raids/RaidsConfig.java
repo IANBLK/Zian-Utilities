@@ -84,6 +84,11 @@ public record RaidsConfig(
     DuelParams d = DuelParams.defaults(tier);
     if (o == null) return d;
     unknown(o, TIER, "tier " + tier);
+    return duelParams(tier, o, d);
+  }
+
+  /** The numbers of a duel over the given defaults; the caller has already checked the keys. Shared with the weekly raid. */
+  static DuelParams duelParams(int tier, JsonObject o, DuelParams d) {
     List<DuelPhase> phases = d.phases();
     if (o.has("phases")) {
       JsonArray array = o.getAsJsonArray("phases");

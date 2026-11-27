@@ -52,6 +52,11 @@ public final class RaidsModule {
     return server != null && config != null && config.enabled() && cooldowns != null && log != null && bosses != null && !log.locked();
   }
 
+  /** Journals and stores are healthy: what the weekly raid needs, whatever the duel config says. */
+  static boolean infraReady() {
+    return server != null && cooldowns != null && log != null && bosses != null && !log.locked();
+  }
+
   public static void install(IEventBus modBus) {
     if (!raidDensLoaded()) return;
     modBus.addListener((FMLCommonSetupEvent e) -> {
@@ -63,21 +68,27 @@ public final class RaidsModule {
     });
     NeoForge.EVENT_BUS.addListener((ServerStartedEvent e) -> start(e.getServer()));
     NeoForge.EVENT_BUS.addListener((ServerStoppingEvent e) -> stop());
-    NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post e) -> { if (server != null) { RaidDuelRuntime.tick(); RaidPendingRewards.tick(); smokeTick(); } });
+    NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post e) -> { if (server != null) { RaidDuelRuntime.tick(); RaidPendingRewards.tick(); WeeklyRuntime.tick(); smokeTick(); } });
     NeoForge.EVENT_BUS.addListener(RaidsModule::registerCommands);
     RaidDuelRuntime.install();
   }
 
-  private static boolean smokeChecked, smokeOn;
+  private static boolean smokeChecked;
+  private static String smokeClass;
 
   /** Local-only fixture: present in the server copy built with -PkeepRaidSmoke, absent from the release jar. */
   private static void smokeTick() {
-    if (!smokeChecked) { smokeChecked = true; smokeOn = "true".equals(System.getenv("ZIANUTILITIES_RAIDS_SMOKE")); }
-    if (!smokeOn) return;
+    if (!smokeChecked) {
+      smokeChecked = true;
+      String mode = System.getenv("ZIANUTILITIES_RAIDS_SMOKE");
+      if ("true".equals(mode)) smokeClass = "com.zianblk.zianutilities.neoforge.raids.RaidSmoke";
+      else if (mode != null && mode.startsWith("weekly")) smokeClass = "com.zianblk.zianutilities.neoforge.raids.RaidSmokeWeekly";
+    }
+    if (smokeClass == null) return;
     try {
-      Class.forName("com.zianblk.zianutilities.neoforge.raids.RaidSmoke").getDeclaredMethod("tick").invoke(null);
+      Class.forName(smokeClass).getDeclaredMethod("tick").invoke(null);
     } catch (ReflectiveOperationException unavailable) {
-      smokeOn = false;
+      smokeClass = null;
       LOG.error("Raid smoke fixture unavailable", unavailable);
     }
   }
@@ -91,8 +102,14 @@ public final class RaidsModule {
     log = null;
     bosses = null;
     try {
-      config = RaidsConfig.load(configPath());
-      problem = config.enabled() ? "" : "disabled in config";
+      try {
+        config = RaidsConfig.load(configPath());
+        problem = config.enabled() ? "" : "disabled in config";
+      } catch (Exception | LinkageError badConfig) {
+        config = null;
+        problem = String.valueOf(badConfig.getMessage());
+        LOG.error("Raid duel config unusable (duels stay off, the weekly raid does not depend on it): {}", badConfig.toString());
+      }
       Path dir = dataDir();
       cooldowns = RaidCooldowns.load(dir.resolve("cooldowns.properties"));
       log = new DuelLog(dir.resolve("duels.wal"));
@@ -100,16 +117,25 @@ public final class RaidsModule {
       RaidDuelRuntime.recover();
       RaidPendingRewards.load();
       if (!subscribed) { RaidDensEvents.install(); subscribed = true; }
-      LOG.info("Raids ready: enabled={} duelFromTier={}", config.enabled(), config.duelFromTier());
+      LOG.info("Raids ready: duels enabled={}", config != null && config.enabled());
     } catch (Exception | LinkageError failure) {
       config = null;
+      cooldowns = null;
+      log = null;
+      bosses = null;
       problem = String.valueOf(failure.getMessage());
       LOG.error("Raids unavailable (module stays off, Raid Dens runs untouched): {}", failure.toString(), failure);
+    }
+    try {
+      WeeklyRuntime.start();
+    } catch (Throwable failure) {
+      LOG.error("Weekly raid failed to start; it stays off", failure);
     }
   }
 
   static void stop() {
     try {
+      WeeklyRuntime.stop();
       RaidDuelRuntime.abortAll();
       if (log != null) log.close();
     } catch (Exception failure) {
