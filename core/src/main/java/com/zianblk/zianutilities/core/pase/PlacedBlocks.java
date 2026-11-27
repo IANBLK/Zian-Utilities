@@ -8,7 +8,9 @@ import java.util.Set;
 /**
  * Blocks a player (or a fluid) put in the world, per chunk, so breaking them never pays XP. Bounded: each chunk and the
  * whole level keep at most a fixed number of marks (4 bytes each); past that new placements are no longer marked, which
- * only means a few extra blocks could count, never a crash or a huge file.
+ * only means a few extra blocks could count, never a crash or a huge file. A chunk that hit a bound is remembered as
+ * saturated and pays nothing for any block (fail closed). Known limit: a piston moves a block without moving its mark, so a
+ * placed block pushed by a piston looks natural at its new spot.
  */
 public final class PlacedBlocks {
   public static final int MAX_PER_CHUNK = 8192;
@@ -20,6 +22,7 @@ public final class PlacedBlocks {
   }
 
   private final Map<Long, Marks> chunks = new HashMap<>();
+  private final java.util.HashSet<Long> saturated = new java.util.HashSet<>();
   private int total;
 
   public static long chunkKey(int x, int z) { return ((long) (x >> 4) << 32) | ((z >> 4) & 0xFFFFFFFFL); }
@@ -29,11 +32,20 @@ public final class PlacedBlocks {
 
   /** True if the mark was stored (false when already marked or a bound was hit). */
   public boolean mark(int x, int y, int z) {
-    if (total >= MAX_TOTAL) return false;
-    Marks m = chunks.computeIfAbsent(chunkKey(x, z), k -> new Marks());
+    long key = chunkKey(x, z);
+    if (saturated.contains(key)) return false;
+    if (total >= MAX_TOTAL) {
+      saturated.add(key);
+      return false;
+    }
+    Marks m = chunks.computeIfAbsent(key, k -> new Marks());
     int v = local(x, y, z);
     int i = Arrays.binarySearch(m.a, 0, m.n, v);
-    if (i >= 0 || m.n >= MAX_PER_CHUNK) return false;
+    if (i >= 0) return false;
+    if (m.n >= MAX_PER_CHUNK) {
+      saturated.add(key);
+      return false;
+    }
     i = -i - 1;
     if (m.n == m.a.length) m.a = Arrays.copyOf(m.a, m.n * 2);
     System.arraycopy(m.a, i, m.a, i + 1, m.n - i);
@@ -62,6 +74,13 @@ public final class PlacedBlocks {
   }
 
   public int size() { return total; }
+
+  /** True if this chunk ran out of marks: nothing broken in it pays. */
+  public boolean saturated(int x, int z) { return saturated.contains(chunkKey(x, z)); }
+
+  public Set<Long> saturatedKeys() { return Set.copyOf(saturated); }
+
+  public void loadSaturated(long chunk) { saturated.add(chunk); }
 
   public Set<Long> chunkKeys() { return Set.copyOf(chunks.keySet()); }
 

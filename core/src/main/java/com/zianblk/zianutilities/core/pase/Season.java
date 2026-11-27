@@ -15,6 +15,12 @@ public record Season(String id, Instant start, Instant end) {
     return new Season(id, start, start.atZone(zone).plusMonths(months).toInstant());
   }
 
+  /** The start of the game day that contains {@code now}: that day's reset time in the zone (the day before if it is not reached yet). */
+  public static Instant alignedStart(Instant now, java.time.LocalTime reset, ZoneId zone) {
+    var day = now.atZone(zone).toLocalDateTime().minusHours(reset.getHour()).minusMinutes(reset.getMinute()).toLocalDate();
+    return day.atTime(reset).atZone(zone).toInstant();
+  }
+
   public boolean contains(Instant now) {
     return !now.isBefore(start) && now.isBefore(end);
   }

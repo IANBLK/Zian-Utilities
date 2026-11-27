@@ -92,7 +92,8 @@ public record PaseConfig(boolean enabled, PaseRules rules, Instant firstStart, i
     if (boostCap < dailyCap) throw new IllegalArgumentException("xp.boostCap no puede ser menor que xp.dailyCap");
     JsonObject season = section(root, "season", SEASON);
     JsonObject daily = section(root, "daily", DAILY);
-    ZoneId zone = daily.has("zone") ? ZoneId.of(daily.get("zone").getAsString()) : d.zone();
+    String zoneText = daily.has("zone") ? daily.get("zone").getAsString().trim() : "";
+    ZoneId zone = zoneText.isEmpty() ? ZoneId.systemDefault() : ZoneId.of(zoneText);
     LocalTime reset = daily.has("resetTime") ? LocalTime.parse(daily.get("resetTime").getAsString()) : d.resetTime();
     Instant first = null;
     if (season.has("firstStart") && !season.get("firstStart").getAsString().isBlank()) {
@@ -103,7 +104,7 @@ public record PaseConfig(boolean enabled, PaseRules rules, Instant firstStart, i
       }
     }
     boolean streak = bool(section(root, "streak", STREAK), "enabled", false);
-    int afk = integer(section(root, "afk", AFK), "seconds", 60, 5, 3600);
+    int afk = integer(section(root, "afk", AFK), "seconds", 150, 5, 3600);
 
     JsonObject missions = section(root, "missions", MISSIONS);
     int perDay = integer(missions, "perDay", d.missionsPerDay(), 0, MissionType.values().length);
@@ -192,10 +193,10 @@ public record PaseConfig(boolean enabled, PaseRules rules, Instant firstStart, i
     root.put("season", season);
     var daily = new LinkedHashMap<String, Object>();
     daily.put("resetTime", "04:00");
-    daily.put("zone", d.zone().getId());
+    daily.put("zone", "");
     root.put("daily", daily);
     root.put("streak", Map.of("enabled", false));
-    root.put("afk", Map.of("seconds", 60));
+    root.put("afk", Map.of("seconds", 150));
     var missions = new LinkedHashMap<String, Object>();
     missions.put("dailyCap", d.sourceCaps().get(PaseRules.MISSION));
     missions.put("perDay", d.missionsPerDay());

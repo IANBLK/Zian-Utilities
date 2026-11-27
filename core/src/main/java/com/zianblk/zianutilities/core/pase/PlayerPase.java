@@ -35,6 +35,8 @@ public final class PlayerPase {
   public final Set<String> missionDone = new HashSet<>();
   /** Today's distinct trades, "villager:level". */
   public final Set<String> trades = new HashSet<>();
+  /** Caps the player was already told about today ("day" or a source name). */
+  public final Set<String> warned = new HashSet<>();
 
   /** Set when the stored file could not be read: the engine then leaves the player alone and the file is never overwritten. */
   public boolean locked;
@@ -56,5 +58,6 @@ public final class PlayerPase {
     missionProgress.clear();
     missionDone.clear();
     trades.clear();
+    warned.clear();
   }
 }

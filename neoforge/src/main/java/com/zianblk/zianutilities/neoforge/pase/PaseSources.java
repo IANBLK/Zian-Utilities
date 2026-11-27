@@ -35,7 +35,8 @@ import net.neoforged.neoforge.event.level.BlockEvent;
  * a disabled module never count. Anything unclear counts as not farmed-for: it simply gives nothing.
  */
 public final class PaseSources {
-  static final String IGNORE_TAG = "zianutilities_pase_ignore";
+  /** Carried in the mob NBT: set at spawn only for mobs that appeared naturally. No mark, no XP. */
+  static final String NATURAL_TAG = "zianutilities_pase_natural";
 
   private PaseSources() {}
 
@@ -43,8 +44,9 @@ public final class PaseSources {
     var bus = NeoForge.EVENT_BUS;
     bus.addListener((BlockEvent.EntityPlaceEvent e) -> { if (e.getLevel() instanceof ServerLevel l) onPlaced(l, e.getPos(), e.getPlacedBlock()); });
     bus.addListener((BlockEvent.FluidPlaceBlockEvent e) -> { if (e.getLevel() instanceof ServerLevel l) onPlaced(l, e.getPos(), e.getNewState()); });
-    bus.addListener((BlockEvent.BreakEvent e) -> {
-      if (e.getPlayer() instanceof ServerPlayer p && !(p instanceof FakePlayer) && e.getLevel() instanceof ServerLevel l) onBreak(p, l, e.getPos(), e.getState());
+    // Lowest priority and not cancelled: a break that another mod cancels must neither pay nor clear the mark.
+    bus.addListener(net.neoforged.bus.api.EventPriority.LOWEST, (BlockEvent.BreakEvent e) -> {
+      if (!e.isCanceled() && e.getPlayer() instanceof ServerPlayer p && !(p instanceof FakePlayer) && e.getLevel() instanceof ServerLevel l) onBreak(p, l, e.getPos(), e.getState());
     });
     bus.addListener((FinalizeSpawnEvent e) -> onSpawn(e.getEntity(), e.getSpawnType().name()));
     bus.addListener((LivingDeathEvent e) -> {
@@ -90,24 +92,24 @@ public final class PaseSources {
   /** A block is about to break: a block somebody placed never pays, whoever breaks it. */
   static void onBreak(ServerPlayer p, ServerLevel level, BlockPos pos, BlockState state) {
     if (!PaseModule.active()) return;
-    boolean placed = PaseBlockMarks.of(level).consume(pos);
-    if (placed || !eligible(p)) return;
+    var marks = PaseBlockMarks.of(level);
+    boolean placed = marks.consume(pos);
+    if (placed || marks.saturated(pos) || !eligible(p)) return;
     if (matureCrop(state)) mission(p, MissionType.HARVEST_CROPS, 1, null);
     else if (naturalBlock(state)) mission(p, MissionType.BREAK_BLOCKS, 1, null);
   }
 
   // ---------------------------------------------------------------- mobs
 
-  /** Marks hostile mobs that came from a spawner, an egg, a command or a dispenser: the mark travels with the mob in its NBT. */
+  /** Marks hostile mobs that appeared naturally (whitelist of spawn types); the mark travels with the mob in its NBT. */
   static void onSpawn(LivingEntity entity, String spawnType) {
-    if (!(entity instanceof Enemy) || !PaseModule.active()) return;
-    if (!AntiFarm.spawnTypeCounts(spawnType)) entity.getPersistentData().putBoolean(IGNORE_TAG, true);
+    if (entity instanceof Enemy && AntiFarm.spawnTypeCounts(spawnType)) entity.getPersistentData().putBoolean(NATURAL_TAG, true);
   }
 
   static void onKill(ServerPlayer p, LivingEntity victim) {
     if (!eligible(p) || !(victim instanceof Enemy)) return;
     boolean leashed = victim instanceof Mob m && m.isLeashed();
-    if (AntiFarm.mobCounts(victim.getPersistentData().getBoolean(IGNORE_TAG), victim.hasCustomName(), leashed, true)) mission(p, MissionType.KILL_MOBS, 1, null);
+    if (AntiFarm.mobCounts(victim.getPersistentData().getBoolean(NATURAL_TAG), victim.hasCustomName(), leashed, true)) mission(p, MissionType.KILL_MOBS, 1, null);
   }
 
   // ---------------------------------------------------------------- trade, fish, explore
@@ -165,7 +167,7 @@ public final class PaseSources {
   }
 
   private static void done(ServerPlayer p, PaseEngine.MissionResult r) {
-    if (r.completed()) p.sendSystemMessage(Messages.format(PaseMessages.missionDone(r.type(), r.target(), r.grant().applied())));
+    if (r.completed()) p.sendSystemMessage(Messages.format(PaseMessages.missionDone(r.type(), r.target(), r.grant().applied(), lang(p))));
     if (r.grant() != null) notify(p, r.grant());
   }
 
@@ -178,5 +180,11 @@ public final class PaseSources {
     }
     if (normal != null) p.sendSystemMessage(Messages.format(PaseMessages.levelUp(normal.level())));
     if (extra != null) p.sendSystemMessage(Messages.format(PaseMessages.extraLevelUp(extra.level())));
+    for (String cap : g.caps()) p.sendSystemMessage(Messages.format(PaseMessages.capReached(cap, PaseModule.config.rules().resetTime().toString())));
+  }
+
+  /** The client language, for number formatting. */
+  static String lang(ServerPlayer p) {
+    return p.clientInformation().language();
   }
 }

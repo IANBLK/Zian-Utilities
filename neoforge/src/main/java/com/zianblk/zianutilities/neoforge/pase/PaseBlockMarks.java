@@ -9,7 +9,10 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 
-/** Blocks placed by players in one dimension (see {@link PlacedBlocks}), saved with the world. A future format is left untouched. */
+/**
+ * Blocks placed by players in one dimension (see {@link PlacedBlocks}), saved with the world. A future format is left untouched.
+ * Known limit: a piston moves a block but not its mark, so a placed block pushed by a piston can count at its new position.
+ */
 public final class PaseBlockMarks extends SavedData {
   static final int FORMAT_VERSION = 1;
   static final String NAME = "zianutilities_pase_marks";
@@ -35,6 +38,9 @@ public final class PaseBlockMarks extends SavedData {
     return true;
   }
 
+  /** The chunk ran out of marks: nothing broken there pays. */
+  boolean saturated(BlockPos pos) { return marks.saturated(pos.getX(), pos.getZ()); }
+
   boolean isMarked(BlockPos pos) { return marks.isMarked(pos.getX(), pos.getY(), pos.getZ()); }
 
   int size() { return marks.size(); }
@@ -46,6 +52,7 @@ public final class PaseBlockMarks extends SavedData {
       data.frozen = true;
       return data;
     }
+    for (long key : tag.getLongArray("saturated")) data.marks.loadSaturated(key);
     for (Tag t : tag.getList("chunks", Tag.TAG_COMPOUND)) {
       CompoundTag c = (CompoundTag) t;
       data.marks.load(c.getLong("chunk"), c.getIntArray("marks"));
@@ -64,6 +71,7 @@ public final class PaseBlockMarks extends SavedData {
       chunks.add(c);
     }
     tag.put("chunks", chunks);
+    tag.putLongArray("saturated", marks.saturatedKeys().stream().mapToLong(Long::longValue).toArray());
     return tag;
   }
 

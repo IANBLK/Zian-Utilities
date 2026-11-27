@@ -67,6 +67,7 @@ final class PaseStateJson {
     if (o.has("missionProgress")) for (var e : o.getAsJsonObject("missionProgress").entrySet()) p.missionProgress.put(e.getKey(), e.getValue().getAsInt());
     if (o.has("missionDone")) for (JsonElement e : o.getAsJsonArray("missionDone")) p.missionDone.add(e.getAsString());
     if (o.has("trades")) for (JsonElement e : o.getAsJsonArray("trades")) p.trades.add(e.getAsString());
+    if (o.has("warned")) for (JsonElement e : o.getAsJsonArray("warned")) p.warned.add(e.getAsString());
     return p;
   }
 
@@ -109,6 +110,7 @@ final class PaseStateJson {
     o.add("missionProgress", ints(p.missionProgress));
     o.add("missionDone", strings(p.missionDone));
     o.add("trades", strings(p.trades));
+    o.add("warned", strings(p.warned));
     return new GsonBuilder().setPrettyPrinting().create().toJson(o) + "\n";
   }
 

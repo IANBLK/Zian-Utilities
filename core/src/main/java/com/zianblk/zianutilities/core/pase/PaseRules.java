@@ -37,7 +37,7 @@ public record PaseRules(
     m.put(MissionType.TRADE, new MissionDef(MissionType.TRADE, 3, 300));
     m.put(MissionType.EXPLORE, new MissionDef(MissionType.EXPLORE, 2, 400));
     m.put(MissionType.FISH, new MissionDef(MissionType.FISH, 10, 300));
-    return new PaseRules(200, 800, 4000, 8000, 2, 10, 1500, 100, LocalTime.of(4, 0), ZoneId.of("Europe/Madrid"), 2, false,
+    return new PaseRules(200, 800, 4000, 8000, 2, 10, 1500, 100, LocalTime.of(4, 0), ZoneId.systemDefault(), 2, false,
         Map.of(MISSION, 1400, "boss", 1600, "raid", 1500, "weeklyRaid", 1500), 4, m);
   }
 

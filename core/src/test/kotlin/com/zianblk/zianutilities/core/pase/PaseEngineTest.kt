@@ -315,14 +315,14 @@ class PaseEngineTest {
     }
 
     @Test fun `mobs from spawners, eggs and commands do not count and named, leashed or machine kills do not either`() {
-        for (type in listOf("SPAWNER", "TRIAL_SPAWNER", "SPAWN_ITEM_USE", "COMMAND", "DISPENSER", "MOB_SUMMONED", "BUCKET"))
+        for (type in listOf("SPAWNER", "TRIAL_SPAWNER", "SPAWN_ITEM_USE", "SPAWN_EGG", "COMMAND", "DISPENSER", "MOB_SUMMONED", "BUCKET", "REINFORCEMENT", "BREEDING", "CONVERSION", "EVENT"))
             assertFalse(AntiFarm.spawnTypeCounts(type), type)
-        for (type in listOf("NATURAL", "CHUNK_GENERATION", "STRUCTURE", "REINFORCEMENT")) assertTrue(AntiFarm.spawnTypeCounts(type), type)
-        assertTrue(AntiFarm.mobCounts(false, false, false, true))
-        assertFalse(AntiFarm.mobCounts(true, false, false, true))
-        assertFalse(AntiFarm.mobCounts(false, true, false, true))
-        assertFalse(AntiFarm.mobCounts(false, false, true, true))
-        assertFalse(AntiFarm.mobCounts(false, false, false, false))
+        for (type in listOf("NATURAL", "CHUNK_GENERATION", "STRUCTURE", "PATROL", "JOCKEY")) assertTrue(AntiFarm.spawnTypeCounts(type), type)
+        assertTrue(AntiFarm.mobCounts(true, false, false, true))
+        assertFalse(AntiFarm.mobCounts(false, false, false, true))
+        assertFalse(AntiFarm.mobCounts(true, true, false, true))
+        assertFalse(AntiFarm.mobCounts(true, false, true, true))
+        assertFalse(AntiFarm.mobCounts(true, false, false, false))
     }
 
     @Test fun `a player who does not move or turn is afk after the time and moving or turning resets it`() {
@@ -339,5 +339,108 @@ class PaseEngineTest {
         assertTrue(d.afk(id, 130_000, 60_000))
         d.forget(id)
         assertFalse(d.afk(id, 999_999, 60_000))
+    }
+
+    // ---------------------------------------------------------------- review additions
+
+    @Test fun `the daily reset survives the daylight saving changes of Madrid`() {
+        // 2027-03-28 has only 23 hours (02:00 -> 03:00) and 2026-10-25 has 25; the reset stays at 04:00 local.
+        for ((d1, d2) in listOf("2027-03-27" to "2027-03-28", "2027-03-28" to "2027-03-29", "2026-10-24" to "2026-10-25", "2026-10-25" to "2026-10-26")) {
+            val c = Fake(java.time.LocalDateTime.parse("${d2}T03:59:00").atZone(madrid).toInstant()); val mem = Mem()
+            val e = engine(c, start = "2026-10-01T00:00:00+02:00", days = 365, mem = mem)
+            e.grant(a, "x", 4000)
+            c.now = java.time.LocalDateTime.parse("${d2}T04:01:00").atZone(madrid).toInstant()
+            assertEquals(4000, e.grant(a, "x", 4000).applied(), "$d1 -> $d2")
+            c.now = java.time.LocalDateTime.parse("${d2}T23:00:00").atZone(madrid).toInstant()
+            assertEquals(0, e.grant(a, "x", 100).applied(), "same game day at night on $d2")
+        }
+    }
+
+    @Test fun `the zone decides the game day`() {
+        val instant = at("2026-12-02T10:30:00+01:00")
+        fun dayIn(zone: String): java.time.LocalDate {
+            val r = custom()
+            val rules = PaseRules(r.levels(), r.xpPerLevel(), r.dailyCap(), r.boostCap(), 2, 10, 1500, 100, r.resetTime(), ZoneId.of(zone), 2, false, mapOf(), 4, r.missions())
+            return engine(Fake(instant), rules).dayOf(instant)
+        }
+        assertEquals(java.time.LocalDate.of(2026, 12, 2), dayIn("Europe/Madrid"))
+        assertEquals(java.time.LocalDate.of(2026, 12, 2), dayIn("America/Guayaquil"))
+        // 10:30 Madrid is 04:30 in Guayaquil (UTC-5): past 04:00, still the 2nd; at 08:30 UTC+1 it is 02:30 there, the 1st.
+        val early = at("2026-12-02T08:30:00+01:00")
+        val g = custom().let { PaseRules(it.levels(), it.xpPerLevel(), it.dailyCap(), it.boostCap(), 2, 10, 1500, 100, it.resetTime(), ZoneId.of("America/Guayaquil"), 2, false, mapOf(), 4, it.missions()) }
+        assertEquals(java.time.LocalDate.of(2026, 12, 1), engine(Fake(early), g).dayOf(early))
+        assertEquals(java.time.LocalDate.of(2026, 12, 2), engine(Fake(early)).dayOf(early))
+    }
+
+    @Test fun `a season change in the middle of a day does not give a second daily cap`() {
+        val c = Fake(at("2026-12-02T10:00:00+01:00")); val mem = Mem()
+        val s = at("2026-11-01T00:00:00+01:00")
+        val e = PaseEngine(custom(), SeasonBook(Season("temporada-1", s, at("2026-12-02T12:00:00+01:00")), null), mem, c)
+        // Inside the last ten days of temporada-1 the x2 applies: 1500 base pay 3000.
+        assertEquals(3000, e.grant(a, "x", 1500).applied())
+        c.now = at("2026-12-02T13:00:00+01:00")
+        // New season, no x2; the cap of the same game day is per player, not per pass, and the 3000 already paid count: 1000 left.
+        assertEquals(1000, e.grant(a, "x", 3000).applied())
+        assertEquals("temporada-2", e.seasons().current().id())
+        assertEquals(2500, mem.get(a).baseToday)
+        assertEquals(0, e.grant(a, "x", 1).applied())
+    }
+
+    @Test fun `a chunk that ran out of marks is saturated and persists as saturated`() {
+        val p = PlacedBlocks()
+        for (y in 0 until 100) for (x in 0 until 16) for (z in 0 until 16) p.mark(x, y, z)
+        assertTrue(p.saturated(3, 3))
+        assertFalse(p.saturated(100, 100))
+        assertFalse(p.mark(0, 200, 0))
+        assertTrue(p.consume(1, 1, 1))
+        assertTrue(p.saturated(1, 1))
+        val q = PlacedBlocks()
+        for (k in p.saturatedKeys()) q.loadSaturated(k)
+        assertTrue(q.saturated(5, 5))
+    }
+
+    @Test fun `without firstStart the first season starts at the reset time of that game day`() {
+        val reset = java.time.LocalTime.of(4, 0)
+        assertEquals(at("2026-12-02T04:00:00+01:00"), Season.alignedStart(at("2026-12-02T10:00:00+01:00"), reset, madrid))
+        assertEquals(at("2026-12-01T04:00:00+01:00"), Season.alignedStart(at("2026-12-02T03:59:00+01:00"), reset, madrid))
+    }
+
+    @Test fun `a stored day more than one day ahead is reset with a warning`() {
+        val c = Fake(at("2026-12-02T10:00:00+01:00")); val mem = Mem(); val e = engine(c, mem = mem)
+        val warnings = ArrayList<String>()
+        e.warn = java.util.function.Consumer { warnings.add(it) }
+        mem.get(a).day = "2026-12-20"; mem.get(a).baseToday = 4000
+        assertEquals(4000, e.grant(a, "x", 4000).applied())
+        assertEquals(1, warnings.size)
+        mem.get(a).day = "2026-12-03"; mem.get(a).baseToday = 4000
+        assertEquals(0, e.grant(a, "x", 100).applied())
+        assertEquals(1, warnings.size)
+    }
+
+    @Test fun `the pending level events are bounded`() {
+        val c = Fake(at("2026-12-02T10:00:00+01:00")); val mem = Mem(); val e = engine(c, mem = mem)
+        val warnings = ArrayList<String>()
+        e.warn = java.util.function.Consumer { warnings.add(it) }
+        repeat(1000) { mem.get(a).events.add(LevelEvent("temporada-2", 1, false, 0)) }
+        e.grant(a, "x", 1600)
+        assertEquals(PaseEngine.MAX_EVENTS, mem.get(a).events.size)
+        assertTrue(warnings.isNotEmpty())
+    }
+
+    @Test fun `applied counts extra levels at base XP so the x2 does not inflate it`() {
+        val c = Fake(at("2027-01-25T10:00:00+01:00")); val mem = Mem(); val e = engine(c, mem = mem)
+        mem.get(a).progress("temporada-2").xp = 160_000
+        assertEquals(1500, e.grant(a, "x", 1500).applied())
+    }
+
+    @Test fun `a cap is announced once per day and per cap and again the next day`() {
+        val c = Fake(at("2026-12-02T10:00:00+01:00")); val e = engine(c, custom(mapOf("boss" to 1600)))
+        assertEquals(listOf<String>(), e.grant(a, "boss", 1000).caps())
+        assertEquals(listOf("boss"), e.grant(a, "boss", 1000).caps())
+        assertEquals(listOf<String>(), e.grant(a, "boss", 1000).caps())
+        assertEquals(listOf("day"), e.grant(a, "other", 5000).caps())
+        assertEquals(listOf<String>(), e.grant(a, "other", 5000).caps())
+        c.now = at("2026-12-03T10:00:00+01:00")
+        assertEquals(listOf("boss"), e.grant(a, "boss", 5000).caps())
     }
 }

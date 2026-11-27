@@ -97,12 +97,13 @@ public final class PaseModule {
     if (seasons == null) {
       seasons = store.loadSeasons();
       if (seasons == null) {
-        var first = config.firstStart() != null ? config.firstStart() : CLOCK.instant();
+        var first = config.firstStart() != null ? config.firstStart() : Season.alignedStart(CLOCK.instant(), config.rules().resetTime(), config.rules().zone());
         seasons = new SeasonBook(Season.ofMonths("temporada-1", first, config.rules().seasonMonths(), config.rules().zone()), null);
         store.saveSeasons(seasons);
       }
     }
     engine = new PaseEngine(config.rules(), seasons, store, CLOCK);
+    engine.warn = LOG::warn;
   }
 
   static void stop() {

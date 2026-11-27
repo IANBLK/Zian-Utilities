@@ -39,6 +39,27 @@ final class PaseMessages {
     };
   }
 
+  /** A number with thousands separators: "." for Spanish clients, "," for the rest. Sent as plain text, so no client formatting is needed. */
+  static Component num(long value, String lang) {
+    var symbols = new java.text.DecimalFormatSymbols(java.util.Locale.ROOT);
+    boolean es = lang != null && lang.toLowerCase(java.util.Locale.ROOT).startsWith("es");
+    symbols.setGroupingSeparator(es ? '.' : ',');
+    return Component.literal(new java.text.DecimalFormat("#,##0", symbols).format(value));
+  }
+
+  /** Short mission name for the compact lines of pase ver. */
+  static Component missionShort(MissionType type) {
+    return switch (type) {
+      case BREAK_BLOCKS -> Tr.c("zianutilities.pase.mission_short.break_blocks", "Minar bloques");
+      case HARVEST_CROPS -> Tr.c("zianutilities.pase.mission_short.harvest_crops", "Cosechar cultivos");
+      case KILL_MOBS -> Tr.c("zianutilities.pase.mission_short.kill_mobs", "Matar monstruos");
+      case BREED_ANIMALS -> Tr.c("zianutilities.pase.mission_short.breed_animals", "Criar animales");
+      case TRADE -> Tr.c("zianutilities.pase.mission_short.trade", "Comerciar");
+      case EXPLORE -> Tr.c("zianutilities.pase.mission_short.explore", "Explorar");
+      case FISH -> Tr.c("zianutilities.pase.mission_short.fish", "Pescar");
+    };
+  }
+
   static Component levelUp(int level) {
     return Tr.c("zianutilities.pase.msg.level", "§6¡Has alcanzado el nivel %s del pase!", level);
   }
@@ -47,36 +68,52 @@ final class PaseMessages {
     return Tr.c("zianutilities.pase.msg.extra_level", "§6¡Has alcanzado el nivel extra %s del pase!", level);
   }
 
-  static Component missionDone(MissionType type, int target, long xp) {
-    return Tr.c("zianutilities.pase.msg.mission_done", "§a¡Misión completada: %s! §7(+%s XP)", missionName(type, target), xp);
+  static Component missionDone(MissionType type, int target, long xp, String lang) {
+    return Tr.c("zianutilities.pase.msg.mission_done", "§a¡Misión completada: %s! §7(+%s XP)", missionName(type, target), num(xp, lang));
   }
 
-  /** The lines of /ZianUtilities pase ver. */
-  static List<Component> view(PaseEngine.View v, String resetTime, String zone) {
+  static Component sourceName(String source) {
+    return switch (source) {
+      case "mission" -> Tr.c("zianutilities.pase.source.mission", "misiones");
+      case "boss" -> Tr.c("zianutilities.pase.source.boss", "jefes");
+      case "raid" -> Tr.c("zianutilities.pase.source.raid", "raids");
+      case "weeklyRaid" -> Tr.c("zianutilities.pase.source.weekly_raid", "la raid semanal");
+      default -> Component.literal(source);
+    };
+  }
+
+  /** "day" is the daily total; anything else is the name of a source. */
+  static Component capReached(String cap, String resetTime) {
+    return "day".equals(cap)
+        ? Tr.c("zianutilities.pase.msg.cap_day", "§eHas alcanzado el tope diario de XP del pase. Vuelve mañana a las %s.", resetTime)
+        : Tr.c("zianutilities.pase.msg.cap_source", "§eHas alcanzado el tope diario de XP de %s.", sourceName(cap));
+  }
+
+  /** The lines of /ZianUtilities pase ver: only the first one gets the server prefix; the rest are short and indented. */
+  static List<Component> view(PaseEngine.View v, String resetTime, String lang) {
     List<Component> out = new ArrayList<>();
     out.add(Tr.c("zianutilities.pase.view.header", "§6Pase de batalla §7(%s)", v.seasonId()));
     if (v.level() >= v.maxLevel()) {
-      out.add(Tr.c("zianutilities.pase.view.complete", "§aHas completado el pase (nivel %s).", v.maxLevel()));
-      out.add(Tr.c("zianutilities.pase.view.extra", "§7Niveles extra: §e%s§7 de %s (%s de %s XP del siguiente).", v.extraLevels(), v.maxExtraLevels(), v.extraIntoLevel(), extraXp(v)));
+      out.add(Tr.c("zianutilities.pase.view.complete", "  §aPase completado §7· extra §e%s§7/%s · XP §e%s§7/%s", v.extraLevels(), v.maxExtraLevels(), num(v.extraIntoLevel(), lang), num(extraXp(v), lang)));
     } else {
-      out.add(Tr.c("zianutilities.pase.view.level", "§7Nivel §e%s§7 de %s. XP del nivel: §e%s§7 de %s.", v.level(), v.maxLevel(), v.xpIntoLevel(), v.xpPerLevel()));
+      out.add(Tr.c("zianutilities.pase.view.level", "  §7Nivel §e%s§7/%s · XP §e%s§7/%s", v.level(), v.maxLevel(), num(v.xpIntoLevel(), lang), num(v.xpPerLevel(), lang)));
     }
     if (v.previousId() != null) {
       out.add(v.previousComplete()
-          ? Tr.c("zianutilities.pase.view.previous_done", "§7Pase anterior (%s): §acompletado§7.", v.previousId())
-          : Tr.c("zianutilities.pase.view.previous", "§7Pase anterior (%s): nivel §e%s§7 de %s. Tu XP va primero aquí.", v.previousId(), v.previousLevel(), v.maxLevel()));
+          ? Tr.c("zianutilities.pase.view.previous_done", "  §7Anterior %s: §acompletado", v.previousId())
+          : Tr.c("zianutilities.pase.view.previous", "  §7Anterior %s: nivel §e%s§7/%s (va primero)", v.previousId(), v.previousLevel(), v.maxLevel()));
     }
-    out.add(Tr.c("zianutilities.pase.view.cap", "§7Tope de XP de hoy: te quedan §e%s§7 de %s.", v.capLeft(), v.capTotal()));
-    if (v.boost()) out.add(Tr.c("zianutilities.pase.view.boost", "§dDoble XP activo hasta que acabe la temporada."));
-    out.add(Tr.c("zianutilities.pase.view.days", "§7Días restantes de la temporada: §e%s§7.", v.daysLeft()));
-    out.add(v.premium() ? Tr.c("zianutilities.pase.view.premium_yes", "§7Pista premium: §aactiva§7.") : Tr.c("zianutilities.pase.view.premium_no", "§7Pista premium: §cno§7."));
+    Component premium = v.premium() ? Tr.c("zianutilities.pase.view.premium_yes", "§así") : Tr.c("zianutilities.pase.view.premium_no", "§cno");
+    out.add(Tr.c("zianutilities.pase.view.today", "  §7Hoy quedan §e%s§7/%s XP · §e%s§7 días · Premium %s", num(v.capLeft(), lang), num(v.capTotal(), lang), v.daysLeft(), premium));
+    if (v.boost()) out.add(Tr.c("zianutilities.pase.view.boost", "  §dDoble XP activo hasta el final de la temporada"));
     if (v.missions().isEmpty()) {
-      out.add(Tr.c("zianutilities.pase.view.no_missions", "§7Hoy no hay misiones."));
+      out.add(Tr.c("zianutilities.pase.view.no_missions", "  §7Hoy no hay misiones."));
     } else {
-      out.add(Tr.c("zianutilities.pase.view.missions", "§6Misiones de hoy §7(se reinician a las %s, %s):", resetTime, zone));
+      out.add(Tr.c("zianutilities.pase.view.missions", "  §6Misiones §7(reinicio a las %s)", resetTime));
       for (var m : v.missions()) {
-        Component state = m.done() ? Tr.c("zianutilities.pase.view.mission_done", "§a✔ completada") : Tr.c("zianutilities.pase.view.mission_pending", "§e+%s XP", m.xp());
-        out.add(Tr.c("zianutilities.pase.view.mission", "§7- %s §8[%s de %s] %s", missionName(m.type(), m.target()), m.progress(), m.target(), state));
+        out.add(m.done()
+            ? Tr.c("zianutilities.pase.view.mission_done", "    §a✔ %s §7· §e+%s XP", missionShort(m.type()), num(m.xp(), lang))
+            : Tr.c("zianutilities.pase.view.mission", "    §7▸ %s §8%s/%s §7· §e+%s XP", missionShort(m.type()), m.progress(), m.target(), num(m.xp(), lang)));
       }
     }
     return out;
@@ -84,16 +121,16 @@ final class PaseMessages {
 
   private static long extraXp(PaseEngine.View v) { return PaseModule.config == null ? 1500 : PaseModule.config.rules().extraLevelXp(); }
 
-  static Component xpGiven(long xp, String player) {
-    return Tr.c("zianutilities.pase.admin.xp_given", "§aDados %s XP del pase a %s.", xp, player);
+  static Component xpGiven(long xp, String player, String lang) {
+    return Tr.c("zianutilities.pase.admin.xp_given", "§aDados %s XP del pase a %s.", num(xp, lang), player);
   }
 
   static Component xpNone(String player) {
     return Tr.c("zianutilities.pase.admin.xp_none", "§e%s no ha recibido XP (el pase está completo o su archivo está bloqueado).", player);
   }
 
-  static Component xpRemoved(long xp, String player) {
-    return Tr.c("zianutilities.pase.admin.xp_removed", "§aQuitados %s XP del pase a %s.", xp, player);
+  static Component xpRemoved(long xp, String player, String lang) {
+    return Tr.c("zianutilities.pase.admin.xp_removed", "§aQuitados %s XP del pase a %s.", num(xp, lang), player);
   }
 
   static Component levelsGiven(int levels, String player) {

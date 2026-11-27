@@ -47,6 +47,14 @@ class PaseConfigTest {
         assertEquals(PaseRules.defaults().missions(), r.missions());
     }
 
+    @Test void anEmptyZoneMeansTheSystemZoneAndAfkDefaultsTo150() {
+        PaseConfig c = PaseConfig.defaults();
+        assertEquals(java.time.ZoneId.systemDefault(), c.rules().zone());
+        assertEquals(150, c.afkSeconds());
+        assertEquals(java.time.ZoneId.systemDefault(), PaseConfig.parse(edit(o -> o.getAsJsonObject("daily").addProperty("zone", "  "))).rules().zone());
+        assertEquals(java.time.ZoneId.of("Europe/Madrid"), PaseConfig.parse(edit(o -> o.getAsJsonObject("daily").addProperty("zone", "Europe/Madrid"))).rules().zone());
+    }
+
     @Test void theFileWrittenTheFirstTimeLoadsBack(@TempDir Path dir) throws Exception {
         Path file = dir.resolve("config/zianutilities-pase.json");
         PaseConfig c = PaseConfig.load(file);

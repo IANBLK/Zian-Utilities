@@ -30,6 +30,12 @@ public final class PaseEngine {
       String previousId, int previousLevel, boolean previousComplete, boolean boost, long capTotal, long capLeft, long daysLeft,
       boolean premium, List<MissionLine> missions) {}
 
+  /** Safety bound for the level events waiting for P2 to hand out their rewards. */
+  public static final int MAX_EVENTS = 1000;
+
+  /** Where warnings go (the module points it at its log). */
+  public java.util.function.Consumer<String> warn = message -> { };
+
   private final PaseRules rules;
   private final SeasonBook seasons;
   private final Store store;
@@ -72,6 +78,10 @@ public final class PaseEngine {
     if (p.locked) return null;
     String today = dayOf(now).toString();
     // A clock that went back never wipes a day that already counted.
+    if (!p.day.isEmpty() && LocalDate.parse(p.day).isAfter(dayOf(now).plusDays(1))) {
+      warn.accept("El dia guardado del pase de " + id + " (" + p.day + ") va mas de un dia por delante de hoy (" + today + "); se reinician sus contadores de hoy");
+      p.day = "";
+    }
     if (p.day.isEmpty() || today.compareTo(p.day) > 0) {
       p.clearDaily();
       p.day = today;
@@ -98,15 +108,24 @@ public final class PaseEngine {
     long base = Math.min(baseXp, Math.min(room, Math.min(sourceRoom, finalRoom)));
     GrantResult.Limit limit = base >= baseXp ? GrantResult.Limit.NONE
         : (sourceRoom < room && sourceRoom <= finalRoom ? GrantResult.Limit.SOURCE : GrantResult.Limit.DAY);
-    if (base <= 0) return new GrantResult(0, limit, List.of());
+    if (base <= 0) return new GrantResult(0, limit, List.of(), capNotices(p, source, boost, m));
     p.baseToday += base;
     p.finalToday += base * m;
     p.perSource.merge(source, (int) base, Integer::sum);
     p.dirty = true;
     List<LevelEvent> events = new ArrayList<>();
     long applied = distribute(p, base * m, m, true, now, events);
-    p.events.addAll(events);
-    return new GrantResult(applied, limit, List.copyOf(events));
+    addEvents(p, events);
+    return new GrantResult(applied, limit, List.copyOf(events), capNotices(p, source, boost, m));
+  }
+
+  /** The day cap or the cap of this source is used up: say so once per day and per cap. */
+  private List<String> capNotices(PlayerPase p, String source, boolean boost, int m) {
+    List<String> out = new ArrayList<>();
+    if ((rules.dailyCap() - p.baseToday <= 0 || rules.dayFinalCap(boost) - p.finalToday < m) && p.warned.add("day")) out.add("day");
+    if (rules.sourceCap(source) - p.perSource.getOrDefault(source, 0) <= 0 && p.warned.add(source)) out.add(source);
+    if (!out.isEmpty()) p.dirty = true;
+    return out;
   }
 
   /** Admin XP: no caps, no x2, previous season first. */
@@ -126,7 +145,7 @@ public final class PaseEngine {
     if (p == null) return new GrantResult(0, GrantResult.Limit.LOCKED, List.of());
     List<LevelEvent> events = new ArrayList<>();
     long applied = distribute(p, xp, 1, previousFirst, now, events);
-    p.events.addAll(events);
+    addEvents(p, events);
     p.dirty = true;
     return new GrantResult(applied, GrantResult.Limit.NONE, List.copyOf(events));
   }
@@ -150,7 +169,7 @@ public final class PaseEngine {
     if (previousFirst && prev != null) left = addNormal(p, prev.id(), left, now, out);
     left = addNormal(p, seasons.current().id(), left, now, out);
     long applied = finalXp - left;
-    if (left > 0) applied += addExtra(p, seasons.current().id(), left / m, now, out) * m;
+    if (left > 0) applied += addExtra(p, seasons.current().id(), left / m, now, out);
     return applied;
   }
 
@@ -172,6 +191,16 @@ public final class PaseEngine {
     pr.extraXp += take;
     for (long l = before + 1; l <= pr.extraXp / rules.extraLevelXp(); l++) out.add(new LevelEvent(seasonId, (int) l, true, now.toEpochMilli()));
     return take;
+  }
+
+  private void addEvents(PlayerPase p, List<LevelEvent> events) {
+    for (LevelEvent e : events) {
+      if (p.events.size() >= MAX_EVENTS) {
+        warn.accept("El jugador " + p.id + " tiene " + MAX_EVENTS + " eventos de nivel sin entregar; se descartan los nuevos");
+        return;
+      }
+      p.events.add(e);
+    }
   }
 
   // ------------------------------------------------------------------ missions

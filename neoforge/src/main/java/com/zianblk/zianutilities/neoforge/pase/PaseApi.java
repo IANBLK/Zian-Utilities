@@ -9,6 +9,8 @@ import net.minecraft.server.level.ServerPlayer;
  * reflection) when a dungeon boss falls, and without them the hook simply never fires.
  */
 public final class PaseApi {
+  private static final java.util.Map<String, Long> LAST_WIN = new java.util.concurrent.ConcurrentHashMap<>();
+
   private PaseApi() {}
 
   /** A dungeon boss was defeated by this player. Pays the "boss" source, within its daily cap. */
@@ -19,6 +21,9 @@ public final class PaseApi {
   /** The player won a raid (Raid Dens battle or Utilities duel); {@code weekly} is the weekly custom raid. Pays "raid" or "weeklyRaid". */
   public static void raidWon(UUID player, boolean weekly) {
     if (!PaseModule.active() || PaseModule.server == null) return;
+    // A duel closing may also make Raid Dens report a battle end for the same win: one win pays once.
+    Long last = LAST_WIN.put(player + (weekly ? ":w" : ":r"), PaseModule.ticks);
+    if (last != null && PaseModule.ticks - last < 200) return;
     guard(PaseModule.server.getPlayerList().getPlayer(player), weekly ? PaseConfig.WEEKLY_RAID : PaseConfig.RAID);
   }
 

@@ -72,7 +72,12 @@ final class PaseCommands {
       return 0;
     }
     var rules = PaseModule.config.rules();
-    for (Component line : PaseMessages.view(v, rules.resetTime().toString(), rules.zone().getId())) say(s, line);
+    boolean first = true;
+    for (Component line : PaseMessages.view(v, rules.resetTime().toString(), PaseSources.lang(s.getPlayer()))) {
+      Component shown = first ? Messages.format(line) : line;
+      s.sendSuccess(() -> shown, false);
+      first = false;
+    }
     return 1;
   }
 
@@ -85,7 +90,7 @@ final class PaseCommands {
     }
     PaseSources.notify(p, g);
     done(s, "xp dar " + p.getGameProfile().getName() + " " + g.applied());
-    say(s, PaseMessages.xpGiven(g.applied(), p.getGameProfile().getName()));
+    say(s, PaseMessages.xpGiven(g.applied(), p.getGameProfile().getName(), PaseSources.lang(p)));
     return 1;
   }
 
@@ -93,7 +98,7 @@ final class PaseCommands {
     if (!ready(s)) return 0;
     long taken = PaseModule.engine.adminRemove(p.getUUID(), xp);
     done(s, "xp quitar " + p.getGameProfile().getName() + " " + taken);
-    say(s, PaseMessages.xpRemoved(taken, p.getGameProfile().getName()));
+    say(s, PaseMessages.xpRemoved(taken, p.getGameProfile().getName(), PaseSources.lang(p)));
     return 1;
   }
 
