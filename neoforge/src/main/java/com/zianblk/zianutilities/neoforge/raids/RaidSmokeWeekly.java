@@ -101,7 +101,9 @@ public final class RaidSmokeWeekly {
     return boss() != null && s != null && s.getActive() != null && boss().isAlive();
   }
 
+  /** Fake players never claim their reward; a pending one would (rightly) refuse the next challenge, which is not what these steps test. */
   private static void challenge(ServerPlayer p) {
+    com.necro.raid.dens.common.raids.helpers.RaidHelper.REWARD_QUEUE.remove(p.getUUID());
     var packet = new RaidChallengePacket(boss().getId(), UUID.randomUUID(), BattleFormat.Companion.getGEN_9_SINGLES());
     packet.handleServer(p);
   }
@@ -122,11 +124,22 @@ public final class RaidSmokeWeekly {
     return n;
   }
 
+  private static boolean hitUntilEnd(ServerPlayer p, UUID id) {
+    boss().hurt(p.damageSources().playerAttack(p), 200F);
+    return until(!RaidDuelRuntime.inDuel(id), 3000, "the duel to end by hits");
+  }
+
+  private static boolean fresh() {
+    if (!until(bossUp() && !boss().getUUID().equals(oldBoss), 1500, "a fresh boss")) return false;
+    oldBoss = boss().getUUID();
+    return true;
+  }
+
   private static int attempts(UUID id) { return WeeklyRuntime.state.counts.of(id).attempts(); }
 
   private static int rewards(UUID id) { return WeeklyRuntime.state.counts.of(id).rewards(); }
 
-  private static boolean raidIs(String id) { return WeeklyRuntime.session() != null && WeeklyRuntime.session().boss().getId().getPath().equals("weekly/" + id); }
+  private static boolean raidIs(String id) { return WeeklyRuntime.session() != null && WeeklyRuntime.session().boss().getId().getPath().startsWith("weekly/" + id); }
 
   // ---------------------------------------------------------------- phase 1
 
@@ -134,6 +147,7 @@ public final class RaidSmokeWeekly {
     switch (step) {
       case 0 -> {
         if (age < 100) return;
+        new com.zianblk.zianutilities.neoforge.generation.NeoForgeGenerationStateStore(RaidsModule.server).save(com.zianblk.zianutilities.core.generation.GenerationState.Companion.all());
         check(WeeklyRuntime.ready(), "weekly raid ready with the weekly config enabled");
         check(WeeklyRuntime.state.week.weekNumber() == 1 && "semana-a".equals(WeeklyRuntime.active.id()), "week 1 is semana-a");
         step = 1;
@@ -165,86 +179,115 @@ public final class RaidSmokeWeekly {
         step = 4;
       }
       case 4 -> {
-        boss().hurt(p1.damageSources().playerAttack(p1), 200F);
-        if (until(!RaidDuelRuntime.inDuel(ID1), 3000, "the duel to end by hits")) { wait = 30; step = 5; }
+        if (hitUntilEnd(p1, ID1)) { wait = 90; step = 5; }
       }
       case 5 -> {
-        check(attempts(ID1) == 1 && rewards(ID1) == 1, "won duel spent one attempt and counted one reward");
-        check(WeeklyRuntime.queue.playing() == null && ID2.equals(WeeklyRuntime.queue.called()), "the queue advanced: second player is called");
+        check(attempts(ID1) == 1 && rewards(ID1) == 1, "won duel spent one attempt and counted ONE reward (no double count after 90 ticks)");
         step = 6;
       }
       case 6 -> {
-        if (!until(WeeklyRuntime.queue.called() == null, 400, "the called player to time out")) return;
-        check(WeeklyRuntime.queue.position(ID2) == -1 && !RaidDuelRuntime.inDuel(ID2), "called player who did not enter lost the turn");
+        if (!until(WeeklyRuntime.queue.called() != null, 2000, "the next player to be called once the boss is back")) return;
+        check(ID2.equals(WeeklyRuntime.queue.called()) && WeeklyRuntime.queue.playing() == null, "the queue advanced only when the boss was ready: second player is called");
+        check(bossUp() && !boss().getUUID().equals(oldBoss), "the called player was called with a fresh boss in place");
         step = 7;
       }
       case 7 -> {
-        if (!until(bossUp() && !boss().getUUID().equals(oldBoss), 1200, "a fresh boss after the attempt")) return;
+        if (!until(WeeklyRuntime.queue.called() == null, 1500, "the called player to time out")) return;
+        check(WeeklyRuntime.queue.position(ID2) == -1 && !RaidDuelRuntime.inDuel(ID2), "called player who did not enter lost the turn");
         oldBoss = boss().getUUID();
-        check(bossesOnPedestal(false) == 1, "still exactly one boss after recycling");
         challenge(p1);
         wait = 5; step = 8;
       }
       case 8 -> {
-        check(!RaidDuelRuntime.inDuel(ID1) && WeeklyRuntime.queue.playing() == null && attempts(ID1) == 1, "reward limit reached: the challenge is refused and nothing is spent");
-        challenge(p2);
-        wait = 5; step = 9;
+        check(RaidDuelRuntime.inDuel(ID1), "first player plays a second duel (rewardsPerWeek=2)");
+        step = 9;
       }
       case 9 -> {
-        check(RaidDuelRuntime.inDuel(ID2), "second player now plays");
-        lethal(p2);
-        wait = 40; step = 10;
+        if (hitUntilEnd(p1, ID1)) { wait = 90; step = 10; }
       }
       case 10 -> {
-        check(!RaidDuelRuntime.inDuel(ID2) && p2.isAlive(), "lethal hit ended the duel and nobody died");
-        check(attempts(ID2) == 1 && rewards(ID2) == 0, "a defeat below requiredDamage spends the attempt and gives no reward");
+        check(attempts(ID1) == 2 && rewards(ID1) == 2, "second win counted once: two attempts and two rewards");
         step = 11;
       }
       case 11 -> {
-        if (!until(bossUp() && !boss().getUUID().equals(oldBoss), 1200, "a fresh boss (2)")) return;
-        oldBoss = boss().getUUID();
-        challenge(p2);
+        if (!fresh()) return;
+        challenge(p1);
         wait = 5; step = 12;
       }
       case 12 -> {
-        check(RaidDuelRuntime.inDuel(ID2), "second player plays attempt two");
-        lethal(p2);
-        wait = 40; step = 13;
+        check(!RaidDuelRuntime.inDuel(ID1) && WeeklyRuntime.queue.playing() == null && attempts(ID1) == 2, "reward limit of two reached: the challenge is refused and nothing is spent");
+        challenge(p2);
+        wait = 5; step = 13;
       }
       case 13 -> {
-        check(attempts(ID2) == 2, "attempt two spent");
-        step = 14;
+        check(RaidDuelRuntime.inDuel(ID2), "second player now plays");
+        lethal(p2);
+        wait = 40; step = 14;
       }
       case 14 -> {
-        if (!until(bossUp() && !boss().getUUID().equals(oldBoss), 1200, "a fresh boss (3)")) return;
-        oldBoss = boss().getUUID();
-        challenge(p2);
-        wait = 5; step = 15;
+        check(!RaidDuelRuntime.inDuel(ID2) && p2.isAlive(), "lethal hit ended the duel and nobody died");
+        check(attempts(ID2) == 1 && rewards(ID2) == 0, "a defeat below requiredDamage spends the attempt and gives no reward");
+        step = 15;
       }
       case 15 -> {
-        check(!RaidDuelRuntime.inDuel(ID2) && WeeklyRuntime.queue.playing() == null && attempts(ID2) == 2, "attempt limit reached: attempt three is refused");
+        if (!fresh()) return;
+        challenge(p2);
+        wait = 5; step = 16;
+      }
+      case 16 -> {
+        check(RaidDuelRuntime.inDuel(ID2), "second player plays attempt two");
+        lethal(p2);
+        wait = 40; step = 17;
+      }
+      case 17 -> {
+        check(attempts(ID2) == 2, "attempt two spent");
+        step = 18;
+      }
+      case 18 -> {
+        if (!fresh()) return;
+        challenge(p2);
+        wait = 5; step = 19;
+      }
+      case 19 -> {
+        check(RaidDuelRuntime.inDuel(ID2), "second player plays attempt three");
+        lethal(p2);
+        wait = 40; step = 20;
+      }
+      case 20 -> {
+        check(attempts(ID2) == 3, "attempt three spent");
+        step = 21;
+      }
+      case 21 -> {
+        if (!fresh()) return;
+        challenge(p2);
+        wait = 5; step = 22;
+      }
+      case 22 -> {
+        check(!RaidDuelRuntime.inDuel(ID2) && WeeklyRuntime.queue.playing() == null && attempts(ID2) == 3, "attempt limit reached: attempt four is refused");
         check(WeeklyRuntime.state.counts.reset(ID2) && attempts(ID2) == 0, "admin reset frees the player");
         check(WeeklyRuntime.forceRotate() == null, "forced rotation accepted");
         check(WeeklyRuntime.state.week.weekNumber() == 2 && "semana-b".equals(WeeklyRuntime.active.id()), "week 2 is semana-b");
         check(rewards(ID1) == 0 && attempts(ID1) == 0, "a new week starts with empty counts");
-        step = 16;
+        check(WeeklyRuntime.state.previous.size() == 1 && WeeklyRuntime.state.previous.get(0).weekNumber() == 1, "the snapshot of week 1 is kept for pending rewards");
+        step = 23;
       }
-      case 16 -> {
+      case 23 -> {
         if (!until(bossUp() && raidIs("semana-b") && !boss().getUUID().equals(oldBoss), 1500, "the rotated boss")) return;
         check(bossesOnPedestal(false) == 1, "exactly one boss after the rotation");
+        check(com.necro.raid.dens.common.registry.CustomRaidRegistries.RAID_REGISTRY.cacheHas(WeeklyRuntime.session().boss().getId()), "the active weekly boss is in the Raid Dens registry");
         challenge(p1);
-        wait = 5; step = 17;
+        wait = 5; step = 24;
       }
-      case 17 -> {
+      case 24 -> {
         check(RaidDuelRuntime.inDuel(ID1), "player plays in the new week");
         lethal(p1);
-        wait = 40; step = 18;
+        wait = 40; step = 25;
       }
-      case 18 -> {
+      case 25 -> {
         check(attempts(ID1) == 1, "attempt of the new week persisted in memory");
-        wait = 40; step = 19;
+        wait = 40; step = 26;
       }
-      case 19 -> finish(true);
+      case 26 -> finish(true);
       default -> { }
     }
   }

@@ -14,17 +14,28 @@ final class WeeklyBossFactory {
 
   private WeeklyBossFactory() {}
 
-  static RaidBoss build(WeeklyConfig.Raid raid) {
+  /** The boss of a raid not tied to a week (validation, or a raid that is only in the list). */
+  static RaidBoss build(WeeklyConfig.Raid raid) { return build(raid, 0); }
+
+  /**
+   * weekNumber > 0 gives the id weekly/<id>-w<week>, so two versions of the same raid id (the frozen snapshot of the
+   * week and the edited one in the config) never share a registry entry.
+   */
+  static RaidBoss build(WeeklyConfig.Raid raid, long weekNumber) {
     RaidBoss boss;
     try {
       boss = RaidBoss.GSON.fromJson(raid.boss().deepCopy(), RaidBoss.class);
       if (boss == null) throw new IllegalArgumentException("vacío");
-      boss.setId(ResourceLocation.fromNamespaceAndPath(NAMESPACE, PATH_PREFIX + raid.id()));
+      boss.setId(ResourceLocation.fromNamespaceAndPath(NAMESPACE, PATH_PREFIX + raid.id() + (weekNumber > 0 ? "-w" + weekNumber : "")));
       boss.applyDefaults();
     } catch (RuntimeException bad) {
       throw new IllegalArgumentException("raid " + raid.id() + ": Raid Dens no acepta el jefe: " + bad.getMessage(), bad);
     }
-    String species = boss.getBossProperties().getSpecies();
+    var properties = boss.getBossProperties();
+    String nature = properties.getNature();
+    if (nature != null && !known(nature))
+      throw new IllegalArgumentException("raid " + raid.id() + ": la naturaleza " + nature + " no existe");
+    String species = properties.getSpecies();
     ResourceLocation id = species.indexOf(':') >= 0 ? ResourceLocation.tryParse(species) : ResourceLocation.fromNamespaceAndPath("cobblemon", species);
     if (id == null || PokemonSpecies.INSTANCE.getByIdentifier(id) == null)
       throw new IllegalArgumentException("raid " + raid.id() + ": la especie " + species + " no existe en Cobblemon");
@@ -44,6 +55,12 @@ final class WeeklyBossFactory {
     field.setAccessible(true);
     var cache = (RegistryCache<ResourceLocation, RaidBoss>) field.get(registry);
     cache.putIfCurrent(boss.getId(), boss, cache.currentEpoch());
+  }
+
+  private static boolean known(String nature) {
+    String text = nature.toLowerCase(java.util.Locale.ROOT);
+    var id = text.indexOf(':') >= 0 ? ResourceLocation.tryParse(text) : ResourceLocation.fromNamespaceAndPath("cobblemon", text);
+    return id != null && com.cobblemon.mod.common.api.pokemon.Natures.getNature(id) != null;
   }
 
   static boolean isWeekly(RaidBoss boss) {

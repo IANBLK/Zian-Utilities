@@ -70,7 +70,7 @@ final class WeeklyCommands {
     weekly.then(Commands.literal("jugador").requires(WeeklyCommands::admin)
         .then(Commands.literal("reiniciar").then(Commands.argument("jugador", EntityArgument.player()).executes(c -> {
           ServerPlayer p = EntityArgument.getPlayer(c, "jugador");
-          if (WeeklyRuntime.state == null) return fail(c.getSource(), Tr.enc("zianutilities.raids.weekly.err.unavailable", "§eLa raid semanal no está activa (%s).", WeeklyRuntime.problem));
+          if (WeeklyRuntime.state == null) return fail(c.getSource(), Tr.enc("zianutilities.raids.weekly.err.unavailable", "§eLa raid semanal no está activa (%s).", WeeklyMessages.problemText(WeeklyRuntime.problem)));
           boolean had = WeeklyRuntime.state.counts.reset(p.getUUID());
           try {
             WeeklyRuntime.state.save(WeeklyRuntime.statePath());
@@ -102,17 +102,17 @@ final class WeeklyCommands {
 
   private static int view(CommandSourceStack s) {
     if (!WeeklyRuntime.ready()) {
-      say(s, Tr.c("zianutilities.raids.weekly.status.off", "§eLa raid semanal no está activa (%s).", WeeklyRuntime.problem));
+      say(s, WeeklyMessages.off(WeeklyRuntime.problem));
       return 1;
     }
     var week = WeeklyRuntime.state.week;
     var raid = WeeklyRuntime.active;
-    say(s, Tr.c("zianutilities.raids.weekly.status.raid", "§6Raid semanal: %s §7(%s, tier %s)", raid.displayName(), raid.mode(), raid.tier()));
+    say(s, WeeklyMessages.raidLine(raid));
     say(s, Tr.c("zianutilities.raids.weekly.status.time", "§7Tiempo restante: %s (cambia el %s)", WeeklyRuntime.remaining(week.endsAt()), WeeklyRuntime.when(week.endsAt())));
     ServerPlayer p = s.getPlayer();
     if (p != null) {
       var count = WeeklyRuntime.state.counts.of(p.getUUID());
-      say(s, Tr.c("zianutilities.raids.weekly.status.attempts", "§7Tus intentos: %s de %s. Tus premios: %s de %s. (0 = sin límite)", count.attempts(), raid.attemptsPerWeek(), count.rewards(), raid.rewardsPerWeek()));
+      say(s, WeeklyMessages.attempts(count, raid));
       int position = WeeklyRuntime.queue.position(p.getUUID());
       if (position == 0) say(s, Tr.c("zianutilities.raids.weekly.status.called", "§6Es tu turno: acércate al jefe."));
       else if (position > 0) say(s, Tr.c("zianutilities.raids.weekly.status.position", "§eTu posición en la cola: %s.", position));
@@ -120,8 +120,7 @@ final class WeeklyCommands {
         say(s, Tr.c("zianutilities.raids.weekly.status.playing", "§eAhora mismo juegas tú."));
     }
     int waiting = WeeklyRuntime.queue.waiting().size();
-    say(s, Tr.c("zianutilities.raids.weekly.status.queue", "§7En la cola: %s. %s", waiting,
-        WeeklyRuntime.queue.playing() == null ? Tr.c("zianutilities.raids.weekly.status.free", "§aLa raid está libre.") : Tr.c("zianutilities.raids.weekly.status.busy", "§eHay alguien jugando.")));
+    say(s, WeeklyMessages.queueLine(waiting, WeeklyRuntime.queue.playing() != null));
     return 1;
   }
 

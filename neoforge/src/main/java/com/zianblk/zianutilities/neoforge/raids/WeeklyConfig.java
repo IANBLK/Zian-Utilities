@@ -30,17 +30,21 @@ import java.util.regex.Pattern;
  */
 public record WeeklyConfig(
     boolean enabled, ZoneId zone, DayOfWeek day, LocalTime time, WeeklySchedule.PickOrder order,
-    Entrance entrance, int attemptsPerWeek, int rewardsPerWeek, int turnSeconds, List<Raid> raids
+    Entrance entrance, int attemptsPerWeek, int rewardsPerWeek, int turnSeconds, int maxTurnMinutes, boolean announce, List<Raid> raids
 ) {
   public static final int FORMAT_VERSION = 1;
   private static final Pattern ID = Pattern.compile("[a-z0-9_-]{1,40}");
   private static final Pattern DIMENSION = Pattern.compile("[a-z0-9_.-]+:[a-z0-9_./-]+");
   private static final List<String> TIERS = List.of("TIER_ONE", "TIER_TWO", "TIER_THREE", "TIER_FOUR", "TIER_FIVE", "TIER_SIX", "TIER_SEVEN");
   private static final Set<String> TOP = Set.of("formatVersion", "enabled", "rotation", "entrance", "limits", "queue", "raids");
-  private static final Set<String> ROTATION = Set.of("dayOfWeek", "time", "zone", "pickOrder");
+  private static final Set<String> ROTATION = Set.of("dayOfWeek", "time", "zone", "pickOrder", "announce");
   private static final Set<String> ENTRANCE = Set.of("dimension", "x", "y", "z", "yaw");
   private static final Set<String> LIMITS = Set.of("attemptsPerWeek", "rewardsPerWeek");
-  private static final Set<String> QUEUE = Set.of("turnSeconds");
+  private static final Set<String> QUEUE = Set.of("turnSeconds", "maxTurnMinutes");
+  /** Keys PropertiesAdapter of Raid Dens reads in a pokemon object. Anything else (ivs, ...) would be ignored silently, so it is refused. */
+  private static final Set<String> POKEMON = Set.of("species", "gender", "ability", "nature", "level", "moves", "min_perfect_ivs", "evs", "held_item", "aspects", "form", "dmax_level", "gmax", "tera_type", "custom_properties");
+  /** Keys of RaidBoss (its datapack format) that make sense on a pedestal; adventure nodes and dens do not. */
+  private static final Set<String> BOSS = Set.of("pokemon", "boss", "raid_tier", "raid_type", "raid_feature", "loot_table", "weight", "key", "boss_bar_text", "scale", "force_dynamax", "music", "no_ai", "max_players", "max_clears", "ha_rate", "max_cheers", "raid_party_size", "health_multi", "multiplayer_health_multi", "shiny_rate", "currency", "max_catches", "script", "raid_ai", "marks", "lives", "players_share_lives", "energy", "required_damage", "catch_rate", "battle_format");
   private static final Set<String> RAID = Set.of("id", "displayName", "mode", "boss", "duel", "limits");
   private static final Set<String> DUEL = Set.of("timeLimitSeconds", "bossHealth", "bossDamage", "attackIntervalTicks", "telegraphTicks", "maxDamagePerHitFraction", "phases");
 
@@ -95,6 +99,7 @@ public record WeeklyConfig(
       throw new IllegalArgumentException("rotation inválida: " + bad.getMessage(), bad);
     }
 
+    boolean announce = bool(rot, "announce", true);
     JsonObject ent = root.has("entrance") ? object(root.get("entrance"), "entrance") : new JsonObject();
     unknown(ent, ENTRANCE, "entrance");
     String dimension = text(ent, "dimension", "minecraft:overworld");
@@ -110,7 +115,9 @@ public record WeeklyConfig(
     JsonObject queue = root.has("queue") ? object(root.get("queue"), "queue") : new JsonObject();
     unknown(queue, QUEUE, "queue");
     int turn = queue.has("turnSeconds") ? queue.get("turnSeconds").getAsInt() : 30;
-    if (turn < 5 || turn > 600) throw new IllegalArgumentException("queue.turnSeconds debe estar entre 5 y 600");
+    if (turn < 30 || turn > 600) throw new IllegalArgumentException("queue.turnSeconds debe estar entre 30 y 600");
+    int maxTurn = queue.has("maxTurnMinutes") ? queue.get("maxTurnMinutes").getAsInt() : 15;
+    if (maxTurn < 1 || maxTurn > 120) throw new IllegalArgumentException("queue.maxTurnMinutes debe estar entre 1 y 120");
 
     List<Raid> raids = new ArrayList<>();
     Set<String> seen = new HashSet<>();
@@ -121,7 +128,7 @@ public record WeeklyConfig(
       raids.add(raid);
     }
     if (enabled && raids.isEmpty()) throw new IllegalArgumentException("enabled es true pero la lista raids está vacía");
-    return new WeeklyConfig(enabled, zone, day, time, order, new Entrance(dimension, x, y, z, (float) yaw), attempts, rewards, turn, List.copyOf(raids));
+    return new WeeklyConfig(enabled, zone, day, time, order, new Entrance(dimension, x, y, z, (float) yaw), attempts, rewards, turn, maxTurn, announce, List.copyOf(raids));
   }
 
   /** Parses one raid. Also used to read a frozen snapshot, where the effective limits are already written in. */
@@ -138,7 +145,10 @@ public record WeeklyConfig(
     }
     if (!o.has("boss")) throw new IllegalArgumentException(where + ": falta boss");
     JsonObject boss = object(o.get("boss"), where + ".boss").deepCopy();
+    unknown(boss, BOSS, where + ".boss");
     JsonObject pokemon = boss.has("pokemon") ? object(boss.get("pokemon"), where + ".boss.pokemon") : null;
+    if (pokemon != null) unknown(pokemon, POKEMON, where + ".boss.pokemon");
+    if (boss.has("boss")) unknown(object(boss.get("boss"), where + ".boss.boss"), POKEMON, where + ".boss.boss");
     if (pokemon == null || !pokemon.has("species") || pokemon.get("species").getAsString().isBlank())
       throw new IllegalArgumentException(where + ": boss.pokemon.species es obligatorio");
     if (!boss.has("raid_tier") || !TIERS.contains(boss.get("raid_tier").getAsString()))
@@ -238,10 +248,10 @@ public record WeeklyConfig(
         {
           "formatVersion": 1,
           "enabled": false,
-          "rotation": { "dayOfWeek": "MONDAY", "time": "04:00", "zone": "", "pickOrder": "SEQUENTIAL" },
+          "rotation": { "dayOfWeek": "MONDAY", "time": "04:00", "zone": "", "pickOrder": "SEQUENTIAL", "announce": true },
           "entrance": { "dimension": "minecraft:overworld", "x": 0.5, "y": 80.0, "z": 0.5, "yaw": 180.0 },
           "limits": { "attemptsPerWeek": 3, "rewardsPerWeek": 1 },
-          "queue": { "turnSeconds": 30 },
+          "queue": { "turnSeconds": 30, "maxTurnMinutes": 15 },
           "raids": [
             {
               "id": "semana-charizard",

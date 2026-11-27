@@ -68,13 +68,10 @@ public final class WeeklyQueue {
         return new Result(Entry.QUEUED, position(player));
     }
 
-    /** The player who held the raid is done (or never started). Returns who is called next. */
+    /** The player who held the raid is done (or never started). The next one is called by tick(), once the boss is ready. */
     public List<Event> release(UUID player, long now) {
-        List<Event> out = new ArrayList<>();
-        if (!player.equals(playing)) return out;
-        playing = null;
-        callNext(now, out);
-        return out;
+        if (player.equals(playing)) playing = null;
+        return new ArrayList<>();
     }
 
     /** The player leaves the line (command, disconnect). A called player leaving passes the turn on. */
@@ -84,7 +81,6 @@ public final class WeeklyQueue {
         if (player.equals(called)) {
             called = null;
             out.add(new Dropped(player));
-            if (playing == null) callNext(now, out);
         } else if (removed) {
             out.add(new Dropped(player));
             moved(out);
@@ -102,8 +98,11 @@ public final class WeeklyQueue {
         return out;
     }
 
-    /** Time passes: a called player who did not come in is skipped, and offline players are dropped. */
-    public List<Event> tick(long now, Predicate<UUID> online) {
+    /**
+     * Time passes: a called player who did not come in is skipped, and offline players are dropped. Nobody is called
+     * while the boss is not ready, so a turn can never run out while the boss is recovering.
+     */
+    public List<Event> tick(long now, Predicate<UUID> online, boolean bossReady) {
         List<Event> out = new ArrayList<>();
         boolean changed = false;
         for (UUID w : List.copyOf(waiting)) {
@@ -116,7 +115,7 @@ public final class WeeklyQueue {
             out.add(online.test(called) ? new TimedOut(called) : new Dropped(called));
             called = null;
         }
-        if (playing == null && called == null) callNext(now, out);
+        if (playing == null && called == null && bossReady) callNext(now, out);
         else if (changed) moved(out);
         return out;
     }

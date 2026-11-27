@@ -126,7 +126,11 @@ public final class RaidsModule {
       problem = String.valueOf(failure.getMessage());
       LOG.error("Raids unavailable (module stays off, Raid Dens runs untouched): {}", failure.toString(), failure);
     }
-    WeeklyRuntime.start();
+    try {
+      WeeklyRuntime.start();
+    } catch (Throwable failure) {
+      LOG.error("Weekly raid failed to start; it stays off", failure);
+    }
   }
 
   static void stop() {

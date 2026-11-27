@@ -27,6 +27,11 @@ final class WeeklyState {
   WeeklySchedule.Week week;
   JsonObject snapshot;
   final WeeklyCounts counts = new WeeklyCounts();
+  /** Snapshots of earlier weeks, newest first: their bosses must stay known to Raid Dens while a reward is still pending. */
+  final java.util.List<Past> previous = new java.util.ArrayList<>();
+  static final int KEEP_PAST = 8;
+
+  record Past(long weekNumber, JsonObject snapshot) {}
 
   WeeklyState(WeeklySchedule.Week week, JsonObject snapshot) {
     this.week = week;
@@ -38,7 +43,7 @@ final class WeeklyState {
     if (!StorageFiles.exists(file)) return null;
     try {
       return fromJson(StorageFiles.readString(file));
-    } catch (JsonParseException | IllegalStateException | ClassCastException | DateTimeParseException | IllegalArgumentException | NullPointerException bad) {
+    } catch (RuntimeException bad) {
       throw new IOException("weekly-state.json no se puede leer: " + bad.getMessage(), bad);
     }
   }
@@ -56,6 +61,11 @@ final class WeeklyState {
       JsonObject p = e.getValue().getAsJsonObject();
       state.counts.set(UUID.fromString(e.getKey()), p.get("attempts").getAsInt(), p.get("rewards").getAsInt());
     }
+    if (o.has("previousSnapshots"))
+      for (JsonElement e : o.getAsJsonArray("previousSnapshots")) {
+        JsonObject p = e.getAsJsonObject();
+        state.previous.add(new Past(p.get("weekNumber").getAsLong(), p.getAsJsonObject("snapshot")));
+      }
     return state;
   }
 
@@ -78,6 +88,14 @@ final class WeeklyState {
       players.add(e.getKey().toString(), p);
     }
     o.add("players", players);
+    var past = new com.google.gson.JsonArray();
+    for (Past p : previous) {
+      JsonObject e = new JsonObject();
+      e.addProperty("weekNumber", p.weekNumber());
+      e.add("snapshot", p.snapshot());
+      past.add(e);
+    }
+    o.add("previousSnapshots", past);
     return new GsonBuilder().setPrettyPrinting().create().toJson(o) + "\n";
   }
 

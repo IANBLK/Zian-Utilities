@@ -65,7 +65,7 @@ final class RaidCommands {
   private static int status(CommandSourceStack s) {
     var cfg = RaidsModule.config;
     if (cfg == null || !cfg.enabled()) {
-      say(s, Tr.c("zianutilities.raids.status.off", "§eLos duelos de raid están desactivados (%s).", RaidsModule.problem));
+      say(s, Tr.c("zianutilities.raids.status.off", "§eLos duelos de raid están desactivados (%s).", WeeklyMessages.problem(RaidsModule.problem)));
       return 1;
     }
     say(s, Tr.c("zianutilities.raids.status.on", "§6Duelos de raid activos desde el tier %s. Los tiers inferiores usan la batalla normal de Raid Dens.", cfg.duelFromTier()));
@@ -122,7 +122,7 @@ final class RaidCommands {
   private static int configView(CommandSourceStack s) {
     var cfg = RaidsModule.config;
     if (cfg == null) {
-      s.sendFailure(Tr.c("zianutilities.raids.status.off", "§eLos duelos de raid están desactivados (%s).", RaidsModule.problem));
+      s.sendFailure(Tr.c("zianutilities.raids.status.off", "§eLos duelos de raid están desactivados (%s).", WeeklyMessages.problem(RaidsModule.problem)));
       return 0;
     }
     say(s, Tr.c("zianutilities.raids.admin.config_view", "§7enabled=%s duelFromTier=%s generationFilter=%s safeRewards=%s archivo=%s",

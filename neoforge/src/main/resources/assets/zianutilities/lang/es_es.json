@@ -690,7 +690,7 @@
   "zianutilities.raids.weekly.msg.queued": "§eLa raid semanal está ocupada. Estás en la cola, posición %s. Te avisaremos cuando sea tu turno.",
   "zianutilities.raids.weekly.msg.timeout": "§cNo llegaste a tiempo y pierdes tu turno. Puedes volver a ponerte en la cola.",
   "zianutilities.raids.weekly.msg.turn": "§6Es tu turno en la raid semanal. Tienes %s segundos para retar al jefe.",
-  "zianutilities.raids.weekly.status.attempts": "§7Tus intentos: %s de %s. Tus premios: %s de %s. (0 = sin límite)",
+  "zianutilities.raids.weekly.status.attempts": "§7Tus intentos: %s de %s. Tus premios: %s de %s.",
   "zianutilities.raids.weekly.status.busy": "§eHay alguien jugando.",
   "zianutilities.raids.weekly.status.called": "§6Es tu turno: acércate al jefe.",
   "zianutilities.raids.weekly.status.free": "§aLa raid está libre.",
@@ -701,5 +701,12 @@
   "zianutilities.raids.weekly.status.raid": "§6Raid semanal: %s §7(%s, tier %s)",
   "zianutilities.raids.weekly.status.time": "§7Tiempo restante: %s (cambia el %s)",
   "zianutilities.raids.weekly.subtitle.turn": "§7Acércate al jefe semanal: tienes %s segundos",
-  "zianutilities.raids.weekly.title.turn": "§6¡Es tu turno!"
+  "zianutilities.raids.weekly.title.turn": "§6¡Es tu turno!",
+  "zianutilities.raids.weekly.err.pending_reward": "§eReclama primero tu recompensa pendiente.",
+  "zianutilities.raids.weekly.mode.duel": "duelo",
+  "zianutilities.raids.weekly.mode.battle": "batalla Pokémon",
+  "zianutilities.raids.weekly.status.unlimited": "sin límite",
+  "zianutilities.raids.weekly.msg.new_raid": "§6Nueva raid semanal: %s (%s, tier %s). ¡Desafíala en el spawn!",
+  "zianutilities.raids.problem.disabled": "desactivada en la configuración",
+  "zianutilities.raids.problem.not_started": "todavía no ha arrancado"
 }
