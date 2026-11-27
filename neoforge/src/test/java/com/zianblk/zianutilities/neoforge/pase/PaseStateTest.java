@@ -57,12 +57,12 @@ class PaseStateTest {
     }
 
     @Test void aFutureOrMissingFormatVersionIsRefusedAndNeverHalfRead() {
-        String future = PaseStateJson.writePlayer(sample()).replace("\"formatVersion\": 1", "\"formatVersion\": 2");
+        String future = PaseStateJson.writePlayer(sample()).replace("\"formatVersion\": 2", "\"formatVersion\": 3");
         var e = assertThrows(IllegalArgumentException.class, () -> PaseStateJson.readPlayer(future, id));
         assertTrue(e.getMessage().contains("más nueva"), e.getMessage());
-        String missing = PaseStateJson.writePlayer(sample()).replace("\"formatVersion\": 1,", "");
+        String missing = PaseStateJson.writePlayer(sample()).replace("\"formatVersion\": 2,", "");
         assertThrows(IllegalArgumentException.class, () -> PaseStateJson.readPlayer(missing, id));
-        String zero = PaseStateJson.writePlayer(sample()).replace("\"formatVersion\": 1", "\"formatVersion\": 0");
+        String zero = PaseStateJson.writePlayer(sample()).replace("\"formatVersion\": 2", "\"formatVersion\": 0");
         assertThrows(IllegalArgumentException.class, () -> PaseStateJson.readPlayer(zero, id));
         assertThrows(IllegalArgumentException.class, () -> PaseStateJson.readSeasons("{\"formatVersion\":9,\"current\":{}}"));
     }
@@ -107,7 +107,7 @@ class PaseStateTest {
         var store = new PaseStore(dir, LoggerFactory.getLogger("test"));
         Path file = store.playerFile(id);
         Files.createDirectories(file.getParent());
-        String future = PaseStateJson.writePlayer(sample()).replace("\"formatVersion\": 1", "\"formatVersion\": 5");
+        String future = PaseStateJson.writePlayer(sample()).replace("\"formatVersion\": 2", "\"formatVersion\": 5");
         Files.writeString(file, future);
         PlayerPase p = store.get(id);
         assertTrue(p.locked);
