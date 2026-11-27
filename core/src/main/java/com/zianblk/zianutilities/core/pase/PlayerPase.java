@@ -23,6 +23,8 @@ public final class PlayerPase {
   /** Season ids with the paid track bought. P1 only keeps the flag; P2 delivers rewards and Tebex sets it. */
   public final Set<String> premium = new LinkedHashSet<>();
   public final List<LevelEvent> events = new ArrayList<>();
+  /** Rewards owed to this player and their delivery journal, by prize id. */
+  public final Map<String, Prize> prizes = new LinkedHashMap<>();
   /** Biomes and structures already counted, per season. */
   public final Map<String, Set<String>> explored = new LinkedHashMap<>();
 
