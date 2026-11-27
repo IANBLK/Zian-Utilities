@@ -64,6 +64,9 @@ public final class PaseModule {
     NeoForge.EVENT_BUS.addListener((ServerStoppingEvent e) -> stop());
     NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post e) -> { if (server != null) tick(); });
     NeoForge.EVENT_BUS.addListener((RegisterCommandsEvent e) -> PaseCommands.register(e.getDispatcher()));
+    NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedInEvent e) -> {
+      if (e.getEntity() instanceof ServerPlayer player) PaseRewards.onLogin(player);
+    });
     NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent e) -> {
       AFK.forget(e.getEntity().getUUID());
       if (store != null) store.release(e.getEntity().getUUID());
@@ -78,10 +81,15 @@ public final class PaseModule {
     store = null;
     seasons = null;
     ticks = 0;
+    PaseRewards.reset();
     try {
       config = PaseConfig.load(configPath());
       problem = config.enabled() ? "" : "disabled in config";
-      if (config.enabled()) build();
+      if (config.enabled()) {
+        build();
+        String rewards = PaseRewards.problem();
+        if (rewards != null) LOG.error("Premios del pase cerrados (los niveles se ganan y los premios quedan pendientes): {}", rewards);
+      }
       LOG.info("Pase listo: enabled={}", config.enabled());
     } catch (Exception | LinkageError failure) {
       config = null;
@@ -116,6 +124,7 @@ public final class PaseModule {
     store = null;
     seasons = null;
     server = null;
+    PaseRewards.reset();
   }
 
   /** Writes every pending change (players and seasons). */
@@ -133,6 +142,13 @@ public final class PaseModule {
         AFK.sample(p.getUUID(), p.getX(), p.getY(), p.getZ(), p.getYRot(), p.getXRot(), ticks * 50);
     }
     if (ticks % 100 == 0) PaseSources.explore();
+    if (ticks % 40 == 0) {
+      try {
+        PaseDelivery.proveAll();
+      } catch (RuntimeException | LinkageError failure) {
+        LOG.error("Comprobación de entregas del pase fallida", failure);
+      }
+    }
     if (ticks % 200 == 0) {
       try {
         engine.rollSeason();
@@ -181,6 +197,8 @@ public final class PaseModule {
       } catch (Exception failure) {
         LOG.warn("No se pudo copiar la configuración del pase al historial", failure);
       }
+      String rewards = next.enabled() ? PaseRewards.reload() : null;
+      if (rewards != null) LOG.error("Premios del pase cerrados tras recargar: {}", rewards);
       return null;
     } catch (Exception failure) {
       return String.valueOf(failure.getMessage());

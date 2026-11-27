@@ -166,4 +166,131 @@ final class PaseMessages {
   static Component failed(String error) {
     return Tr.c("zianutilities.pase.err.failed", "§cNo se pudo completar la acción: %s", error);
   }
+
+  // ---------------------------------------------------------------- rewards
+
+  static Component rewardItem(int count, Component name) {
+    return Tr.c("zianutilities.pase.reward.item", "%sx %s", count, name);
+  }
+
+  static Component rewardCoins(long amount, Component currency) {
+    return Tr.c("zianutilities.pase.reward.coins", "%s %s", amount, currency);
+  }
+
+  static Component rewardPokemon(Component species) {
+    return Tr.c("zianutilities.pase.reward.pokemon", "Pokémon %s", species);
+  }
+
+  static Component rewardPokemonRandom() {
+    return Tr.c("zianutilities.pase.reward.pokemon_random", "un Pokémon");
+  }
+
+  static Component rewardCommand() {
+    return Tr.c("zianutilities.pase.reward.command", "un premio especial");
+  }
+
+  static Component rewardClaimed(Component reward) {
+    return Tr.c("zianutilities.pase.msg.reward_claimed", "§a¡Premio reclamado: %s!", reward);
+  }
+
+  static Component rewardsClaimed(long count) {
+    return Tr.c("zianutilities.pase.msg.rewards_claimed", "§a¡Has reclamado %s premios del pase!", count);
+  }
+
+  static Component rewardsPending(long count) {
+    return Tr.c("zianutilities.pase.msg.rewards_pending", "§eTienes %s premios del pase pendientes. Usa /ZianUtilities pase reclamar.", count);
+  }
+
+  static Component rewardsNone() {
+    return Tr.c("zianutilities.pase.msg.rewards_none", "§7No tienes premios del pase pendientes.");
+  }
+
+  static Component uncertain(long count) {
+    return Tr.c("zianutilities.pase.msg.reward_uncertain", "§c%s premios quedaron en revisión: un administrador los comprobará.", count);
+  }
+
+  static Component proof() {
+    return Tr.c("zianutilities.pase.msg.reward_proof", "§7Tu Pokémon se está guardando; se confirmará en unos segundos.");
+  }
+
+  static Component premiumOn(String season) {
+    return Tr.c("zianutilities.pase.msg.premium_on", "§6¡Pase premium de %s activado! Usa /ZianUtilities pase reclamar para recoger tus premios.", season);
+  }
+
+  /** Why prizes stay pending: a full inventory or PC has its own sentence, every other code becomes "N premios siguen pendientes (motivo)". */
+  static Component blocked(String reason, long count) {
+    return switch (reason == null ? "" : reason) {
+      case "INVENTORY_FULL" -> Tr.c("zianutilities.pase.msg.inventory_full", "§eInventario lleno: libera espacio y vuelve a reclamar (%s premios pendientes).", count);
+      case "PC_FULL" -> Tr.c("zianutilities.pase.msg.pc_full", "§eTu PC está lleno: libera espacio y vuelve a reclamar (%s premios pendientes).", count);
+      default -> Tr.c("zianutilities.pase.msg.reward_blocked", "§e%s premios siguen pendientes (%s).", count, reason(reason));
+    };
+  }
+
+  static Component reason(String code) {
+    return switch (code == null ? "" : code) {
+      case "CONFIG_INVALID" -> Tr.c("zianutilities.pase.reason.config_invalid", "la configuración de premios no es válida");
+      case "NO_ECONOMY" -> Tr.c("zianutilities.pase.reason.no_economy", "AVECOINS no está disponible");
+      case "UNSUPPORTED_CURRENCY", "unsupported_currency" -> Tr.c("zianutilities.pase.reason.unsupported_currency", "moneda no admitida");
+      case "wallet_full" -> Tr.c("zianutilities.pase.reason.wallet_full", "cartera llena");
+      case "GENERATION_DISABLED" -> Tr.c("zianutilities.pase.reason.generation_disabled", "generación desactivada");
+      case "NO_SPECIES" -> Tr.c("zianutilities.pase.reason.no_species", "no hay especie disponible");
+      case "COMMAND_NOT_ALLOWED" -> Tr.c("zianutilities.pase.reason.command_not_allowed", "comando no permitido");
+      case "COMMAND_REJECTED" -> Tr.c("zianutilities.pase.reason.command_rejected", "comando rechazado");
+      case "BAD_ITEM" -> Tr.c("zianutilities.pase.reason.bad_item", "objeto no válido");
+      case "BAD_PLAYER_NAME" -> Tr.c("zianutilities.pase.reason.bad_player_name", "nombre de jugador no válido");
+      default -> Tr.c("zianutilities.pase.reason.other", "razón %s", code == null ? "" : code);
+    };
+  }
+
+  static Component premiumGiven(String season, String player, String transaction) {
+    return Tr.c("zianutilities.pase.admin.premium_given", "§aPremium de %s dado a %s (transacción %s).", season, player, transaction);
+  }
+
+  static Component premiumDuplicate(String transaction) {
+    return Tr.c("zianutilities.pase.admin.premium_duplicate", "§eLa transacción %s ya se usó: se ignora.", transaction);
+  }
+
+  static Component premiumRemoved(String season, String player, int dropped) {
+    return Tr.c("zianutilities.pase.admin.premium_removed", "§aPremium de %s retirado a %s (%s premios sin entregar anulados).", season, player, dropped);
+  }
+
+  static Component premiumBadSeason(String current, String previous) {
+    return Tr.c("zianutilities.pase.admin.premium_bad_season", "§cLa temporada debe ser la actual (%s) o la anterior (%s).", current, previous == null ? "-" : previous);
+  }
+
+  static Component premiumBadTransaction() {
+    return Tr.c("zianutilities.pase.admin.premium_bad_transaction", "§cTransacción no válida: letras, números, guion, guion bajo y punto (máximo 64).");
+  }
+
+  static Component premiumFailed(String error) {
+    return Tr.c("zianutilities.pase.admin.premium_failed", "§cNo se pudo dar el premium (se puede repetir el mismo comando): %s", error);
+  }
+
+  static Component premiumRemoveFailed() {
+    return Tr.c("zianutilities.pase.admin.premium_remove_failed", "§cNo se pudo retirar el premium: el archivo del jugador no se puede escribir.");
+  }
+
+  static Component prizesHeader(String player, long pending, long delivered, long review) {
+    return Tr.c("zianutilities.pase.admin.prizes_header", "§6Premios de %s: §e%s§7 pendientes, §a%s§7 entregados, §c%s§7 por revisar.", player, pending, delivered, review);
+  }
+
+  static Component prizesLine(String id, String state, String reason) {
+    return Tr.c("zianutilities.pase.admin.prizes_line", "  §7%s §8%s §7%s", id, state, reason);
+  }
+
+  static Component prizesMore(long count) {
+    return Tr.c("zianutilities.pase.admin.prizes_more", "  §7… y %s más", count);
+  }
+
+  static Component prizesReopened(long count, String player, String note) {
+    return Tr.c("zianutilities.pase.admin.prizes_reopened", "§a%s premios por revisar de %s vuelven a pendientes. %s", count, player, note);
+  }
+
+  static Component prizesOffline() {
+    return Tr.c("zianutilities.pase.admin.prizes_offline", "§7El jugador está desconectado: los entregará al conectarse y usar /ZianUtilities pase reclamar.");
+  }
+
+  static Component rewardsInvalid(String problem) {
+    return Tr.c("zianutilities.pase.admin.rewards_invalid", "§c[Pase] Premios no disponibles: %s. Los niveles se siguen ganando y los premios quedan pendientes hasta que el archivo sea válido.", problem);
+  }
 }

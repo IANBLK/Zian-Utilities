@@ -84,4 +84,22 @@ class PaseMessagesTest {
         // The prefix the server adds is 12 characters long and only goes on the first line.
         assertTrue(lines.get(0).getString().replaceAll("§.", "").length() + 12 <= 60);
     }
+
+    @Test void rewardMessagesBuildAndRenderWithValidArguments() {
+        Component item = Component.literal("Diamante");
+        for (Component c : List.of(
+            PaseMessages.rewardItem(4, item), PaseMessages.rewardCoins(32L, Component.literal("goldcoin")), PaseMessages.rewardPokemon(Component.literal("Eevee")),
+            PaseMessages.rewardPokemonRandom(), PaseMessages.rewardCommand(), PaseMessages.rewardClaimed(PaseMessages.rewardItem(4, item)), PaseMessages.rewardsClaimed(12),
+            PaseMessages.rewardsPending(3), PaseMessages.rewardsNone(), PaseMessages.uncertain(2), PaseMessages.proof(), PaseMessages.premiumOn("temporada-2"),
+            PaseMessages.blocked("INVENTORY_FULL", 3), PaseMessages.blocked("PC_FULL", 1), PaseMessages.blocked("CONFIG_INVALID", 5), PaseMessages.blocked("algo raro", 1), PaseMessages.blocked(null, 1),
+            PaseMessages.premiumGiven("temporada-2", java.util.UUID.randomUUID().toString(), "tbx-1"), PaseMessages.premiumDuplicate("tbx-1"),
+            PaseMessages.premiumRemoved("temporada-1", "Ian", 4), PaseMessages.premiumBadSeason("temporada-2", "temporada-1"), PaseMessages.premiumBadSeason("temporada-1", null),
+            PaseMessages.premiumBadTransaction(), PaseMessages.premiumFailed("boom"), PaseMessages.premiumRemoveFailed(), PaseMessages.prizesHeader("Ian", 3, 10, 1),
+            PaseMessages.prizesLine("temporada-1|free|1|0", "PENDING", "INVENTORY_FULL"), PaseMessages.prizesMore(7), PaseMessages.prizesReopened(2, "Ian", ""),
+            PaseMessages.prizesOffline(), PaseMessages.rewardsInvalid("falta el archivo")))
+            renders(c);
+        for (String code : new String[] {"CONFIG_INVALID", "NO_ECONOMY", "UNSUPPORTED_CURRENCY", "unsupported_currency", "wallet_full", "GENERATION_DISABLED", "NO_SPECIES", "COMMAND_NOT_ALLOWED", "COMMAND_REJECTED", "BAD_ITEM", "BAD_PLAYER_NAME", "DESCONOCIDO"})
+            renders(PaseMessages.reason(code));
+        assertFalse(PaseMessages.blocked("CONFIG_INVALID", 5).getString().contains("CONFIG_INVALID"));
+    }
 }

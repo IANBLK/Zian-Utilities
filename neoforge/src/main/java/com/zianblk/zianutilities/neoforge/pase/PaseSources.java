@@ -180,6 +180,7 @@ public final class PaseSources {
     }
     if (normal != null) p.sendSystemMessage(Messages.format(PaseMessages.levelUp(normal.level())));
     if (extra != null) p.sendSystemMessage(Messages.format(PaseMessages.extraLevelUp(extra.level())));
+    if (!g.levels().isEmpty()) PaseRewards.onLevels(p);
     for (String cap : g.caps()) p.sendSystemMessage(Messages.format(PaseMessages.capReached(cap, PaseModule.config.rules().resetTime().toString())));
   }
 
