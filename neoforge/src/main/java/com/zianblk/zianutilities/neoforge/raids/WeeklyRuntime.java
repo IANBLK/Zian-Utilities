@@ -335,6 +335,7 @@ final class WeeklyRuntime {
     if (!WeeklyBossFactory.isWeekly(boss) || !win) return;
     if (active == null || active.mode() != WeeklyConfig.Mode.BATTLE || battle == null || !battle.player.equals(player)) return;
     countReward(player);
+    com.zianblk.zianutilities.neoforge.pase.PaseApi.raidWon(player, true);
   }
 
   static void onRaidEnd(RaidBoss boss) {

@@ -67,6 +67,7 @@ public final class ZianUtilitiesMod {
         NeoForge.EVENT_BUS.addListener(ZianHubCommands::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(GachaCommands::onRegisterCommands);
         com.zianblk.zianutilities.neoforge.raids.RaidsModule.install(modBus);
+        com.zianblk.zianutilities.neoforge.pase.PaseModule.install();
         GachaRuntime.installDeliveryScheduler();
         GenerationPreselectionFilter.install();
         NaturalSpawnGuard.install();
