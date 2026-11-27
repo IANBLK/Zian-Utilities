@@ -57,6 +57,7 @@ public final class RaidSmokeWeekly {
         case 1 -> phaseOne();
         case 2 -> phaseTwo();
         case 3 -> phaseThree();
+        case 4 -> phaseFour();
         default -> check(false, "unknown phase");
       }
     } catch (Throwable failure) {
@@ -322,17 +323,76 @@ public final class RaidSmokeWeekly {
       case 0 -> {
         if (age < 100) return;
         check(WeeklyRuntime.ready(), "weekly raid ready after a long shutdown");
-        check(WeeklyRuntime.state.week.weekNumber() == 3 && "semana-a".equals(WeeklyRuntime.active.id()), "a long shutdown rotated exactly once (week 3, semana-a)");
+        check(WeeklyRuntime.state.week.weekNumber() == 3 && "semana-c".equals(WeeklyRuntime.active.id()), "a long shutdown rotated exactly once (week 3, semana-c)");
         check("AUTO".equals(WeeklyRuntime.state.week.reason()) && attempts(ID1) == 0, "scheduled rotation with fresh counts");
         step = 1;
       }
       case 1 -> {
         if (!until(bossUp(), 1500, "the rotated boss")) return;
-        check(raidIs("semana-a"), "boss on the pedestal is semana-a");
+        check(raidIs("semana-c"), "boss on the pedestal is semana-c (BATTLE mode also stands on the pedestal)");
         wait = 100; step = 2;
       }
       case 2 -> {
         check(bossesOnPedestal(false) == 1, "exactly one boss on the pedestal");
+        finish(true);
+      }
+      default -> { }
+    }
+  }
+
+  // ---------------------------------------------------------------- phase 4: BATTLE mode
+
+  /**
+   * A real Pokemon battle needs a client choosing a team, so it cannot be started with a fake player. What is exercised
+   * for real: the gate (turn, queue, no duel), the turn bookkeeping and the watchdogs. What is simulated: the Raid Dens
+   * events (RAID_BATTLE_START, RAID_BATTLE_END, RAID_END), which are called exactly as the subscribers receive them.
+   */
+  private static void phaseFour() throws Exception {
+    switch (step) {
+      case 0 -> {
+        if (age < 100) return;
+        new com.zianblk.zianutilities.neoforge.generation.NeoForgeGenerationStateStore(RaidsModule.server).save(com.zianblk.zianutilities.core.generation.GenerationState.Companion.all());
+        check(WeeklyRuntime.ready(), "weekly raid ready");
+        check(WeeklyRuntime.fix("semana-c") == null && WeeklyRuntime.active.mode() == WeeklyConfig.Mode.BATTLE, "semana-c (BATTLE) pinned");
+        step = 1;
+      }
+      case 1 -> {
+        if (!until(bossUp() && raidIs("semana-c"), 1500, "the BATTLE boss")) return;
+        oldBoss = boss().getUUID();
+        p1 = fake("SmokeP1", ID1);
+        p2 = fake("SmokeP2", ID2);
+        challenge(p1);
+        wait = 5; step = 2;
+      }
+      case 2 -> {
+        check(ID1.equals(WeeklyRuntime.queue.playing()) && WeeklyRuntime.battleHeld(ID1) && !RaidDuelRuntime.inDuel(ID1), "BATTLE: first player holds the turn and no duel starts");
+        challenge(p2);
+        check(WeeklyRuntime.queue.position(ID2) == 1 && !WeeklyRuntime.battleHeld(ID2), "BATTLE: second player is queued");
+        var raidBoss = WeeklyRuntime.session().boss();
+        check(WeeklyRuntime.cancelJoin(raidBoss, ID2) && !WeeklyRuntime.cancelJoin(raidBoss, ID1), "BATTLE: RAID_JOIN of the second player is cancelled, the turn holder may join");
+        WeeklyRuntime.onBattleStart(raidBoss, ID1);
+        WeeklyRuntime.onBattleEnd(raidBoss, ID2, true);
+        check(rewards(ID2) == 0, "BATTLE: a win reported for a player without the turn counts nothing");
+        WeeklyRuntime.onBattleEnd(raidBoss, ID1, true);
+        check(rewards(ID1) == 1, "BATTLE: the win is counted once");
+        WeeklyRuntime.onRaidEnd(raidBoss);
+        WeeklyRuntime.onRaidEnd(raidBoss);
+        check(attempts(ID1) == 1 && rewards(ID1) == 1 && WeeklyRuntime.queue.playing() == null && !WeeklyRuntime.battleHeld(ID1), "BATTLE: RAID_END spends one attempt (twice reported, once counted) and frees the turn");
+        step = 3;
+      }
+      case 3 -> {
+        if (!until(ID2.equals(WeeklyRuntime.queue.called()) && bossUp() && !boss().getUUID().equals(oldBoss), 2000, "the second player to be called with a fresh boss")) return;
+        challenge(p2);
+        wait = 5; step = 4;
+      }
+      case 4 -> {
+        check(WeeklyRuntime.battleHeld(ID2), "BATTLE: the called player takes the turn");
+        WeeklyRuntime.onBattleStart(WeeklyRuntime.session().boss(), ID2);
+        step = 5;
+      }
+      case 5 -> {
+        if (!until(!WeeklyRuntime.battleHeld(ID2), 600, "the idle BATTLE turn to close by idleTicks")) return;
+        check(attempts(ID2) == 1 && WeeklyRuntime.queue.playing() == null, "BATTLE: a started turn with no battle in progress closes after 5 s and spends the attempt");
         finish(true);
       }
       default -> { }

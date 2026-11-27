@@ -708,5 +708,7 @@
   "zianutilities.raids.weekly.status.unlimited": "sin límite",
   "zianutilities.raids.weekly.msg.new_raid": "§6Nueva raid semanal: %s (%s, tier %s). ¡Desafíala en el spawn!",
   "zianutilities.raids.problem.disabled": "desactivada en la configuración",
-  "zianutilities.raids.problem.not_started": "todavía no ha arrancado"
+  "zianutilities.raids.problem.not_started": "todavía no ha arrancado",
+  "zianutilities.raids.weekly.msg.blocked_ops": "§cLa raid semanal está bloqueada: el filtro de generaciones no permite a %s. Activa su generación o cambia de raid.",
+  "zianutilities.raids.weekly.status.blocked": "§cEl jefe está bloqueado por el filtro de generaciones."
 }

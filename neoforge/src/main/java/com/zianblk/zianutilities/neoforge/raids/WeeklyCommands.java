@@ -108,6 +108,7 @@ final class WeeklyCommands {
     var week = WeeklyRuntime.state.week;
     var raid = WeeklyRuntime.active;
     say(s, WeeklyMessages.raidLine(raid));
+    if (WeeklyRuntime.filterBlocked) say(s, Tr.c("zianutilities.raids.weekly.status.blocked", "§cEl jefe está bloqueado por el filtro de generaciones."));
     say(s, Tr.c("zianutilities.raids.weekly.status.time", "§7Tiempo restante: %s (cambia el %s)", WeeklyRuntime.remaining(week.endsAt()), WeeklyRuntime.when(week.endsAt())));
     ServerPlayer p = s.getPlayer();
     if (p != null) {

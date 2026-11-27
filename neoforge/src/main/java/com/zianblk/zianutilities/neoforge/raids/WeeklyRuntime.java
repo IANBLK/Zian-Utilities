@@ -100,6 +100,8 @@ final class WeeklyRuntime {
   private static BattleTurn battle;
   private static int ticks, spawnNotBefore;
   private static boolean stateBlocked, subscribed;
+  static boolean filterBlocked;
+  private static int lastFilterWarn = -100_000;
 
   private WeeklyRuntime() {}
 
@@ -142,6 +144,14 @@ final class WeeklyRuntime {
   private static void start0() {
     reset();
     try {
+      state = WeeklyState.load(statePath());
+    } catch (IOException unreadable) {
+      stateBlocked = true;
+      problem = "weekly-state.json: " + unreadable.getMessage();
+      RaidsModule.LOG.error("Weekly raid paused: the state file is corrupt or from a newer version and was not touched", unreadable);
+      return;
+    }
+    try {
       config = WeeklyConfig.load(configPath());
       problem = config.enabled() ? "" : "disabled in config";
       if (config.enabled()) validateBosses(config);
@@ -152,13 +162,8 @@ final class WeeklyRuntime {
       return;
     }
     if (!subscribed) { subscribe(); subscribed = true; }
-    if (!config.enabled()) return;
-    try {
-      state = WeeklyState.load(statePath());
-    } catch (IOException unreadable) {
-      stateBlocked = true;
-      problem = "weekly-state.json: " + unreadable.getMessage();
-      RaidsModule.LOG.error("Weekly raid paused: the state file is corrupt or from a newer version and was not touched", unreadable);
+    if (!config.enabled()) {
+      registerBosses();
       return;
     }
     queue = new WeeklyQueue(config.turnSeconds() * 1000L);
@@ -166,6 +171,7 @@ final class WeeklyRuntime {
     try {
       syncWeek();
       registerBosses();
+      checkFilter();
     } catch (Exception | LinkageError failure) {
       stateBlocked = true;
       problem = String.valueOf(failure.getMessage());
@@ -222,14 +228,31 @@ final class WeeklyRuntime {
     if (state != null) {
       next.previous.add(new WeeklyState.Past(state.week.weekNumber(), state.snapshot));
       next.previous.addAll(state.previous);
-      while (next.previous.size() > WeeklyState.KEEP_PAST) next.previous.remove(next.previous.size() - 1);
+      trimPast(next);
     }
     next.save(statePath());
     state = next;
     active = raid;
+    checkFilter();
     if (live != null && live.retireAt < 0) live.retireAt = ticks;
     if (config != null && config.announce() && !"START".equals(week.reason())) announceRaid(raid);
     RaidsModule.LOG.info("[ZIAN-AUDIT] weekly raid is now {} (week {}, {}, until {}) by {}", raid.id(), week.weekNumber(), week.reason(), week.endsAt(), why);
+  }
+
+  private static ResourceLocation pastId(WeeklyState.Past past) {
+    return ResourceLocation.fromNamespaceAndPath(WeeklyBossFactory.NAMESPACE, WeeklyBossFactory.PATH_PREFIX + past.snapshot().get("id").getAsString() + "-w" + past.weekNumber());
+  }
+
+  /** Only snapshots whose bosses have no reward waiting are dropped once there are more than KEEP_PAST. */
+  private static void trimPast(WeeklyState next) {
+    java.util.Set<ResourceLocation> pending;
+    try {
+      pending = pendingBossIds();
+    } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) {
+      return;
+    }
+    for (int i = next.previous.size() - 1; i >= 0 && next.previous.size() > WeeklyState.KEEP_PAST; i--)
+      if (!pending.contains(pastId(next.previous.get(i)))) next.previous.remove(i);
   }
 
   /** Tells everybody online which raid is now on the pedestal. */
@@ -283,7 +306,7 @@ final class WeeklyRuntime {
         return null;
       }
       if (state == null && !stateBlocked) state = WeeklyState.load(statePath());
-      if (!stateBlocked) { syncWeek(); registerBosses(); }
+      if (!stateBlocked) { syncWeek(); registerBosses(); checkFilter(); }
       if (entranceMoved && live != null && live.retireAt < 0) live.retireAt = ticks;
       return null;
     } catch (Exception | LinkageError failure) {
@@ -294,25 +317,37 @@ final class WeeklyRuntime {
   // ---------------------------------------------------------------- Raid Dens events
 
   private static void subscribe() {
-    RaidEvents.RAID_BATTLE_START.subscribe(Priority.NORMAL, event -> {
-      if (!WeeklyBossFactory.isWeekly(event.getRaidBoss()) || battle == null || !battle.player.equals(event.getPlayer().getUUID())) return;
-      battle.started = true;
-    });
-    RaidEvents.RAID_BATTLE_END.subscribe(Priority.NORMAL, event -> {
-      if (!WeeklyBossFactory.isWeekly(event.raidBoss()) || !event.isWin()) return;
-      if (active == null || active.mode() != WeeklyConfig.Mode.BATTLE || battle == null || !battle.player.equals(event.player().getUUID())) return;
-      countReward(event.player().getUUID());
-    });
+    RaidEvents.RAID_BATTLE_START.subscribe(Priority.NORMAL, event -> { onBattleStart(event.getRaidBoss(), event.getPlayer().getUUID()); });
+    RaidEvents.RAID_BATTLE_END.subscribe(Priority.NORMAL, event -> { onBattleEnd(event.raidBoss(), event.player().getUUID(), event.isWin()); });
     RaidEvents.RAID_JOIN.subscribe(Priority.HIGHEST, event -> {
-      if (!WeeklyBossFactory.isWeekly(event.getRaid())) return;
-      if (event.getPlayer().getUUID().equals(queue.playing())) return;
-      event.cancel();
+      if (cancelJoin(event.getRaid(), event.getPlayer().getUUID())) event.cancel();
     });
-    RaidEvents.RAID_END.subscribe(Priority.NORMAL, event -> {
-      if (!WeeklyBossFactory.isWeekly(event.raidBoss()) || battle == null) return;
-      endBattle(true);
-    });
+    RaidEvents.RAID_END.subscribe(Priority.NORMAL, event -> { onRaidEnd(event.raidBoss()); });
   }
+
+  static void onBattleStart(RaidBoss boss, UUID player) {
+    if (!WeeklyBossFactory.isWeekly(boss) || battle == null || !battle.player.equals(player)) return;
+    battle.started = true;
+  }
+
+  /** Raid Dens reports a battle result. Only the player holding the turn in BATTLE mode earns the weekly reward, once per win. */
+  static void onBattleEnd(RaidBoss boss, UUID player, boolean win) {
+    if (!WeeklyBossFactory.isWeekly(boss) || !win) return;
+    if (active == null || active.mode() != WeeklyConfig.Mode.BATTLE || battle == null || !battle.player.equals(player)) return;
+    countReward(player);
+  }
+
+  static void onRaidEnd(RaidBoss boss) {
+    if (!WeeklyBossFactory.isWeekly(boss) || battle == null) return;
+    endBattle(true);
+  }
+
+  /** Nobody but the player holding the turn may join the weekly boss. */
+  static boolean cancelJoin(RaidBoss boss, UUID player) {
+    return WeeklyBossFactory.isWeekly(boss) && !player.equals(queue.playing());
+  }
+
+  static boolean battleHeld(UUID player) { return battle != null && battle.player.equals(player); }
 
   // ---------------------------------------------------------------- the challenge
 
@@ -358,7 +393,7 @@ final class WeeklyRuntime {
   }
 
   private static Decision refuse(ServerPlayer p, net.minecraft.network.chat.Component message) {
-    RaidsModule.LOG.info("Weekly challenge refused for {}: {}", p.getGameProfile().getName(), message.getString());
+    RaidsModule.LOG.debug("Weekly challenge refused for {}: {}", p.getGameProfile().getName(), message.getString());
     p.sendSystemMessage(Messages.format(message));
     return Decision.HANDLED;
   }
@@ -425,16 +460,34 @@ final class WeeklyRuntime {
   }
 
   private static void tickSecond() throws IOException {
+    registerBosses();
     if (config == null || !config.enabled() || stateBlocked) {
       if (live != null && !busy()) retire();
       return;
     }
     if (state != null && WeeklySchedule.due(state.week, clock.instant())) syncWeek();
-    registerBosses();
+    checkFilter();
     boolean bossReady = live != null && live.ready() && live.retireAt < 0 && live.boss.isAlive() && !live.session.isFinished() && live.session.getActive() != null;
     announce(queue.tick(now(), id -> RaidsModule.server.getPlayerList().getPlayer(id) != null, bossReady));
     watchBattle();
     ensureBoss();
+  }
+
+  /**
+   * A boss the generation filter denies would stand on the pedestal and turn every player away without a word
+   * (a new server has no generation enabled). It is not placed, the log says why and the online admins are told.
+   */
+  private static void checkFilter() {
+    boolean was = filterBlocked;
+    filterBlocked = config != null && config.enabled() && active != null && RaidsModule.server != null && RaidGenerationFilter.deniedWeeklySpecies(active.species());
+    if (!filterBlocked) return;
+    if (!was || ticks - lastFilterWarn > 12_000) {
+      lastFilterWarn = ticks;
+      RaidsModule.LOG.warn("Weekly raid blocked: the generation filter does not allow {} (raid {}). Enable its generation or change the raid.", active.species(), active.id());
+      for (ServerPlayer p : RaidsModule.server.getPlayerList().getPlayers())
+        if (UtilitiesPermissions.allows(p, "admin.raid", true)) p.sendSystemMessage(Messages.format(WeeklyMessages.blocked(active.species())));
+    }
+    if (live != null && !busy()) retire();
   }
 
   private static void watchBattle() {
@@ -464,6 +517,7 @@ final class WeeklyRuntime {
 
   private static void ensureBoss() {
     if (!ready()) { if (live != null && !busy()) retire(); return; }
+    if (filterBlocked) return;
     ServerLevel level = level();
     if (level == null) {
       if (ticks % 600 == 0) RaidsModule.LOG.error("Weekly raid: the dimension {} does not exist", config.entrance().dimension());
@@ -531,11 +585,11 @@ final class WeeklyRuntime {
    * config, the active snapshot and the snapshots of earlier weeks while a reward of theirs is still waiting.
    */
   private static void registerBosses() {
-    if (config == null || !config.enabled() || stateBlocked) return;
+    if (state == null || stateBlocked) return;
     try {
-      for (WeeklyConfig.Raid raid : config.raids()) WeeklyBossFactory.ensureRegistered(bossFor(raid, 0));
-      if (active != null && state != null) WeeklyBossFactory.ensureRegistered(bossFor(active, state.week.weekNumber()));
-      if (state != null && !state.previous.isEmpty() && !RaidHelper.REWARD_QUEUE.isEmpty()) {
+      if (config != null && config.enabled()) for (WeeklyConfig.Raid raid : config.raids()) WeeklyBossFactory.ensureRegistered(bossFor(raid, 0));
+      WeeklyBossFactory.ensureRegistered(bossFor(WeeklyConfig.parseRaid(state.snapshot.deepCopy(), 1, 1), state.week.weekNumber()));
+      if (!state.previous.isEmpty() && !RaidHelper.REWARD_QUEUE.isEmpty()) {
         var pending = pendingBossIds();
         for (WeeklyState.Past past : state.previous) {
           var raid = WeeklyConfig.parseRaid(past.snapshot().deepCopy(), 1, 1);

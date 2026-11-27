@@ -1,6 +1,9 @@
 package com.zianblk.zianutilities.neoforge.raids;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.zianblk.zianutilities.neoforge.Tr;
 
 import com.zianblk.zianutilities.core.raids.weekly.WeeklyCounts;
 import java.util.List;
@@ -13,9 +16,28 @@ class WeeklyMessagesTest {
         return WeeklyConfig.parse(json).raids().get(0);
     }
 
+    /** Translatable arguments must be Component, String, Number or Boolean (anything else makes the client throw), checked recursively. */
+    static boolean validArguments(Component c) {
+        if (c.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t)
+            for (Object arg : t.getArgs()) {
+                if (arg instanceof Component inner) { if (!validArguments(inner)) return false; }
+                else if (!(arg instanceof String || arg instanceof Number || arg instanceof Boolean)) return false;
+            }
+        for (Component sibling : c.getSiblings()) if (!validArguments(sibling)) return false;
+        return true;
+    }
+
     private static void renders(Component c) {
         String text = c.getString();
         assertFalse(text.isEmpty());
+        assertTrue(validArguments(c), "argumentos no válidos en " + text);
+    }
+
+    /** In this Minecraft version the constructor itself refuses a bad argument, so a message built with an enum fails the test at once. */
+    @Test void aMessageWithAnEnumOrAnIdCannotEvenBeBuilt() {
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> Tr.c("k", "x %s", WeeklyConfig.Mode.DUEL));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> Tr.c("k", "x %s", java.util.UUID.randomUUID()));
+        assertTrue(validArguments(Tr.c("k", "x %s %s %s", "a", 1, Tr.c("k2", "y"))));
     }
 
     @Test void everyMessageWithTypedArgumentsRendersInBothModes() {
@@ -23,7 +45,7 @@ class WeeklyMessagesTest {
             var raid = raid(mode);
             for (Component c : List.of(
                 WeeklyMessages.raidLine(raid), WeeklyMessages.newRaid(raid), WeeklyMessages.mode(raid.mode()),
-                WeeklyMessages.attempts(new WeeklyCounts.Count(1, 0), raid), WeeklyMessages.queueLine(2, true), WeeklyMessages.queueLine(0, false)))
+                WeeklyMessages.attempts(new WeeklyCounts.Count(1, 0), raid), WeeklyMessages.queueLine(2, true), WeeklyMessages.queueLine(0, false), WeeklyMessages.blocked("charizard")))
                 renders(c);
         }
     }

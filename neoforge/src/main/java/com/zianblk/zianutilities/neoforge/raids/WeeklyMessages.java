@@ -34,6 +34,10 @@ final class WeeklyMessages {
     return Tr.c("zianutilities.raids.weekly.err.unavailable", "§eLa raid semanal no está activa (%s).", problem(problem));
   }
 
+  static Component blocked(String boss) {
+    return Tr.c("zianutilities.raids.weekly.msg.blocked_ops", "§cLa raid semanal está bloqueada: el filtro de generaciones no permite a %s. Activa su generación o cambia de raid.", boss);
+  }
+
   static Component off(String problem) {
     return Tr.c("zianutilities.raids.weekly.status.off", "§eLa raid semanal no está activa (%s).", problem(problem));
   }
