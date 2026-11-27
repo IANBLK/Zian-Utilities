@@ -70,7 +70,7 @@ final class WeeklyCommands {
     weekly.then(Commands.literal("jugador").requires(WeeklyCommands::admin)
         .then(Commands.literal("reiniciar").then(Commands.argument("jugador", EntityArgument.player()).executes(c -> {
           ServerPlayer p = EntityArgument.getPlayer(c, "jugador");
-          if (WeeklyRuntime.state == null) return fail(c.getSource(), Tr.enc("zianutilities.raids.weekly.err.unavailable", "§eLa raid semanal no está activa (%s).", WeeklyMessages.problemText(WeeklyRuntime.problem)));
+          if (WeeklyRuntime.state == null) return fail(c.getSource(), WeeklyMessages.unavailableEnc(WeeklyRuntime.problem));
           boolean had = WeeklyRuntime.state.counts.reset(p.getUUID());
           try {
             WeeklyRuntime.state.save(WeeklyRuntime.statePath());

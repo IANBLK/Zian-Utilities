@@ -24,6 +24,15 @@ final class WeeklyMessages {
   /** Same, as plain text for the network-safe encoded messages. */
   static String problemText(String problem) { return problem(problem).getString(); }
 
+  /** "Weekly raid not active" for the network: one key per known reason, so each client shows it in its own language. */
+  static String unavailableEnc(String problem) {
+    return switch (problem == null ? "" : problem) {
+      case "disabled in config" -> Tr.enc("zianutilities.raids.weekly.err.unavailable_disabled", "§eLa raid semanal no está activa (desactivada en la configuración).");
+      case "not started" -> Tr.enc("zianutilities.raids.weekly.err.unavailable_not_started", "§eLa raid semanal no está activa (todavía no ha arrancado).");
+      default -> Tr.enc("zianutilities.raids.weekly.err.unavailable", "§eLa raid semanal no está activa (%s).", problem == null ? "" : problem);
+    };
+  }
+
   static Component mode(WeeklyConfig.Mode mode) {
     return mode == WeeklyConfig.Mode.DUEL
         ? Tr.c("zianutilities.raids.weekly.mode.duel", "duelo")

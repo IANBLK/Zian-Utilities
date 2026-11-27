@@ -684,6 +684,8 @@
   "zianutilities.raids.weekly.err.recovering": "§eThe boss is recovering; try again in a few seconds.",
   "zianutilities.raids.weekly.err.rewards": "§cYou have already won this week's reward. The raid changes on %s.",
   "zianutilities.raids.weekly.err.unavailable": "§eThe weekly raid is not active (%s).",
+  "zianutilities.raids.weekly.err.unavailable_disabled": "§eThe weekly raid is not active (disabled in the config).",
+  "zianutilities.raids.weekly.err.unavailable_not_started": "§eThe weekly raid is not active (it has not started yet).",
   "zianutilities.raids.weekly.err.unknown_raid": "§cThere is no raid with id %s in the configuration.",
   "zianutilities.raids.weekly.msg.dropped": "§7You left the weekly raid queue.",
   "zianutilities.raids.weekly.msg.position": "§eYour position in the weekly raid queue: %s.",

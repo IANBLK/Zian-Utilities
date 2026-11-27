@@ -64,4 +64,11 @@ class WeeklyMessagesTest {
         assertFalse(WeeklyMessages.off("disabled in config").getString().contains("disabled in config"));
         assertFalse(WeeklyMessages.problemText("not started").contains("not started"));
     }
+
+    @Test void unavailableTravelsAsOwnKeyPerReason() {
+        assertTrue(WeeklyMessages.unavailableEnc("disabled in config").contains("zianutilities.raids.weekly.err.unavailable_disabled"));
+        assertTrue(WeeklyMessages.unavailableEnc("not started").contains("zianutilities.raids.weekly.err.unavailable_not_started"));
+        assertFalse(WeeklyMessages.unavailableEnc("not started").contains("not started"));
+        renders(Tr.dec(WeeklyMessages.unavailableEnc("formatVersion no soportado")));
+    }
 }

@@ -263,7 +263,7 @@ final class WeeklyRuntime {
 
   /** Admin: the next raid of the list now. It ends at the next scheduled boundary and attempts start from zero. */
   static String forceRotate() {
-    if (!ready()) return Tr.enc("zianutilities.raids.weekly.err.unavailable", "§eLa raid semanal no está activa (%s).", WeeklyMessages.problemText(problem));
+    if (!ready()) return WeeklyMessages.unavailableEnc(problem);
     try {
       adopt(WeeklySchedule.rotateForced(config.rule(), state.week, config.ids(), clock.instant()), config.raid(nextId()), "admin rotation");
       return null;
@@ -279,7 +279,7 @@ final class WeeklyRuntime {
 
   /** Admin: pin one raid of the list. */
   static String fix(String id) {
-    if (!ready()) return Tr.enc("zianutilities.raids.weekly.err.unavailable", "§eLa raid semanal no está activa (%s).", WeeklyMessages.problemText(problem));
+    if (!ready()) return WeeklyMessages.unavailableEnc(problem);
     WeeklyConfig.Raid raid = config.raid(id);
     if (raid == null) return Tr.enc("zianutilities.raids.weekly.err.unknown_raid", "§cNo hay ninguna raid con el id %s en la configuración.", id);
     try {
@@ -662,7 +662,7 @@ final class WeeklyRuntime {
 
   /** Admin: recreate the boss on the pedestal. */
   static String respawn() {
-    if (!ready()) return Tr.enc("zianutilities.raids.weekly.err.unavailable", "§eLa raid semanal no está activa (%s).", WeeklyMessages.problemText(problem));
+    if (!ready()) return WeeklyMessages.unavailableEnc(problem);
     if (busy()) return Tr.enc("zianutilities.raids.weekly.err.busy", "§eHay una pelea en curso; espera a que termine.");
     if (live != null) retire();
     spawnNotBefore = 0;

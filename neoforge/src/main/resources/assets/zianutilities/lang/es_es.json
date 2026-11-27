@@ -684,6 +684,8 @@
   "zianutilities.raids.weekly.err.recovering": "§eEl jefe se está recuperando; vuelve a intentarlo en unos segundos.",
   "zianutilities.raids.weekly.err.rewards": "§cYa has conseguido el premio de esta semana. La raid cambia el %s.",
   "zianutilities.raids.weekly.err.unavailable": "§eLa raid semanal no está activa (%s).",
+  "zianutilities.raids.weekly.err.unavailable_disabled": "§eLa raid semanal no está activa (desactivada en la configuración).",
+  "zianutilities.raids.weekly.err.unavailable_not_started": "§eLa raid semanal no está activa (todavía no ha arrancado).",
   "zianutilities.raids.weekly.err.unknown_raid": "§cNo hay ninguna raid con el id %s en la configuración.",
   "zianutilities.raids.weekly.msg.dropped": "§7Has salido de la cola de la raid semanal.",
   "zianutilities.raids.weekly.msg.position": "§eTu posición en la cola de la raid semanal: %s.",
