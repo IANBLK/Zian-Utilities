@@ -298,13 +298,13 @@ class PaseRewardsTest {
     var again = new Fake();
     PrizeClaimer.claim(back, again, new Disk(), m -> { }, 3L);
     assertFalse(again.given.contains(victim), "an uncertain prize is not delivered by a normal claim");
-    assertEquals(Prize.State.UNCERTAIN, back.prizes.get(Prize.idOf(CUR, Prize.Track.FREE, 1, "base")).state, "the items of one batch share one DELIVERING write: all of them are uncertain after a crash");
+    assertEquals(Prize.State.DELIVERED, back.prizes.get(Prize.idOf(CUR, Prize.Track.FREE, 1, "base")).state, "each prize is written before it is given: the ones before the crash are DELIVERED");
+    assertEquals(2, again.given.size(), "the two prizes behind it were still pending and the next claim gives them");
 
-    assertEquals(5, PrizeClaimer.reopen(back));
+    assertEquals(1, PrizeClaimer.reopen(back), "only the prize in progress is uncertain");
     var admin = new Fake();
     PrizeClaimer.claim(back, admin, new Disk(), m -> { }, 4L);
-    assertEquals(5, admin.given.size());
-    assertTrue(admin.given.contains(victim));
+    assertEquals(List.of(victim), admin.given, "the admin redelivery gives only that prize: nothing already delivered is repeated");
     assertEquals(Prize.State.DELIVERED, back.prizes.get(victim).state);
   }
 
@@ -509,7 +509,7 @@ class PaseRewardsTest {
 
   // ---------------------------------------------------------------- batches, refunds, RCT cap
 
-  @Test void aClaimGivesAtMost25PrizesAndTheItemsOfABatchAreMarkedWithOneWrite() {
+  @Test void aClaimGivesAtMost25PrizesAndWritesEachOneBeforeGivingIt() {
     engine.adminGiveLevels(id, 30);
     PlayerPase p = player();
     sync(p);
@@ -519,12 +519,47 @@ class PaseRewardsTest {
     };
     var fake = new Fake();
     var report = PrizeClaimer.claim(p, fake, counting, m -> { }, 2L, PrizeClaimer.BATCH);
-    long items = report.delivered().stream().filter(z -> z.reward.kind() == PaseReward.Kind.ITEM).count();
     assertEquals(25, fake.given.size());
     assertEquals(p.prizes.size() - 25, report.remaining());
-    assertTrue(counting.saves <= 2 + (25 - items) * 2, "items share a single DELIVERING write: " + counting.saves + " writes for " + items + " items");
+    assertEquals(50, counting.saves, "one write before and one after each prize");
     int more = PrizeClaimer.claim(p, new Fake(), counting, m -> { }, 3L, PrizeClaimer.BATCH).delivered().size();
     assertEquals(p.prizes.size() - 25, more);
+  }
+
+  @Test void ifTheJournalFailsHalfWayNothingStaysDeliveringWithoutBeingGiven() {
+    engine.adminGiveLevels(id, 6);
+    PlayerPase p = player();
+    sync(p);
+    int total = p.prizes.size();
+    var failing = new Disk() {
+      int saves;
+      @Override public void save(PlayerPase q) throws IOException {
+        if (++saves == 7) throw new IOException("disco lleno");
+        super.save(q);
+      }
+    };
+    var fake = new Fake();
+    var report = PrizeClaimer.claim(p, fake, failing, m -> { }, 2L, PrizeClaimer.BATCH);
+    assertEquals(3, fake.given.size(), "the first three prizes (two writes each) were given; the write of the fourth failed");
+    assertEquals(3, report.delivered().size());
+    assertTrue(p.prizes.values().stream().noneMatch(z -> z.state == Prize.State.DELIVERING), "no prize is left DELIVERING");
+    assertEquals(total - 3, p.prizes.values().stream().filter(z -> z.state == Prize.State.PENDING && "SAVE_FAILED".equals(z.reason)).count(), "the failed prize and all behind it wait as PENDING");
+    var again = new Fake();
+    PrizeClaimer.claim(p, again, new Disk(), m -> { }, 3L, PrizeClaimer.BATCH);
+    assertEquals(total - 3, again.given.size());
+    assertTrue(again.given.stream().noneMatch(fake.given::contains), "nothing given before is given again");
+  }
+
+  @Test void aRefundForgetsThePlannedMarkOfThePaidLevelsSoAPremiumBoughtAgainCreatesThemAgain() {
+    PlayerPase p = player();
+    p.progress(CUR).xp = 4L * rules.xpPerLevel();
+    p.legacyLevels.add(Prize.levelKey(CUR, Prize.Track.PREMIUM, 2));
+    p.legacyLevels.add(Prize.levelKey(CUR, Prize.Track.FREE, 2));
+    PrizePlanner.revokePremium(p, CUR);
+    assertFalse(p.legacyLevels.contains(Prize.levelKey(CUR, Prize.Track.PREMIUM, 2)));
+    assertTrue(p.legacyLevels.contains(Prize.levelKey(CUR, Prize.Track.FREE, 2)));
+    p.premium.add(CUR);
+    assertEquals(rewardsUpTo(4, true) + rewardsUpTo(4, false) - example.level(2).free().size(), sync(p), "paid levels are planned again; the free level 2 stays marked");
   }
 
   @Test void aReopenedPrizeOfAPaidTrackIsNotDeliveredWithoutThePremium() {

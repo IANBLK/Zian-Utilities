@@ -852,7 +852,7 @@
   "zianutilities.pase.problem.level_range": "Level %s is outside 1-%s",
   "zianutilities.pase.problem.type_object": "\"%s\" must be an object",
   "zianutilities.pase.problem.in_loot": "In extra.loot: %s",
-  "zianutilities.pase.problem.id_missing": "The reward id is missing",
+  "zianutilities.pase.problem.id_missing": "The reward id is missing: every reward needs its own \"id\" field (see the season 1 example)",
   "zianutilities.pase.problem.id_bad": "The id \"%s\" is not valid (letters, digits, dash, underscore and dot; up to 40)",
   "zianutilities.pase.problem.id_duplicate": "The id \"%s\" is repeated",
   "zianutilities.pase.problem.at": "Level %s, track %s: %s",

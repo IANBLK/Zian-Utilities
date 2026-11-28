@@ -852,7 +852,7 @@
   "zianutilities.pase.problem.level_range": "El nivel %s está fuera de 1-%s",
   "zianutilities.pase.problem.type_object": "«%s» debe ser un objeto",
   "zianutilities.pase.problem.in_loot": "En extra.loot: %s",
-  "zianutilities.pase.problem.id_missing": "Falta el id del premio",
+  "zianutilities.pase.problem.id_missing": "Falta el id del premio: cada premio necesita un campo «id» propio (mira el ejemplo de la temporada 1)",
   "zianutilities.pase.problem.id_bad": "El id «%s» no es válido (letras, números, guion, guion bajo y punto; máximo 40)",
   "zianutilities.pase.problem.id_duplicate": "El id «%s» está repetido",
   "zianutilities.pase.problem.at": "Nivel %s, pista %s: %s",

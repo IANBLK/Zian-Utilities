@@ -46,9 +46,10 @@ public final class PrizeClaimer {
   }
 
   /**
-   * Delivers up to {@code limit} pending prizes it can. The DELIVERING mark of every item of the batch goes to disk in one write
-   * (if the server dies, those items are UNCERTAIN, given or not); coins, Pokemon and commands are written one by one because
-   * they can be resumed exactly. A locked player gets nothing.
+   * Delivers up to {@code limit} pending prizes it can, one by one: DELIVERING is written to disk before each prize is given and
+   * the result right after, so a crash can only leave the single prize that was in progress as DELIVERING (UNCERTAIN for items and
+   * commands, resumable for coins and Pokemon). If a write fails, that prize and the ones behind it stay PENDING (SAVE_FAILED).
+   * A locked player gets nothing.
    */
   public static Report claim(PlayerPase p, Gateway gateway, Saver saver, Consumer<String> warn, long now, int limit) {
     Report r = new Report(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), 0);
@@ -77,36 +78,21 @@ public final class PrizeClaimer {
       }
       batch.add(z);
     }
-    // One write for all the items of the batch.
-    List<Prize> items = batch.stream().filter(z -> z.reward.kind() == PaseReward.Kind.ITEM).toList();
-    if (!items.isEmpty()) {
-      for (Prize z : items) mark(z, now);
+    for (int n = 0; n < batch.size(); n++) {
+      Prize z = batch.get(n);
+      mark(z, now);
       try {
         saver.save(p);
       } catch (IOException failure) {
-        for (Prize z : items) {
-          z.state = Prize.State.PENDING;
-          z.reason = "SAVE_FAILED";
-          r.blocked.add(z);
+        // The journal cannot be written: this prize and every one behind it in the batch stay PENDING, none is left DELIVERING.
+        warn.accept("No se pudo escribir el diario del premio " + z.id + " de " + p.id + "; no se entrega este ni los siguientes: " + failure);
+        for (Prize left : batch.subList(n, batch.size())) {
+          left.state = Prize.State.PENDING;
+          left.reason = "SAVE_FAILED";
+          r.blocked.add(left);
         }
-        batch.removeAll(items);
-        warn.accept("No se pudo escribir el diario de premios de " + p.id + "; no se entregan los objetos: " + failure);
-      }
-    }
-    boolean dirtyItems = false;
-    for (Prize z : batch) {
-      boolean item = z.reward.kind() == PaseReward.Kind.ITEM;
-      if (!item) {
-        mark(z, now);
-        try {
-          saver.save(p);
-        } catch (IOException failure) {
-          z.state = Prize.State.PENDING;
-          z.reason = "SAVE_FAILED";
-          warn.accept("No se pudo escribir el diario del premio " + z.id + " de " + p.id + "; no se entrega: " + failure);
-          r.blocked.add(z);
-          break;
-        }
+        p.dirty = true;
+        break;
       }
       Outcome o;
       try {
@@ -126,21 +112,10 @@ public final class PrizeClaimer {
         case DELIVERING -> r.proving.add(z);
       }
       p.dirty = true;
-      if (item) {
-        dirtyItems = true;
-        continue;
-      }
       try {
         saver.save(p);
       } catch (IOException failure) {
         warn.accept("No se pudo guardar el resultado del premio " + z.id + " de " + p.id + " (se reintenta; si cae el servidor quedará por revisar): " + failure);
-      }
-    }
-    if (dirtyItems) {
-      try {
-        saver.save(p);
-      } catch (IOException failure) {
-        warn.accept("No se pudo guardar el resultado de los objetos de " + p.id + " (se reintenta; si cae el servidor quedarán por revisar): " + failure);
       }
     }
     return new Report(r.delivered, r.blocked, r.uncertain, r.proving, remaining);

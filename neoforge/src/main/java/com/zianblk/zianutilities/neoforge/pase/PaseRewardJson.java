@@ -205,7 +205,7 @@ final class PaseRewardJson {
         try {
           if (!e.isJsonObject()) throw bad("type_object", "«%s» debe ser un objeto", key);
           PaseReward r = reward(e.getAsJsonObject());
-          if (r.id() == null) throw bad("id_missing", "Falta el id del premio");
+          if (r.id() == null) throw bad("id_missing", "Falta el id del premio: cada premio necesita un campo «id» propio (mira el ejemplo de la temporada 1)");
           if (!REWARD_ID.matcher(r.id()).matches()) throw bad("id_bad", "El id «%s» no es válido (letras, números, guion, guion bajo y punto; máximo 40)", r.id());
           if (!ids.add(r.id())) throw bad("id_duplicate", "El id «%s» está repetido", r.id());
           out.add(r);

@@ -59,6 +59,8 @@ public final class PrizePlanner {
     List<String> drop = new ArrayList<>();
     for (Prize z : p.prizes.values()) if (z.seasonId.equals(seasonId) && z.premiumOnly() && z.state == Prize.State.PENDING) drop.add(z.id);
     drop.forEach(p.prizes::remove);
+    // The paid levels are not "already planned" any more: a premium bought again must create their prizes.
+    if (p.legacyLevels.removeIf(k -> k.startsWith(seasonId + "|premium|"))) p.dirty = true;
     if (!drop.isEmpty()) p.dirty = true;
     return drop.size();
   }
