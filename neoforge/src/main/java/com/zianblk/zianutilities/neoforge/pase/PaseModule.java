@@ -69,6 +69,7 @@ public final class PaseModule {
     });
     NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent e) -> {
       AFK.forget(e.getEntity().getUUID());
+      PaseDelivery.forget(e.getEntity().getUUID());
       if (store != null) store.release(e.getEntity().getUUID());
     });
     PaseSources.install();
@@ -87,8 +88,9 @@ public final class PaseModule {
       problem = config.enabled() ? "" : "disabled in config";
       if (config.enabled()) {
         build();
-        String rewards = PaseRewards.problem();
+        String rewards = PaseRewards.problemText();
         if (rewards != null) LOG.error("Premios del pase cerrados (los niveles se ganan y los premios quedan pendientes): {}", rewards);
+        PaseRewards.reportPendingTransactions();
       }
       LOG.info("Pase listo: enabled={}", config.enabled());
     } catch (Exception | LinkageError failure) {

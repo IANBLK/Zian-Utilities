@@ -11,7 +11,7 @@ import java.util.UUID;
 public final class LootTable {
   public record Entry(int weight, PaseReward reward) {
     public Entry {
-      if (weight < 1 || weight > 1_000_000) throw new IllegalArgumentException("weight debe estar entre 1 y 1000000");
+      if (weight < 1 || weight > 1_000_000) throw PaseDataException.range("weight", 1, 1_000_000);
     }
   }
 

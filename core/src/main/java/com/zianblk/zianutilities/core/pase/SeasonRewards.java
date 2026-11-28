@@ -13,8 +13,8 @@ public record SeasonRewards(int levelCap, Map<Integer, Level> levels, int extraE
   }
 
   public SeasonRewards {
-    if (levelCap < 1 || levelCap > 100) throw new IllegalArgumentException("levelCap debe estar entre 1 y 100");
-    if (extraEvery < 1) throw new IllegalArgumentException("extra.every debe ser al menos 1");
+    if (levelCap < 1 || levelCap > 100) throw PaseDataException.range("levelCap", 1, 100);
+    if (extraEvery < 1) throw PaseDataException.range("every", 1, 1_000_000);
     levels = Map.copyOf(levels);
     loot = List.copyOf(loot);
   }

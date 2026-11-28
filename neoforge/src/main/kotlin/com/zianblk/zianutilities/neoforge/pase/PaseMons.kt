@@ -13,7 +13,7 @@ object PaseMons {
     /** ivs is -1 (random) or 0-31 for every stat; minPerfect stats chosen by the seed become 31. */
     @JvmStatic
     fun build(species: String, level: Int, ivs: Int, minPerfect: Int, alpha: Boolean, shiny: Boolean, id: UUID, seed: Long, trainer: UUID): Pokemon {
-        val properties = PokemonProperties.parse("$species level=$level" + if (shiny) " shiny=yes" else "")
+        val properties = PokemonProperties.parse("$species level=$level" + if (shiny) " shiny=yes" else " shiny=no")
         properties.isAlpha = null
         val pokemon = properties.create()
         properties.isAlpha = if (alpha) true else null

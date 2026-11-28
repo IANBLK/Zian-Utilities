@@ -59,8 +59,12 @@ final class PaseStateJson {
     if (o.has("prizes"))
       for (JsonElement e : o.getAsJsonArray("prizes")) {
         JsonObject z = e.getAsJsonObject();
+        // Journals written when ids were list positions have "index" and no "key": their levels are marked as already planned
+        // so the planner never adds a second prize for the same reward under a new id.
+        boolean legacy = !z.has("key");
         Prize prize = new Prize(z.get("season").getAsString(), Prize.Track.valueOf(z.get("track").getAsString().toUpperCase(java.util.Locale.ROOT)),
-            z.get("level").getAsInt(), z.get("index").getAsInt(), PaseRewardJson.reward(z.getAsJsonObject("reward")));
+            z.get("level").getAsInt(), legacy ? String.valueOf(z.get("index").getAsInt()) : z.get("key").getAsString(), PaseRewardJson.reward(z.getAsJsonObject("reward")));
+        if (legacy && prize.track != Prize.Track.EXTRA) p.legacyLevels.add(Prize.levelKey(prize.seasonId, prize.track, prize.level));
         if (!prize.id.equals(z.get("id").getAsString())) throw new IllegalArgumentException("premio con id incoherente: " + z.get("id").getAsString());
         prize.state = Prize.State.valueOf(z.get("state").getAsString());
         prize.reason = z.has("reason") ? z.get("reason").getAsString() : "";
@@ -69,6 +73,7 @@ final class PaseStateJson {
         prize.updated = z.has("updated") ? z.get("updated").getAsLong() : 0;
         if (p.prizes.put(prize.id, prize) != null) throw new IllegalArgumentException("premio repetido en el diario: " + prize.id);
       }
+    if (o.has("legacyLevels")) for (JsonElement e : o.getAsJsonArray("legacyLevels")) p.legacyLevels.add(e.getAsString());
     com.zianblk.zianutilities.core.pase.PrizeClaimer.recover(p);
     if (o.has("explored"))
       for (var e : o.getAsJsonObject("explored").entrySet()) {
@@ -123,7 +128,7 @@ final class PaseStateJson {
       e.addProperty("season", z.seasonId);
       e.addProperty("track", z.track.name().toLowerCase(java.util.Locale.ROOT));
       e.addProperty("level", z.level);
-      e.addProperty("index", z.index);
+      e.addProperty("key", z.key);
       e.addProperty("state", z.state.name());
       e.addProperty("reason", z.reason);
       e.addProperty("detail", z.detail);
@@ -133,6 +138,7 @@ final class PaseStateJson {
       prizes.add(e);
     }
     o.add("prizes", prizes);
+    o.add("legacyLevels", strings(p.legacyLevels));
     JsonObject explored = new JsonObject();
     for (var e : p.explored.entrySet()) explored.add(e.getKey(), strings(e.getValue()));
     o.add("explored", explored);

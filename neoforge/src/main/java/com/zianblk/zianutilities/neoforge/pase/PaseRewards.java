@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.fml.loading.FMLPaths;
 
@@ -37,9 +38,9 @@ import net.neoforged.fml.loading.FMLPaths;
 final class PaseRewards {
   static final String FIRST_SEASON = "temporada-1";
   private static final Map<String, SeasonRewards> LOADED = new HashMap<>();
-  private static final Map<String, String> FAILED = new LinkedHashMap<>();
+  private static final Map<String, Throwable> FAILED = new LinkedHashMap<>();
   private static Set<String> commands;
-  private static String commandsProblem;
+  private static Throwable commandsProblem;
   private static AvecoinsEconomyPort port;
   private static RewardClaimService coins;
   private static PaseTransactions transactions;
@@ -84,7 +85,7 @@ final class PaseRewards {
       commandsProblem = null;
     } catch (IOException | RuntimeException bad) {
       commands = Set.of();
-      commandsProblem = String.valueOf(bad.getMessage());
+      commandsProblem = bad;
       PaseModule.LOG.error("La lista blanca de comandos de premios ({}) no es válida; ningún premio de comando se entrega: {}", commandsFile().getFileName(), bad.toString());
     }
     return commands;
@@ -99,47 +100,53 @@ final class PaseRewards {
     try {
       Path file = seasonFile(seasonId);
       if (!StorageFiles.exists(file)) {
-        if (!FIRST_SEASON.equals(seasonId)) throw new IllegalArgumentException("falta el archivo config/" + file.getFileName());
-        writeNew(file, PaseSeasonExample.json());
+        if (!FIRST_SEASON.equals(seasonId)) throw PaseRewardJson.bad("file_missing", "Falta el archivo config/%s", file.getFileName().toString());
+        writeNew(file, PaseSeasonExample.json(PaseModule.config.rules().levels()));
         PaseModule.LOG.info("Creada la temporada de ejemplo {}", file.getFileName());
       }
       SeasonRewards parsed = PaseRewardJson.parseSeason(StorageFiles.readString(file), PaseModule.config.rules().levels());
-      String bad = validate(parsed);
-      if (bad != null) throw new IllegalArgumentException(bad);
+      RuntimeException bad = validate(parsed);
+      if (bad != null) throw bad;
       LOADED.put(seasonId, parsed);
       return parsed;
     } catch (IOException | RuntimeException bad) {
-      FAILED.put(seasonId, String.valueOf(bad.getMessage()));
+      FAILED.put(seasonId, bad);
       PaseModule.LOG.error("Premios de {} no disponibles (no se entrega nada de esa temporada hasta que el archivo sea válido; /ZianUtilities pase admin recargar): {}", seasonId, bad.toString());
       return null;
     }
   }
 
-  /** The first reason a season of the pass has no rewards, or null. */
-  static String problem() {
+  /** The first reason a season of the pass has no rewards (a translatable exception, see PaseMessages.problem), or null. */
+  static Throwable problem() {
     if (!PaseModule.active()) return null;
     var seasons = PaseModule.seasons;
     rewardsOf(seasons.current().id());
     if (seasons.previous() != null) rewardsOf(seasons.previous().id());
-    if (commandsProblem != null) return commandsFile().getFileName() + ": " + commandsProblem;
-    return FAILED.entrySet().stream().findFirst().map(e -> e.getKey() + ": " + e.getValue()).orElse(null);
+    if (commandsProblem != null) return PaseRewardJson.bad("commands_file", "Lista blanca de comandos (%s): %s", commandsFile().getFileName().toString(), commandsProblem);
+    return FAILED.entrySet().stream().findFirst().map(e -> (Throwable) PaseRewardJson.bad("season_problem", "Temporada %s: %s", e.getKey(), e.getValue())).orElse(null);
+  }
+
+  /** The problem as plain text for the log. */
+  static String problemText() {
+    Throwable p = problem();
+    return p == null ? null : PaseMessages.problem(p).getString();
   }
 
   /** Checks that every item, species and command named in the season exists or is allowed, so a typo is caught on load and not at claim time. */
-  private static String validate(SeasonRewards s) {
+  private static RuntimeException validate(SeasonRewards s) {
     var registries = PaseModule.server.registryAccess();
     for (var e : new java.util.TreeMap<>(s.levels()).entrySet()) {
-      for (PaseReward r : e.getValue().free()) { String bad = PaseDelivery.validate(r, registries, commands()); if (bad != null) return "nivel " + e.getKey() + " (free): " + bad; }
-      for (PaseReward r : e.getValue().premium()) { String bad = PaseDelivery.validate(r, registries, commands()); if (bad != null) return "nivel " + e.getKey() + " (premium): " + bad; }
+      for (PaseReward r : e.getValue().free()) { RuntimeException bad = PaseDelivery.validate(r, registries, commands()); if (bad != null) return PaseRewardJson.bad("at", "Nivel %s, pista %s: %s", e.getKey(), "free", bad); }
+      for (PaseReward r : e.getValue().premium()) { RuntimeException bad = PaseDelivery.validate(r, registries, commands()); if (bad != null) return PaseRewardJson.bad("at", "Nivel %s, pista %s: %s", e.getKey(), "premium", bad); }
     }
-    for (var entry : s.loot()) { String bad = PaseDelivery.validate(entry.reward(), registries, commands()); if (bad != null) return "extra.loot: " + bad; }
+    for (var entry : s.loot()) { RuntimeException bad = PaseDelivery.validate(entry.reward(), registries, commands()); if (bad != null) return PaseRewardJson.bad("in_loot", "En extra.loot: %s", bad); }
     return null;
   }
 
   /** The reload command: forgets what was loaded, reads the current and previous season again and copies good files to the history. */
   static String reload() {
     reset();
-    String problem = problem();
+    String problem = problemText();
     if (problem == null) {
       for (String id : seasonIds()) {
         try {
@@ -221,9 +228,12 @@ final class PaseRewards {
       PlayerPase p = PaseModule.store.get(player.getUUID());
       sync(p);
       tellPending(player, p);
-      String problem = problem();
-      if (problem != null && UtilitiesPermissions.allows(player, "admin.pase", true))
-        player.sendSystemMessage(Messages.format(PaseMessages.rewardsInvalid(problem)));
+      if (UtilitiesPermissions.allows(player, "admin.pase", true)) {
+        Throwable problem = problem();
+        if (problem != null) player.sendSystemMessage(Messages.format(PaseMessages.rewardsInvalid(PaseMessages.problem(problem))));
+        var stuck = pendingTransactions();
+        if (!stuck.isEmpty()) player.sendSystemMessage(Messages.format(PaseMessages.tebexPending(String.join(", ", stuck))));
+      }
     } catch (RuntimeException | LinkageError failure) {
       PaseModule.LOG.error("Revisión de premios al entrar fallida para {}", player.getGameProfile().getName(), failure);
     }
@@ -231,38 +241,82 @@ final class PaseRewards {
 
   static void tellPending(ServerPlayer player, PlayerPase p) {
     long pending = PrizePlanner.pending(p);
-    if (pending > 0) player.sendSystemMessage(Messages.format(PaseMessages.rewardsPending(pending)));
+    if (pending > 0) player.sendSystemMessage(Messages.format(PaseMessages.rewardsPending(pending, PaseSources.lang(player))));
   }
 
   /** Delivers everything pending to an online player and tells them what happened. */
   static PrizeClaimer.Report claim(ServerPlayer player) {
     PlayerPase p = PaseModule.store.get(player.getUUID());
     sync(p);
-    var report = PrizeClaimer.claim(p, new PaseDelivery(player), PaseModule.store::saveNow, PaseModule.LOG::warn, PaseModule.CLOCK.millis());
+    var report = PrizeClaimer.claim(p, new PaseDelivery(player), PaseModule.store::saveNow, PaseModule.LOG::warn, PaseModule.CLOCK.millis(), PrizeClaimer.BATCH);
     tell(player, report, p.prizes.values().stream().filter(z -> z.state == Prize.State.UNCERTAIN).count());
     return report;
   }
 
   /** {@code review} is every prize of the player under review, not only the ones this claim touched. */
   static void tell(ServerPlayer player, PrizeClaimer.Report r, long review) {
-    if (r.delivered().size() > 8) player.sendSystemMessage(Messages.format(PaseMessages.rewardsClaimed(r.delivered().size())));
-    else for (Prize z : r.delivered()) player.sendSystemMessage(Messages.format(PaseMessages.rewardClaimed(PaseDelivery.describe(z, player.registryAccess()))));
+    String lang = PaseSources.lang(player);
+    if (r.delivered().size() > 8) player.sendSystemMessage(Messages.format(PaseMessages.rewardsClaimed(r.delivered().size(), lang)));
+    else for (Prize z : r.delivered()) player.sendSystemMessage(Messages.format(PaseMessages.rewardClaimed(PaseDelivery.describe(z, player.registryAccess(), lang))));
     Map<String, Integer> blocked = new LinkedHashMap<>();
     for (Prize z : r.blocked()) blocked.merge(z.reason, 1, Integer::sum);
-    blocked.forEach((reason, n) -> player.sendSystemMessage(Messages.format(PaseMessages.blocked(reason, n))));
-    if (review > 0) player.sendSystemMessage(Messages.format(PaseMessages.uncertain(review)));
+    blocked.forEach((reason, n) -> player.sendSystemMessage(Messages.format(PaseMessages.blocked(reason, n, lang))));
+    if (review > 0) player.sendSystemMessage(Messages.format(PaseMessages.uncertain(review, lang)));
     if (!r.proving().isEmpty()) player.sendSystemMessage(Messages.format(PaseMessages.proof()));
+    if (r.remaining() > 0) player.sendSystemMessage(Messages.format(PaseMessages.remaining(r.remaining(), lang)));
     if (r.empty() && review == 0) player.sendSystemMessage(Messages.format(PaseMessages.rewardsNone()));
   }
 
   // ---------------------------------------------------------------- Tebex premium
 
-  enum Status { GIVEN, DUPLICATE, BAD_SEASON, BAD_TRANSACTION, FAILED }
+  enum Status { GIVEN, DUPLICATE, BAD_SEASON, BAD_TRANSACTION, LOCKED, TX_UNREADABLE, FAILED }
 
   record PremiumResult(Status status, String detail) {}
 
-  /** The Tebex command. The transaction is on disk as PENDING before the premium is given and APPLIED after; a repeated one is ignored. */
+  /** Tells every online player who may administer the pass (OP, or the LuckPerms admin node). */
+  static void alertOps(Component message) {
+    if (PaseModule.server == null) return;
+    for (ServerPlayer p : PaseModule.server.getPlayerList().getPlayers())
+      if (UtilitiesPermissions.allows(p, "admin.pase", true)) p.sendSystemMessage(Messages.format(message));
+  }
+
+  /** Tebex transactions written as PENDING that never finished (the server died between the two writes). */
+  static List<String> pendingTransactions() {
+    try {
+      var tx = transactions();
+      tx.load();
+      return tx.pendingIds();
+    } catch (IOException | RuntimeException failure) {
+      PaseModule.LOG.warn("No se pudo revisar las transacciones de Tebex pendientes: {}", failure.toString());
+      return List.of();
+    }
+  }
+
+  /** At start: lists the half-finished Tebex transactions in the log (the OPs are told when they join). */
+  static void reportPendingTransactions() {
+    var stuck = pendingTransactions();
+    if (!stuck.isEmpty()) PaseModule.LOG.warn("[ZIAN-AUDIT] tebex transacciones sin completar tras una caída: {}. Repetir su comando las termina sin duplicar", String.join(", ", stuck));
+  }
+
+  /** The Tebex command. Every failure goes to the log and to the OPs online; the transaction is on disk as PENDING before the premium is given. */
   static PremiumResult premiumGive(UUID id, String season, String transaction) {
+    PremiumResult r = premiumGive0(id, season, transaction);
+    Component reason = switch (r.status()) {
+      case BAD_SEASON -> PaseMessages.premiumBadSeason(PaseModule.seasons.current().id(), PaseModule.seasons.previous() == null ? null : PaseModule.seasons.previous().id());
+      case BAD_TRANSACTION -> PaseMessages.premiumBadTransaction();
+      case LOCKED -> PaseMessages.premiumLocked();
+      case TX_UNREADABLE -> PaseMessages.premiumTxUnreadable();
+      case FAILED -> Component.literal(r.detail());
+      default -> null;
+    };
+    if (reason != null) {
+      PaseModule.LOG.warn("[ZIAN-AUDIT] tebex premium {} NO dado: jugador {}, temporada {}, transacción {} ({})", r.status(), id, season, transaction, reason.getString());
+      alertOps(PaseMessages.tebexProblem(reason, transaction, id.toString()));
+    }
+    return r;
+  }
+
+  private static PremiumResult premiumGive0(UUID id, String season, String transaction) {
     var seasons = PaseModule.seasons;
     boolean known = season.equals(seasons.current().id()) || (seasons.previous() != null && season.equals(seasons.previous().id()));
     if (!known) return new PremiumResult(Status.BAD_SEASON, "");
@@ -270,6 +324,10 @@ final class PaseRewards {
     var tx = transactions();
     try {
       tx.load();
+    } catch (IOException unreadable) {
+      return new PremiumResult(Status.TX_UNREADABLE, String.valueOf(unreadable.getMessage()));
+    }
+    try {
       var seen = tx.get(transaction);
       if (seen != null && seen.state() == PaseTransactions.State.APPLIED) {
         PaseModule.LOG.warn("[ZIAN-AUDIT] tebex transacción repetida ignorada: {} (ya usada para {} en {})", transaction, seen.uuid(), seen.season());
@@ -283,9 +341,10 @@ final class PaseRewards {
       var player = PaseModule.server.getPlayerList().getPlayer(id);
       PlayerPase p = PaseModule.store.get(id);
       try {
-        if (p.locked) throw new IOException("el archivo del pase del jugador está bloqueado");
+        if (p.locked) return new PremiumResult(Status.LOCKED, "");
         PaseModule.engine.setPremium(id, season, true);
         PaseModule.store.saveNow(p);
+        if (!p.premium.contains(season)) throw new IllegalStateException("el premium no quedó registrado");
         tx.applied(transaction);
         sync(p);
         PaseModule.store.saveNow(p);
@@ -311,9 +370,10 @@ final class PaseRewards {
     try {
       if (p.locked) return -1;
       PaseModule.engine.setPremium(id, season, false);
+      long delivered = p.prizes.values().stream().filter(z -> z.seasonId.equals(season) && z.premiumOnly() && z.state == Prize.State.DELIVERED).count();
       int dropped = PrizePlanner.revokePremium(p, season);
       PaseModule.store.saveNow(p);
-      PaseModule.LOG.info("[ZIAN-AUDIT] premium {} retirado a {} ({} premios sin entregar anulados)", season, id, dropped);
+      PaseModule.LOG.info("[ZIAN-AUDIT] premium {} retirado a {}: {} premios de pago sin entregar anulados, {} ya entregados (siguen entregados)", season, id, dropped, delivered);
       return dropped;
     } catch (IOException | RuntimeException failure) {
       PaseModule.LOG.error("No se pudo retirar el premium de {} a {}", season, id, failure);

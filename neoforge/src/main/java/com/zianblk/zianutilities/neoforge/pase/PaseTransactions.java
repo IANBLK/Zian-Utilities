@@ -57,6 +57,11 @@ final class PaseTransactions {
 
   synchronized Entry get(String transaction) { return entries.get(transaction); }
 
+  /** The transactions that were begun but never marked APPLIED. */
+  synchronized java.util.List<String> pendingIds() {
+    return entries.entrySet().stream().filter(e -> e.getValue().state() == State.PENDING).map(Map.Entry::getKey).toList();
+  }
+
   /** Records the transaction as PENDING on disk. If the write fails it is forgotten again and the premium must not be given. */
   synchronized void begin(String transaction, UUID player, String season, long at) throws IOException {
     put(transaction, new Entry(player.toString(), season, State.PENDING, at));

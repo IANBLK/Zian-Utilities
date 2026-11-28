@@ -38,6 +38,15 @@ final class PaseCommands {
 
   private static boolean admin(CommandSourceStack s) { return UtilitiesPermissions.allows(s, "admin.pase", true); }
 
+  /** Tebex and refunds: only a real OP level 4 (the console always has it). LuckPerms nodes never grant these two. */
+  private static boolean tebex(CommandSourceStack s) { return s.hasPermission(4); }
+
+  /** The language of the sender for number formatting; the console gets Spanish. */
+  private static String lang(CommandSourceStack s) {
+    ServerPlayer p = s.getPlayer();
+    return p == null ? "es_es" : PaseSources.lang(p);
+  }
+
   private static void say(CommandSourceStack s, Component c) { s.sendSuccess(() -> Messages.format(c), false); }
 
   private static boolean ready(CommandSourceStack s) {
@@ -68,12 +77,12 @@ final class PaseCommands {
         .then(Commands.literal("reiniciar").requires(PaseCommands::admin).then(Commands.argument("jugador", EntityArgument.player())
             .executes(c -> resetPlayer(c.getSource(), EntityArgument.getPlayer(c, "jugador"))))));
     SuggestionProvider<CommandSourceStack> seasons = (c, b) -> SharedSuggestionProvider.suggest(PaseModule.active() ? PaseRewards.seasonIds() : java.util.List.of(), b);
-    admin.then(Commands.literal("premium").requires(PaseCommands::admin)
-        .then(Commands.literal("dar").requires(PaseCommands::admin).then(Commands.argument("uuid", UuidArgument.uuid())
+    admin.then(Commands.literal("premium").requires(PaseCommands::tebex)
+        .then(Commands.literal("dar").requires(PaseCommands::tebex).then(Commands.argument("uuid", UuidArgument.uuid())
             .then(Commands.argument("temporada", StringArgumentType.word()).suggests(seasons)
                 .then(Commands.argument("transaction", StringArgumentType.word())
                     .executes(c -> premiumGive(c.getSource(), UuidArgument.getUuid(c, "uuid"), StringArgumentType.getString(c, "temporada"), StringArgumentType.getString(c, "transaction")))))))
-        .then(Commands.literal("quitar").requires(PaseCommands::admin).then(Commands.argument("uuid", UuidArgument.uuid())
+        .then(Commands.literal("quitar").requires(PaseCommands::tebex).then(Commands.argument("uuid", UuidArgument.uuid())
             .then(Commands.argument("temporada", StringArgumentType.word()).suggests(seasons)
                 .executes(c -> premiumRemove(c.getSource(), UuidArgument.getUuid(c, "uuid"), StringArgumentType.getString(c, "temporada")))))));
     admin.then(Commands.literal("premios").requires(PaseCommands::admin)
@@ -93,7 +102,7 @@ final class PaseCommands {
     if (!ready(s)) return 0;
     var v = PaseModule.engine.view(s.getPlayer().getUUID());
     if (v == null) {
-      s.sendFailure(Messages.format(PaseMessages.failed("archivo del pase ilegible")));
+      s.sendFailure(Messages.format(PaseMessages.failed(PaseMessages.lockedFile())));
       return 0;
     }
     var rules = PaseModule.config.rules();
@@ -134,7 +143,9 @@ final class PaseCommands {
       }
       case BAD_SEASON -> s.sendFailure(Messages.format(PaseMessages.premiumBadSeason(PaseModule.seasons.current().id(), PaseModule.seasons.previous() == null ? null : PaseModule.seasons.previous().id())));
       case BAD_TRANSACTION -> s.sendFailure(Messages.format(PaseMessages.premiumBadTransaction()));
-      default -> s.sendFailure(Messages.format(PaseMessages.premiumFailed(r.detail())));
+      case LOCKED -> s.sendFailure(Messages.format(PaseMessages.premiumFailed(PaseMessages.premiumLocked())));
+      case TX_UNREADABLE -> s.sendFailure(Messages.format(PaseMessages.premiumFailed(PaseMessages.premiumTxUnreadable())));
+      default -> s.sendFailure(Messages.format(PaseMessages.premiumFailed(Component.literal(r.detail()))));
     }
     return 0;
   }
@@ -152,13 +163,13 @@ final class PaseCommands {
       return 0;
     }
     done(s, "premium quitar " + id + " " + season);
-    say(s, PaseMessages.premiumRemoved(season, id.toString(), dropped));
+    say(s, PaseMessages.premiumRemoved(season, id.toString(), dropped, lang(s)));
     return 1;
   }
 
   private static com.mojang.authlib.GameProfile single(CommandSourceStack s, java.util.List<com.mojang.authlib.GameProfile> profiles) {
     if (profiles.size() == 1) return profiles.get(0);
-    s.sendFailure(Messages.format(PaseMessages.failed("elige un solo jugador")));
+    s.sendFailure(Messages.format(PaseMessages.failed(PaseMessages.pickOne())));
     return null;
   }
 
@@ -170,7 +181,7 @@ final class PaseCommands {
     PlayerPase p = PaseModule.store.get(profile.getId());
     try {
       if (p.locked) {
-        s.sendFailure(Messages.format(PaseMessages.failed("archivo del pase ilegible")));
+        s.sendFailure(Messages.format(PaseMessages.failed(PaseMessages.lockedFile())));
         return 0;
       }
       long pending = 0, delivered = 0, review = 0;
@@ -181,16 +192,16 @@ final class PaseCommands {
           default -> pending++;
         }
       }
-      say(s, PaseMessages.prizesHeader(profile.getName(), pending, delivered, review));
+      say(s, PaseMessages.prizesHeader(profile.getName(), pending, delivered, review, lang(s)));
       int shown = 0;
       long open = pending + review;
       for (Prize z : p.prizes.values()) {
         if (z.state == Prize.State.DELIVERED) continue;
         if (shown >= 20) break;
         shown++;
-        say(s, PaseMessages.prizesLine(z.id, z.state.name(), z.reason));
+        say(s, PaseMessages.prizesLine(z.id, PaseMessages.state(z.state), PaseMessages.reason(z.reason)));
       }
-      if (open > shown) say(s, PaseMessages.prizesMore(open - shown));
+      if (open > shown) say(s, PaseMessages.prizesMore(open - shown, lang(s)));
       return 1;
     } finally {
       if (!online) PaseModule.store.release(profile.getId());
@@ -205,13 +216,13 @@ final class PaseCommands {
     PlayerPase p = PaseModule.store.get(profile.getId());
     try {
       if (p.locked) {
-        s.sendFailure(Messages.format(PaseMessages.failed("archivo del pase ilegible")));
+        s.sendFailure(Messages.format(PaseMessages.failed(PaseMessages.lockedFile())));
         return 0;
       }
       int reopened = PrizeClaimer.reopen(p);
       PaseModule.store.saveNow(p);
       done(s, "premios reentregar " + profile.getName() + " (" + reopened + " reabiertos)");
-      say(s, PaseMessages.prizesReopened(reopened, profile.getName(), ""));
+      say(s, PaseMessages.prizesReopened(reopened, profile.getName(), lang(s)));
       if (online == null) {
         say(s, PaseMessages.prizesOffline());
         return 1;

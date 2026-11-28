@@ -25,6 +25,11 @@ public final class PlayerPase {
   public final List<LevelEvent> events = new ArrayList<>();
   /** Rewards owed to this player and their delivery journal, by prize id. */
   public final Map<String, Prize> prizes = new LinkedHashMap<>();
+  /**
+   * "season|track|level" of the levels whose prizes were created when ids were list positions. Those levels are considered fully
+   * planned: the planner never adds prizes to them, so a legacy prize and a new-id prize can never both pay the same reward.
+   */
+  public final Set<String> legacyLevels = new LinkedHashSet<>();
   /** Biomes and structures already counted, per season. */
   public final Map<String, Set<String>> explored = new LinkedHashMap<>();
 

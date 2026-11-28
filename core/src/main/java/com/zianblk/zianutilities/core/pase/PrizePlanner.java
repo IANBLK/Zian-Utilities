@@ -32,9 +32,9 @@ public final class PrizePlanner {
       if (!premium) continue;
       long extra = pr.extraXp / rules.extraLevelXp();
       for (int level = rewards.extraEvery(); level <= extra; level += rewards.extraEvery()) {
-        if (p.prizes.containsKey(Prize.idOf(season, Prize.Track.EXTRA, level, 0))) continue;
+        if (p.prizes.containsKey(Prize.idOf(season, Prize.Track.EXTRA, level, "0"))) continue;
         PaseReward drawn = LootTable.draw(rewards.loot(), LootTable.seed(p.id, season, level));
-        if (drawn != null) added += add(p, season, Prize.Track.EXTRA, level, List.of(drawn), now);
+        if (drawn != null) added += add(p, season, Prize.Track.EXTRA, level, List.of(drawn.withId("0")), now);
       }
     }
     if (added > 0) p.dirty = true;
@@ -43,8 +43,9 @@ public final class PrizePlanner {
 
   private static int add(PlayerPase p, String season, Prize.Track track, int level, List<PaseReward> rewards, long now) {
     int added = 0;
-    for (int i = 0; i < rewards.size(); i++) {
-      Prize z = new Prize(season, track, level, i, rewards.get(i));
+    if (p.legacyLevels.contains(Prize.levelKey(season, track, level))) return 0;
+    for (PaseReward reward : rewards) {
+      Prize z = new Prize(season, track, level, reward.id() == null ? "0" : reward.id(), reward);
       if (p.prizes.putIfAbsent(z.id, z) == null) {
         z.updated = now;
         added++;

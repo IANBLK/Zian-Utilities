@@ -26,11 +26,15 @@ final class PaseSeasonExample {
   private static PaseReward pick(String[][] cycle, int level) {
     String[] e = cycle[(level - 1) % cycle.length];
     int count = Math.min(64, Integer.parseInt(e[1]) * (1 + level / 50));
-    return PaseReward.item(e[0], count, null);
+    return PaseReward.item(e[0], count, null).withId("base");
   }
 
   private static PaseReward pokemon(int level, int minPerfect, boolean shiny, PaseReward.Legendary legendary) {
     return PaseReward.pokemon(new PaseReward.PokemonSpec(null, List.of(), legendary, level, -1, minPerfect, false, shiny, false, false));
+  }
+
+  private static PaseReward mon(int level, int minPerfect, boolean shiny, PaseReward.Legendary legendary) {
+    return pokemon(level, minPerfect, shiny, legendary).withId("pokemon");
   }
 
   static SeasonRewards build(int levels) {
@@ -40,22 +44,22 @@ final class PaseSeasonExample {
       free.add(pick(FREE, level));
       premium.add(pick(PREMIUM, level));
       if (level % 10 == 0) {
-        free.add(PaseReward.coins("avecoins:coppercoin", 32));
-        premium.add(PaseReward.coins("avecoins:goldcoin", 4));
+        free.add(PaseReward.coins("avecoins:coppercoin", 32).withId("coins"));
+        premium.add(PaseReward.coins("avecoins:goldcoin", 4).withId("coins"));
       }
       if (level % 25 == 0) {
-        free.add(PaseReward.item("minecraft:diamond", level / 25 * 2, null));
-        premium.add(PaseReward.item("minecraft:netherite_scrap", level / 25 * 2, null));
+        free.add(PaseReward.item("minecraft:diamond", level / 25 * 2, null).withId("diamond"));
+        premium.add(PaseReward.item("minecraft:netherite_scrap", level / 25 * 2, null).withId("scrap"));
       }
       switch (level) {
-        case 25 -> { free.add(pokemon(10, 0, false, PaseReward.Legendary.NONE)); premium.add(pokemon(20, 3, false, PaseReward.Legendary.NONE)); }
-        case 50 -> { free.add(pokemon(20, 0, false, PaseReward.Legendary.NONE)); premium.add(pokemon(30, 4, false, PaseReward.Legendary.NONE)); }
-        case 100 -> { free.add(pokemon(30, 0, false, PaseReward.Legendary.NONE)); premium.add(pokemon(40, 4, true, PaseReward.Legendary.NONE)); }
-        case 150 -> { free.add(pokemon(35, 2, false, PaseReward.Legendary.NONE)); premium.add(pokemon(45, 5, true, PaseReward.Legendary.NONE)); }
-        case 200 -> { free.add(pokemon(40, 3, false, PaseReward.Legendary.NONE)); premium.add(pokemon(50, 5, false, PaseReward.Legendary.ONLY)); }
+        case 25 -> { free.add(mon(10, 0, false, PaseReward.Legendary.NONE)); premium.add(mon(20, 3, false, PaseReward.Legendary.NONE)); }
+        case 50 -> { free.add(mon(20, 0, false, PaseReward.Legendary.NONE)); premium.add(mon(30, 4, false, PaseReward.Legendary.NONE)); }
+        case 100 -> { free.add(mon(30, 0, false, PaseReward.Legendary.NONE)); premium.add(mon(40, 4, true, PaseReward.Legendary.NONE)); }
+        case 150 -> { free.add(mon(35, 2, false, PaseReward.Legendary.NONE)); premium.add(mon(45, 5, true, PaseReward.Legendary.NONE)); }
+        case 200 -> { free.add(mon(40, 3, false, PaseReward.Legendary.NONE)); premium.add(mon(50, 5, false, PaseReward.Legendary.ONLY)); }
         default -> { }
       }
-      if (level % 50 == 0) premium.add(PaseReward.coins("avecoins:diamondcoin", level / 50));
+      if (level % 50 == 0) premium.add(PaseReward.coins("avecoins:diamondcoin", level / 50).withId("big-coins"));
       map.put(level, new SeasonRewards.Level(free, premium));
     }
     List<LootTable.Entry> loot = List.of(
@@ -70,5 +74,6 @@ final class PaseSeasonExample {
     return new SeasonRewards(50, map, 5, loot);
   }
 
-  static String json() { return PaseRewardJson.toJson(build(200)); }
+  /** The example for a pass of this many levels (the configured length), so the file always matches the pass. */
+  static String json(int levels) { return PaseRewardJson.toJson(build(levels)); }
 }

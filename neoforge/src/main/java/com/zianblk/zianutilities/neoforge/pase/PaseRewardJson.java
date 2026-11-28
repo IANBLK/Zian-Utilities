@@ -7,88 +7,126 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.zianblk.zianutilities.core.pase.LootTable;
+import com.zianblk.zianutilities.core.pase.PaseDataException;
 import com.zianblk.zianutilities.core.pase.PaseReward;
 import com.zianblk.zianutilities.core.pase.SeasonRewards;
+import com.zianblk.zianutilities.neoforge.LocalizedException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 /**
  * Reading and writing of the reward files: config/zianutilities-pase-temporada-N.json (the rewards of a season) and
  * config/zianutilities-pase-commands.json (the console commands a reward may run). Every file has formatVersion; anything
- * unknown, mistyped or from a newer version throws IllegalArgumentException, and the rewards module stays closed.
+ * unknown, mistyped or from a newer version throws an IllegalArgumentException that carries a translatable message
+ * (LocalizedException.Argument), and the rewards module stays closed. Every reward of a level carries an {@code id},
+ * unique inside its level and track: it is part of the prize id, so editing the file later never duplicates or loses a prize.
+ * Items name their item in {@code item}; {@code id} is always the reward id.
  */
 final class PaseRewardJson {
   static final int FORMAT_VERSION = 1;
+  static final String P = "zianutilities.pase.problem.";
+  private static final Pattern REWARD_ID = Pattern.compile("[A-Za-z0-9_.\\-]{1,40}");
   private static final Set<String> SEASON = Set.of("formatVersion", "levelCap", "levels", "extra");
   private static final Set<String> LEVEL = Set.of("free", "premium");
   private static final Set<String> EXTRA = Set.of("every", "loot");
   private static final Set<String> LOOT = Set.of("weight", "reward");
-  private static final Set<String> ITEM = Set.of("type", "id", "count", "components");
-  private static final Set<String> COINS = Set.of("type", "currency", "amount");
-  private static final Set<String> COMMAND = Set.of("type", "command");
-  private static final Set<String> POKEMON = Set.of("type", "species", "pool", "legendary", "level", "ivs", "min_perfect_ivs", "alpha", "shiny", "ignore_generation", "ignore_level_cap");
+  private static final Set<String> ITEM = Set.of("type", "id", "item", "count", "components");
+  private static final Set<String> COINS = Set.of("type", "id", "currency", "amount");
+  private static final Set<String> COMMAND = Set.of("type", "id", "command");
+  private static final Set<String> POKEMON = Set.of("type", "id", "species", "pool", "legendary", "level", "ivs", "min_perfect_ivs", "alpha", "shiny", "ignore_generation", "ignore_level_cap");
 
   private PaseRewardJson() {}
 
+  static LocalizedException.Argument bad(String key, String es, Object... args) { return new LocalizedException.Argument(P + key, es, args); }
+
+  /** A value rejected by the core records, with the same translatable shape. */
+  private static LocalizedException.Argument bad(PaseDataException e) {
+    return switch (e.code) {
+      case "range" -> bad("range", "«%s» debe estar entre %s y %s", e.args);
+      case "missing" -> bad("missing", "Falta «%s»", e.args);
+      default -> bad("conflict", "«%s» y «%s» no pueden ir juntos", e.args);
+    };
+  }
+
   // ---------------------------------------------------------------- rewards
 
+  /** A reward as written in a file; {@code id} is null when the object has none (the season parser then refuses it). */
   static PaseReward reward(JsonObject o) {
     try {
       String type = string(o, "type");
-      return switch (type) {
+      PaseReward r = switch (type) {
         case "item" -> {
           unknown(o, ITEM, "item");
-          yield PaseReward.item(string(o, "id"), o.has("count") ? integer(o, "count") : 1, o.has("components") ? string(o, "components") : null);
+          // The first P2 builds wrote the item in "id": no "item" means that old shape, which has no reward id.
+          boolean old = !o.has("item") && o.has("id");
+          String item = old ? string(o, "id") : string(o, "item");
+          yield PaseReward.item(item, o.has("count") ? integer(o, "count") : 1, o.has("components") ? string(o, "components") : null).withId(old ? null : optionalId(o));
         }
         case "coins" -> {
           unknown(o, COINS, "coins");
-          yield PaseReward.coins(string(o, "currency"), integer(o, "amount"));
+          yield PaseReward.coins(string(o, "currency"), integer(o, "amount")).withId(optionalId(o));
         }
         case "command" -> {
           unknown(o, COMMAND, "command");
-          yield PaseReward.command(string(o, "command"));
+          yield PaseReward.command(string(o, "command")).withId(optionalId(o));
         }
         case "pokemon" -> {
           unknown(o, POKEMON, "pokemon");
           List<String> pool = new ArrayList<>();
           if (o.has("pool")) for (JsonElement e : array(o, "pool")) pool.add(e.getAsString());
-          String legendary = o.has("legendary") ? string(o, "legendary").toUpperCase(java.util.Locale.ROOT) : "ANY";
-          yield PaseReward.pokemon(new PaseReward.PokemonSpec(o.has("species") ? string(o, "species") : null, pool, PaseReward.Legendary.valueOf(legendary),
+          PaseReward.Legendary legendary;
+          try {
+            legendary = PaseReward.Legendary.valueOf((o.has("legendary") ? string(o, "legendary") : "any").toUpperCase(java.util.Locale.ROOT));
+          } catch (IllegalArgumentException wrong) {
+            throw bad("legendary", "«legendary» debe ser any, only o none");
+          }
+          yield PaseReward.pokemon(new PaseReward.PokemonSpec(o.has("species") ? string(o, "species") : null, pool, legendary,
               integer(o, "level"), o.has("ivs") ? integer(o, "ivs") : -1, o.has("min_perfect_ivs") ? integer(o, "min_perfect_ivs") : 0,
-              bool(o, "alpha"), bool(o, "shiny"), bool(o, "ignore_generation"), bool(o, "ignore_level_cap")));
+              bool(o, "alpha"), bool(o, "shiny"), bool(o, "ignore_generation"), bool(o, "ignore_level_cap"))).withId(optionalId(o));
         }
-        default -> throw new IllegalArgumentException("tipo de premio desconocido: " + type);
+        default -> throw bad("reward_type", "Tipo de premio desconocido: %s", type);
       };
-    } catch (IllegalStateException | UnsupportedOperationException | ClassCastException | NumberFormatException bad) {
-      throw new IllegalArgumentException("premio con un valor de tipo incorrecto: " + bad.getMessage(), bad);
+      return r;
+    } catch (PaseDataException e) {
+      throw bad(e);
+    } catch (IllegalStateException | UnsupportedOperationException | ClassCastException | NumberFormatException e) {
+      throw bad("type_generic", "Valor con tipo incorrecto: %s", String.valueOf(e.getMessage()));
     }
   }
+
+  private static String optionalId(JsonObject o) { return o.has("id") ? string(o, "id") : null; }
 
   static JsonObject toJson(PaseReward r) {
     JsonObject o = new JsonObject();
     switch (r.kind()) {
       case ITEM -> {
         o.addProperty("type", "item");
-        o.addProperty("id", r.item());
+        if (r.id() != null) o.addProperty("id", r.id());
+        o.addProperty("item", r.item());
         o.addProperty("count", r.count());
         if (r.components() != null) o.addProperty("components", r.components());
       }
       case COINS -> {
         o.addProperty("type", "coins");
+        if (r.id() != null) o.addProperty("id", r.id());
         o.addProperty("currency", r.currency());
         o.addProperty("amount", r.amount());
       }
       case COMMAND -> {
         o.addProperty("type", "command");
+        if (r.id() != null) o.addProperty("id", r.id());
         o.addProperty("command", r.command());
       }
       case POKEMON -> {
         var s = r.pokemon();
         o.addProperty("type", "pokemon");
+        if (r.id() != null) o.addProperty("id", r.id());
         if (s.species() != null) o.addProperty("species", s.species());
         if (!s.pool().isEmpty()) {
           JsonArray pool = new JsonArray();
@@ -122,10 +160,11 @@ final class PaseRewardJson {
           int n;
           try {
             n = Integer.parseInt(e.getKey());
-          } catch (NumberFormatException bad) {
-            throw new IllegalArgumentException("levels." + e.getKey() + " no es un número de nivel");
+          } catch (NumberFormatException wrong) {
+            throw bad("level_nan", "«%s» no es un número de nivel", e.getKey());
           }
-          if (n < 1 || n > maxLevel) throw new IllegalArgumentException("levels." + n + " está fuera de 1-" + maxLevel);
+          if (n < 1 || n > maxLevel) throw bad("level_range", "El nivel %s está fuera de 1-%s", n, maxLevel);
+          if (!e.getValue().isJsonObject()) throw bad("type_object", "«%s» debe ser un objeto", "levels." + n);
           JsonObject lv = e.getValue().getAsJsonObject();
           unknown(lv, LEVEL, "levels." + n);
           levels.put(n, new SeasonRewards.Level(rewards(lv, "free", n), rewards(lv, "premium", n)));
@@ -138,25 +177,42 @@ final class PaseRewardJson {
         if (extra.has("every")) every = integer(extra, "every");
         if (extra.has("loot"))
           for (JsonElement el : array(extra, "loot")) {
-            JsonObject entry = el.getAsJsonObject();
-            unknown(entry, LOOT, "extra.loot");
-            loot.add(new LootTable.Entry(integer(entry, "weight"), reward(object(entry, "reward"))));
+            try {
+              if (!el.isJsonObject()) throw bad("type_object", "«%s» debe ser un objeto", "extra.loot");
+              JsonObject entry = el.getAsJsonObject();
+              unknown(entry, LOOT, "extra.loot");
+              loot.add(new LootTable.Entry(integer(entry, "weight"), reward(object(entry, "reward"))));
+            } catch (PaseDataException wrong) {
+              throw bad("in_loot", "En extra.loot: %s", bad(wrong));
+            } catch (LocalizedException.Argument wrong) {
+              throw bad("in_loot", "En extra.loot: %s", wrong);
+            }
           }
       }
       return new SeasonRewards(cap, levels, every, loot);
-    } catch (IllegalStateException | UnsupportedOperationException | ClassCastException | NumberFormatException bad) {
-      throw new IllegalArgumentException("Valor con tipo incorrecto: " + bad.getMessage(), bad);
+    } catch (PaseDataException e) {
+      throw bad(e);
+    } catch (IllegalStateException | UnsupportedOperationException | ClassCastException | NumberFormatException e) {
+      throw bad("type_generic", "Valor con tipo incorrecto: %s", String.valueOf(e.getMessage()));
     }
   }
 
   private static List<PaseReward> rewards(JsonObject level, String key, int n) {
     List<PaseReward> out = new ArrayList<>();
+    Set<String> ids = new HashSet<>();
     if (level.has(key))
       for (JsonElement e : array(level, key)) {
         try {
-          out.add(reward(e.getAsJsonObject()));
-        } catch (IllegalArgumentException bad) {
-          throw new IllegalArgumentException("nivel " + n + " (" + key + "): " + bad.getMessage(), bad);
+          if (!e.isJsonObject()) throw bad("type_object", "«%s» debe ser un objeto", key);
+          PaseReward r = reward(e.getAsJsonObject());
+          if (r.id() == null) throw bad("id_missing", "Falta el id del premio");
+          if (!REWARD_ID.matcher(r.id()).matches()) throw bad("id_bad", "El id «%s» no es válido (letras, números, guion, guion bajo y punto; máximo 40)", r.id());
+          if (!ids.add(r.id())) throw bad("id_duplicate", "El id «%s» está repetido", r.id());
+          out.add(r);
+        } catch (PaseDataException wrong) {
+          throw bad("at", "Nivel %s, pista %s: %s", n, key, bad(wrong));
+        } catch (LocalizedException.Argument wrong) {
+          throw bad("at", "Nivel %s, pista %s: %s", n, key, wrong);
         }
       }
     return out;
@@ -205,8 +261,8 @@ final class PaseRewardJson {
       Set<String> allowed = new LinkedHashSet<>();
       if (root.has("allowed")) for (JsonElement e : array(root, "allowed")) allowed.add(e.getAsString());
       return Set.copyOf(allowed);
-    } catch (IllegalStateException | UnsupportedOperationException | ClassCastException bad) {
-      throw new IllegalArgumentException("Valor con tipo incorrecto: " + bad.getMessage(), bad);
+    } catch (IllegalStateException | UnsupportedOperationException | ClassCastException e) {
+      throw bad("type_generic", "Valor con tipo incorrecto: %s", String.valueOf(e.getMessage()));
     }
   }
 
@@ -219,55 +275,54 @@ final class PaseRewardJson {
   private static JsonObject root(String json) {
     try {
       JsonElement e = JsonParser.parseString(json);
-      if (!e.isJsonObject()) throw new IllegalArgumentException("El archivo debe ser un objeto JSON");
+      if (!e.isJsonObject()) throw bad("not_object", "El archivo debe ser un objeto JSON");
       return e.getAsJsonObject();
     } catch (JsonParseException broken) {
-      throw new IllegalArgumentException("JSON inválido: " + broken.getMessage(), broken);
+      throw bad("syntax", "El archivo no es JSON válido: %s", String.valueOf(broken.getMessage()));
     }
   }
 
   private static void version(JsonObject root) {
-    if (!root.has("formatVersion") || !root.get("formatVersion").isJsonPrimitive()) throw new IllegalArgumentException("falta formatVersion");
+    if (!root.has("formatVersion") || !root.get("formatVersion").isJsonPrimitive()) throw bad("version_missing", "Falta formatVersion");
     int v = root.get("formatVersion").getAsInt();
-    if (v > FORMAT_VERSION) throw new IllegalArgumentException("formatVersion " + v + " es de una versión más nueva que esta (" + FORMAT_VERSION + ")");
-    if (v < 1) throw new IllegalArgumentException("formatVersion " + v + " no soportado");
+    if (v > FORMAT_VERSION || v < 1) throw bad("version", "formatVersion %s no soportado (esta versión usa %s)", v, FORMAT_VERSION);
   }
 
   private static void unknown(JsonObject o, Set<String> allowed, String where) {
-    for (String k : o.keySet()) if (!allowed.contains(k)) throw new IllegalArgumentException("Clave desconocida en " + where + ": " + k);
+    for (String k : o.keySet()) if (!allowed.contains(k)) throw bad("unknown_key", "Clave desconocida en %s: %s", where, k);
   }
 
   private static String string(JsonObject o, String key) {
-    if (!o.has(key) || !o.get(key).isJsonPrimitive() || !o.get(key).getAsJsonPrimitive().isString()) throw new IllegalArgumentException(key + " debe ser un texto");
+    if (!o.has(key) || !o.get(key).isJsonPrimitive() || !o.get(key).getAsJsonPrimitive().isString()) throw bad("type_text", "«%s» debe ser un texto", key);
     return o.get(key).getAsString();
   }
 
   private static long integerLong(JsonObject o, String key) {
-    if (!o.has(key) || !o.get(key).isJsonPrimitive() || !o.get(key).getAsJsonPrimitive().isNumber()) throw new IllegalArgumentException(key + " debe ser un número entero");
+    if (!o.has(key) || !o.get(key).isJsonPrimitive() || !o.get(key).getAsJsonPrimitive().isNumber()) throw bad("type_int", "«%s» debe ser un número entero", key);
     double d = o.get(key).getAsDouble();
-    if (d != Math.rint(d)) throw new IllegalArgumentException(key + " debe ser un número entero");
+    if (d != Math.rint(d)) throw bad("type_int", "«%s» debe ser un número entero", key);
     return o.get(key).getAsLong();
   }
 
   private static int integer(JsonObject o, String key) {
     long v = integerLong(o, key);
-    if (v < Integer.MIN_VALUE || v > Integer.MAX_VALUE) throw new IllegalArgumentException(key + " fuera de rango");
+    if (v < Integer.MIN_VALUE || v > Integer.MAX_VALUE) throw bad("range", "«%s» debe estar entre %s y %s", key, Integer.MIN_VALUE, Integer.MAX_VALUE);
     return (int) v;
   }
 
   private static boolean bool(JsonObject o, String key) {
     if (!o.has(key)) return false;
-    if (!o.get(key).isJsonPrimitive() || !o.get(key).getAsJsonPrimitive().isBoolean()) throw new IllegalArgumentException(key + " debe ser true o false");
+    if (!o.get(key).isJsonPrimitive() || !o.get(key).getAsJsonPrimitive().isBoolean()) throw bad("type_bool", "«%s» debe ser true o false", key);
     return o.get(key).getAsBoolean();
   }
 
   private static JsonObject object(JsonObject o, String key) {
-    if (!o.has(key) || !o.get(key).isJsonObject()) throw new IllegalArgumentException(key + " debe ser un objeto");
+    if (!o.has(key) || !o.get(key).isJsonObject()) throw bad("type_object", "«%s» debe ser un objeto", key);
     return o.getAsJsonObject(key);
   }
 
   private static JsonArray array(JsonObject o, String key) {
-    if (!o.has(key) || !o.get(key).isJsonArray()) throw new IllegalArgumentException(key + " debe ser una lista");
+    if (!o.has(key) || !o.get(key).isJsonArray()) throw bad("type_list", "«%s» debe ser una lista", key);
     return o.getAsJsonArray(key);
   }
 }

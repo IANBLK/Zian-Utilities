@@ -134,6 +134,17 @@ final class PaseSmokeRewards {
 
   private static void mark() { chatMark = PaseSmoke.CHAT.size(); }
 
+  /** The command once (so it is exercised), then more claims while the batch limit leaves prizes for the next call. */
+  private static int claimAll(ServerPlayer p) throws Exception {
+    int n = run("ZianUtilities pase reclamar", p.createCommandSourceStack());
+    for (int i = 0; i < 10; i++) {
+      var r = PaseRewards.claim(p);
+      n += r.delivered().size();
+      if (r.remaining() == 0) break;
+    }
+    return n;
+  }
+
   private static Prize pokemonPrize(UUID id, Prize.Track track, int level) {
     return data(id).prizes.values().stream().filter(z -> z.track == track && z.level == level && z.reward.kind() == PaseReward.Kind.POKEMON).findFirst().orElseThrow();
   }
@@ -172,6 +183,7 @@ final class PaseSmokeRewards {
     STEPS.add(once(PaseSmokeRewards::paidPokemon));
     STEPS.add(once(PaseSmokeRewards::fullInventory));
     STEPS.add(once(PaseSmokeRewards::previousSeason));
+    STEPS.add(once(PaseSmokeRewards::editedLevel));
     STEPS.add(once(PaseSmokeRewards::offlinePlayer));
     STEPS.add(once(PaseSmokeRewards::adminCommands));
     STEPS.add(once(PaseSmokeRewards::leaveHalfDone));
@@ -254,7 +266,7 @@ final class PaseSmokeRewards {
       denied = true;
     }
     check(denied, "a non-OP player cannot run the Tebex command");
-    check(run("ZianUtilities pase reclamar", p4.createCommandSourceStack()) >= 0, "claim of the paid track");
+    check(claimAll(p4) >= 0, "claim of the paid track (more than one batch of 25)");
   }
 
   private static void paidPokemon() throws Exception {
@@ -283,7 +295,7 @@ final class PaseSmokeRewards {
     check(chatHas("Inventario lleno|Inventory full"), "the player was told the inventory is full");
     check(states(ID4, Prize.State.UNCERTAIN) == 0 && pendingBefore >= 0, "nothing went uncertain");
     p4.getInventory().clearContent();
-    run("ZianUtilities pase reclamar", p4.createCommandSourceStack());
+    claimAll(p4);
     check(states(ID4, Prize.State.PENDING) == 0, "with room again everything is delivered");
     check(countItem(p4, "minecraft:cobblestone") == 0 && countItem(p4, "minecraft:glass") > 0, "and the items are in the inventory");
   }
@@ -293,9 +305,33 @@ final class PaseSmokeRewards {
     long delivered = states(ID4, Prize.State.DELIVERED);
     check(run("ZianUtilities pase admin xp dar PaseSmoke4 2400", console()) == 1, "XP goes to the previous season first");
     check(data(ID4).prizes.values().stream().anyMatch(z -> z.seasonId.equals(PREV)), "prizes of the previous season were created");
-    run("ZianUtilities pase reclamar", p4.createCommandSourceStack());
+    claimAll(p4);
     check(data(ID4).prizes.values().stream().filter(z -> z.seasonId.equals(PREV)).allMatch(z -> z.state == Prize.State.DELIVERED), "the previous season's prizes are claimable");
     check(states(ID4, Prize.State.DELIVERED) > delivered, "and the current season is untouched");
+  }
+
+  /** Edit a level that was already claimed: inserting a reward, deleting one and reordering never duplicate or lose anything; the new id arrives. */
+  private static void editedLevel() throws Exception {
+    SeasonRewards base = withCommand();
+    Map<Integer, SeasonRewards.Level> levels = new TreeMap<>(base.levels());
+    List<PaseReward> five = new ArrayList<>();
+    five.add(PaseReward.item("minecraft:cookie", 3, null).withId("extra-cookie"));
+    five.addAll(base.level(5).free());
+    levels.put(5, new SeasonRewards.Level(five, base.level(5).premium()));
+    levels.put(4, new SeasonRewards.Level(List.of(), base.level(4).premium()));
+    List<PaseReward> six = new ArrayList<>(base.level(6).free());
+    java.util.Collections.reverse(six);
+    levels.put(6, new SeasonRewards.Level(six, base.level(6).premium()));
+    writeSeason(PaseRewardJson.toJson(new SeasonRewards(base.levelCap(), levels, base.extraEvery(), base.loot())));
+    check(PaseRewards.reload() == null, "the edited season file is valid");
+    int before = data(ID4).prizes.size();
+    long coins = balance(ID4, COPPER);
+    int cookies = countItem(p4, "minecraft:cookie");
+    check(PaseRewards.sync(data(ID4)) == 1 && data(ID4).prizes.size() == before + 1, "inserting, deleting and reordering created exactly one prize: the new id");
+    check(claimAll(p4) == 1 && countItem(p4, "minecraft:cookie") == cookies + 3, "and only that one reaches the player");
+    check(balance(ID4, COPPER) == coins && states(ID4, Prize.State.PENDING) == 0, "nothing that was already claimed was repeated or lost");
+    writeSeason(PaseRewardJson.toJson(base));
+    check(PaseRewards.reload() == null, "the original season file is back");
   }
 
   private static void offlinePlayer() throws Exception {
@@ -312,7 +348,7 @@ final class PaseSmokeRewards {
     PaseRewards.onLogin(p5);
     check(chatHas("pendientes|waiting"), "on login the player is told about the pending prizes");
     mark();
-    check(run("ZianUtilities pase reclamar", p5.createCommandSourceStack()) == freeCount(5) + paidCount(5), "they claim everything after joining");
+    check(claimAll(p5) == freeCount(5) + paidCount(5), "they claim everything after joining");
     check(chatHas("reclamado|claimed"), "and are told what they got");
     check(run("ZianUtilities pase admin premium quitar " + ID5 + " " + CUR, console()) == 1 && !data(ID5).premium.contains(CUR), "a refund removes the premium");
   }
@@ -335,8 +371,8 @@ final class PaseSmokeRewards {
     PaseModule.engine.adminGiveLevels(ID6, 25);
     PlayerPase d = data(ID6);
     PaseRewards.sync(d);
-    Prize item = d.prizes.get(Prize.idOf(CUR, Prize.Track.FREE, 1, 0));
-    Prize coins = d.prizes.get(Prize.idOf(CUR, Prize.Track.FREE, 10, 1));
+    Prize item = d.prizes.get(Prize.idOf(CUR, Prize.Track.FREE, 1, "base"));
+    Prize coins = d.prizes.get(Prize.idOf(CUR, Prize.Track.FREE, 10, "coins"));
     Prize mon = pokemonPrize(ID6, Prize.Track.FREE, 25);
     var gateway = new PaseDelivery(p6);
     check(gateway.check(item) == null && gateway.check(coins) == null && gateway.check(mon) == null, "the three prizes can be delivered");
@@ -376,7 +412,7 @@ final class PaseSmokeRewards {
     check(d.prizes.get(saved.get("monPrize")).state == Prize.State.PENDING && "RESUME".equals(d.prizes.get(saved.get("monPrize")).reason), "the Pokemon resumes with the same Pokemon id");
     check(Long.parseLong(saved.get("coins")) == 32 && balance(ID6, COPPER) == 32, "the coins were credited once before the restart");
     mark();
-    run("ZianUtilities pase reclamar", p6.createCommandSourceStack());
+    claimAll(p6);
     check(balance(ID6, COPPER) == 64, "after the claim player 6 has 64 copper (level 20 once more, the interrupted 32 not repeated): " + balance(ID6, COPPER));
     check(d.prizes.get(saved.get("coinsPrize")).state == Prize.State.DELIVERED, "the resumed coins prize closed without a second credit");
     check(countItem(p6, "minecraft:bread") == 32, "bread: levels 11 and 21 arrived, the uncertain level 1 one was not repeated");
