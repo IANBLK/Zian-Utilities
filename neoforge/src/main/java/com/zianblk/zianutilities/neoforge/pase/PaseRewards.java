@@ -232,7 +232,7 @@ final class PaseRewards {
         Throwable problem = problem();
         if (problem != null) player.sendSystemMessage(Messages.format(PaseMessages.rewardsInvalid(PaseMessages.problem(problem))));
         var stuck = pendingTransactions();
-        if (!stuck.isEmpty()) player.sendSystemMessage(Messages.format(PaseMessages.tebexPending(String.join(", ", stuck))));
+        if (!stuck.isEmpty()) player.sendSystemMessage(Messages.format(PaseMessages.tebexPending(stuck.size() <= 5 ? String.join(", ", stuck) : String.join(", ", stuck.subList(0, 5)) + " (+" + (stuck.size() - 5) + ")")));
       }
     } catch (RuntimeException | LinkageError failure) {
       PaseModule.LOG.error("Revisión de premios al entrar fallida para {}", player.getGameProfile().getName(), failure);
@@ -269,7 +269,7 @@ final class PaseRewards {
 
   // ---------------------------------------------------------------- Tebex premium
 
-  enum Status { GIVEN, DUPLICATE, BAD_SEASON, BAD_TRANSACTION, LOCKED, TX_UNREADABLE, FAILED }
+  enum Status { GIVEN, DUPLICATE, BAD_SEASON, BAD_TRANSACTION, LOCKED, TX_UNREADABLE, NOT_REGISTERED, FAILED }
 
   record PremiumResult(Status status, String detail) {}
 
@@ -306,7 +306,8 @@ final class PaseRewards {
       case BAD_TRANSACTION -> PaseMessages.premiumBadTransaction();
       case LOCKED -> PaseMessages.premiumLocked();
       case TX_UNREADABLE -> PaseMessages.premiumTxUnreadable();
-      case FAILED -> Component.literal(r.detail());
+      case NOT_REGISTERED -> PaseMessages.premiumNotRegistered();
+      case FAILED -> Component.literal(r.detail().isEmpty() ? r.detail() : Character.toUpperCase(r.detail().charAt(0)) + r.detail().substring(1));
       default -> null;
     };
     if (reason != null) {
@@ -344,7 +345,7 @@ final class PaseRewards {
         if (p.locked) return new PremiumResult(Status.LOCKED, "");
         PaseModule.engine.setPremium(id, season, true);
         PaseModule.store.saveNow(p);
-        if (!p.premium.contains(season)) throw new IllegalStateException("el premium no quedó registrado");
+        if (!p.premium.contains(season)) return new PremiumResult(Status.NOT_REGISTERED, "");
         tx.applied(transaction);
         sync(p);
         PaseModule.store.saveNow(p);

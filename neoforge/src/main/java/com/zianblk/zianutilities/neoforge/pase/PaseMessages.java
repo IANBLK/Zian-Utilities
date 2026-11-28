@@ -5,6 +5,7 @@ import com.zianblk.zianutilities.core.pase.PaseEngine;
 import com.zianblk.zianutilities.neoforge.Tr;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -24,18 +25,21 @@ final class PaseMessages {
   }
 
   static Component off(String problem) {
-    return Tr.c("zianutilities.pase.status.off", "§eEl pase de batalla no está activo (%s).", problem(problem));
+    return Tr.c("zianutilities.pase.status.off", "El pase de batalla no está activo (%s).", problem(problem)).withStyle(ChatFormatting.YELLOW);
   }
 
-  static Component missionName(MissionType type, int target) {
+  /** "1 vez" / "N veces": singular and plural keys, and the target with thousands separators. */
+  static Component missionName(MissionType type, int target, String lang) {
+    boolean one = target == 1;
+    Component n = num(target, lang);
     return switch (type) {
-      case BREAK_BLOCKS -> Tr.c("zianutilities.pase.mission.break_blocks", "Minar %s bloques naturales", target);
-      case HARVEST_CROPS -> Tr.c("zianutilities.pase.mission.harvest_crops", "Cosechar %s cultivos maduros", target);
-      case KILL_MOBS -> Tr.c("zianutilities.pase.mission.kill_mobs", "Derrotar %s monstruos", target);
-      case BREED_ANIMALS -> Tr.c("zianutilities.pase.mission.breed_animals", "Criar animales %s veces", target);
-      case TRADE -> Tr.c("zianutilities.pase.mission.trade", "Comerciar %s veces con aldeanos o niveles distintos", target);
-      case EXPLORE -> Tr.c("zianutilities.pase.mission.explore", "Descubrir %s biomas o estructuras nuevos", target);
-      case FISH -> Tr.c("zianutilities.pase.mission.fish", "Pescar %s veces sin quedarte quieto", target);
+      case BREAK_BLOCKS -> one ? Tr.c("zianutilities.pase.mission.break_blocks.one", "Minar 1 bloque natural") : Tr.c("zianutilities.pase.mission.break_blocks", "Minar %s bloques naturales", n);
+      case HARVEST_CROPS -> one ? Tr.c("zianutilities.pase.mission.harvest_crops.one", "Cosechar 1 cultivo maduro") : Tr.c("zianutilities.pase.mission.harvest_crops", "Cosechar %s cultivos maduros", n);
+      case KILL_MOBS -> one ? Tr.c("zianutilities.pase.mission.kill_mobs.one", "Derrotar 1 monstruo") : Tr.c("zianutilities.pase.mission.kill_mobs", "Derrotar %s monstruos", n);
+      case BREED_ANIMALS -> one ? Tr.c("zianutilities.pase.mission.breed_animals.one", "Criar animales 1 vez") : Tr.c("zianutilities.pase.mission.breed_animals", "Criar animales %s veces", n);
+      case TRADE -> one ? Tr.c("zianutilities.pase.mission.trade.one", "Comerciar 1 vez con aldeanos o niveles distintos") : Tr.c("zianutilities.pase.mission.trade", "Comerciar %s veces con aldeanos o niveles distintos", n);
+      case EXPLORE -> one ? Tr.c("zianutilities.pase.mission.explore.one", "Descubrir 1 bioma o estructura nuevo") : Tr.c("zianutilities.pase.mission.explore", "Descubrir %s biomas o estructuras nuevos", n);
+      case FISH -> one ? Tr.c("zianutilities.pase.mission.fish.one", "Pescar 1 vez sin quedarte quieto") : Tr.c("zianutilities.pase.mission.fish", "Pescar %s veces sin quedarte quieto", n);
     };
   }
 
@@ -61,15 +65,15 @@ final class PaseMessages {
   }
 
   static Component levelUp(int level) {
-    return Tr.c("zianutilities.pase.msg.level", "§6¡Has alcanzado el nivel %s del pase!", level);
+    return Tr.c("zianutilities.pase.msg.level", "¡Has alcanzado el nivel %s del pase!", level).withStyle(ChatFormatting.GOLD);
   }
 
   static Component extraLevelUp(int level) {
-    return Tr.c("zianutilities.pase.msg.extra_level", "§6¡Has alcanzado el nivel extra %s del pase!", level);
+    return Tr.c("zianutilities.pase.msg.extra_level", "¡Has alcanzado el nivel extra %s del pase!", level).withStyle(ChatFormatting.GOLD);
   }
 
   static Component missionDone(MissionType type, int target, long xp, String lang) {
-    return Tr.c("zianutilities.pase.msg.mission_done", "§a¡Misión completada: %s! §7(+%s XP)", missionName(type, target), num(xp, lang));
+    return Tr.c("zianutilities.pase.msg.mission_done", "¡Misión completada: %s! (+%s XP)", missionName(type, target, lang), num(xp, lang)).withStyle(ChatFormatting.GREEN);
   }
 
   static Component sourceName(String source) {
@@ -85,90 +89,95 @@ final class PaseMessages {
   /** "day" is the daily total; anything else is the name of a source. */
   static Component capReached(String cap, String resetTime) {
     return "day".equals(cap)
-        ? Tr.c("zianutilities.pase.msg.cap_day", "§eHas alcanzado el tope diario de XP del pase. Vuelve mañana a las %s.", resetTime)
-        : Tr.c("zianutilities.pase.msg.cap_source", "§eHas alcanzado el tope diario de XP de %s.", sourceName(cap));
+        ? Tr.c("zianutilities.pase.msg.cap_day", "Has alcanzado el tope diario de XP del pase. Vuelve mañana a las %s.", resetTime).withStyle(ChatFormatting.YELLOW)
+        : Tr.c("zianutilities.pase.msg.cap_source", "Has alcanzado el tope diario de XP de %s.", sourceName(cap)).withStyle(ChatFormatting.YELLOW);
   }
 
   /** The lines of /ZianUtilities pase ver: only the first one gets the server prefix; the rest are short and indented. */
   static List<Component> view(PaseEngine.View v, String resetTime, String lang) {
     List<Component> out = new ArrayList<>();
-    out.add(Tr.c("zianutilities.pase.view.header", "§6Pase de batalla §7(%s)", v.seasonId()));
+    out.add(Tr.c("zianutilities.pase.view.header", "Pase de batalla (%s)", v.seasonId()).withStyle(ChatFormatting.GOLD));
     if (v.level() >= v.maxLevel()) {
-      out.add(Tr.c("zianutilities.pase.view.complete", "  §aPase completado §7· extra §e%s§7/%s · XP §e%s§7/%s", v.extraLevels(), v.maxExtraLevels(), num(v.extraIntoLevel(), lang), num(extraXp(v), lang)));
+      out.add(Tr.c("zianutilities.pase.view.complete", "  Pase completado · extra %s/%s · XP %s/%s", hl(v.extraLevels(), ChatFormatting.YELLOW), v.maxExtraLevels(), hl(num(v.extraIntoLevel(), lang), ChatFormatting.YELLOW), num(extraXp(v), lang)).withStyle(ChatFormatting.GREEN));
     } else {
-      out.add(Tr.c("zianutilities.pase.view.level", "  §7Nivel §e%s§7/%s · XP §e%s§7/%s", v.level(), v.maxLevel(), num(v.xpIntoLevel(), lang), num(v.xpPerLevel(), lang)));
+      out.add(Tr.c("zianutilities.pase.view.level", "  Nivel %s/%s · XP %s/%s", hl(v.level(), ChatFormatting.YELLOW), v.maxLevel(), hl(num(v.xpIntoLevel(), lang), ChatFormatting.YELLOW), num(v.xpPerLevel(), lang)).withStyle(ChatFormatting.GRAY));
     }
     if (v.previousId() != null) {
       out.add(v.previousComplete()
-          ? Tr.c("zianutilities.pase.view.previous_done", "  §7Anterior %s: §acompletado", v.previousId())
-          : Tr.c("zianutilities.pase.view.previous", "  §7Anterior %s: nivel §e%s§7/%s (va primero)", v.previousId(), v.previousLevel(), v.maxLevel()));
+          ? Tr.c("zianutilities.pase.view.previous_done", "  Anterior %s: completado", v.previousId()).withStyle(ChatFormatting.GRAY)
+          : Tr.c("zianutilities.pase.view.previous", "  Anterior %s: nivel %s/%s (va primero)", v.previousId(), hl(v.previousLevel(), ChatFormatting.YELLOW), v.maxLevel()).withStyle(ChatFormatting.GRAY));
     }
-    Component premium = v.premium() ? Tr.c("zianutilities.pase.view.premium_yes", "§así") : Tr.c("zianutilities.pase.view.premium_no", "§cno");
-    out.add(Tr.c("zianutilities.pase.view.today", "  §7Hoy quedan §e%s§7/%s XP · §e%s§7 días · Premium %s", num(v.capLeft(), lang), num(v.capTotal(), lang), v.daysLeft(), premium));
-    if (v.boost()) out.add(Tr.c("zianutilities.pase.view.boost", "  §dDoble XP activo hasta el final de la temporada"));
+    Component premium = v.premium() ? Tr.c("zianutilities.pase.view.premium_yes", "sí").withStyle(ChatFormatting.GREEN) : Tr.c("zianutilities.pase.view.premium_no", "no").withStyle(ChatFormatting.RED);
+    out.add(Tr.c("zianutilities.pase.view.today", "  Hoy quedan %s/%s XP · %s días · Premium %s", hl(num(v.capLeft(), lang), ChatFormatting.YELLOW), num(v.capTotal(), lang), hl(v.daysLeft(), ChatFormatting.YELLOW), premium).withStyle(ChatFormatting.GRAY));
+    if (v.boost()) out.add(Tr.c("zianutilities.pase.view.boost", "  Doble XP activo hasta el final de la temporada").withStyle(ChatFormatting.LIGHT_PURPLE));
     if (v.missions().isEmpty()) {
-      out.add(Tr.c("zianutilities.pase.view.no_missions", "  §7Hoy no hay misiones."));
+      out.add(Tr.c("zianutilities.pase.view.no_missions", "  Hoy no hay misiones.").withStyle(ChatFormatting.GRAY));
     } else {
-      out.add(Tr.c("zianutilities.pase.view.missions", "  §6Misiones §7(reinicio a las %s)", resetTime));
+      out.add(Tr.c("zianutilities.pase.view.missions", "  Misiones (reinicio a las %s)", resetTime).withStyle(ChatFormatting.GOLD));
       for (var m : v.missions()) {
         out.add(m.done()
-            ? Tr.c("zianutilities.pase.view.mission_done", "    §a✔ %s §7· §e+%s XP", missionShort(m.type()), num(m.xp(), lang))
-            : Tr.c("zianutilities.pase.view.mission", "    §7▸ %s §8%s/%s §7· §e+%s XP", missionShort(m.type()), m.progress(), m.target(), num(m.xp(), lang)));
+            ? Tr.c("zianutilities.pase.view.mission_done", "    ✔ %s · +%s XP", missionShort(m.type()), hl(num(m.xp(), lang), ChatFormatting.YELLOW)).withStyle(ChatFormatting.GREEN)
+            : Tr.c("zianutilities.pase.view.mission", "    ▸ %s %s/%s · +%s XP", missionShort(m.type()), hl(m.progress(), ChatFormatting.DARK_GRAY), hl(m.target(), ChatFormatting.DARK_GRAY), hl(num(m.xp(), lang), ChatFormatting.YELLOW)).withStyle(ChatFormatting.GRAY));
       }
     }
     return out;
   }
 
+  /** An argument with its own color: the color of the whole message does not reach into it, and a colored argument does not leak out. */
+  private static Component hl(Object value, ChatFormatting color) {
+    return (value instanceof Component c ? c.copy() : Component.literal(String.valueOf(value))).withStyle(color);
+  }
+
   private static long extraXp(PaseEngine.View v) { return PaseModule.config == null ? 1500 : PaseModule.config.rules().extraLevelXp(); }
 
   static Component xpGiven(long xp, String player, String lang) {
-    return Tr.c("zianutilities.pase.admin.xp_given", "§aDados %s XP del pase a %s.", num(xp, lang), player);
+    return Tr.c("zianutilities.pase.admin.xp_given", "Dados %s XP del pase a %s.", num(xp, lang), player).withStyle(ChatFormatting.GREEN);
   }
 
   static Component xpNone(String player) {
-    return Tr.c("zianutilities.pase.admin.xp_none", "§e%s no ha recibido XP (el pase está completo o su archivo está bloqueado).", player);
+    return Tr.c("zianutilities.pase.admin.xp_none", "%s no ha recibido XP (el pase está completo o su archivo está bloqueado).", player).withStyle(ChatFormatting.YELLOW);
   }
 
   static Component xpRemoved(long xp, String player, String lang) {
-    return Tr.c("zianutilities.pase.admin.xp_removed", "§aQuitados %s XP del pase a %s.", num(xp, lang), player);
+    return Tr.c("zianutilities.pase.admin.xp_removed", "Quitados %s XP del pase a %s.", num(xp, lang), player).withStyle(ChatFormatting.GREEN);
   }
 
   static Component levelsGiven(int levels, String player) {
-    return Tr.c("zianutilities.pase.admin.levels_given", "§aDados %s niveles del pase a %s.", levels, player);
+    return Tr.c("zianutilities.pase.admin.levels_given", "Dados %s niveles del pase a %s.", levels, player).withStyle(ChatFormatting.GREEN);
   }
 
   static Component season(String id, String start, String end, boolean previous) {
     return previous
-        ? Tr.c("zianutilities.pase.admin.season_previous", "§7Temporada anterior: %s (del %s al %s).", id, start, end)
-        : Tr.c("zianutilities.pase.admin.season", "§6Temporada actual: %s §7(del %s al %s).", id, start, end);
+        ? Tr.c("zianutilities.pase.admin.season_previous", "Temporada anterior: %s (del %s al %s).", id, start, end).withStyle(ChatFormatting.GRAY)
+        : Tr.c("zianutilities.pase.admin.season", "Temporada actual: %s (del %s al %s).", id, start, end).withStyle(ChatFormatting.GOLD);
   }
 
   static Component noPreviousSeason() {
-    return Tr.c("zianutilities.pase.admin.season_none_previous", "§7No hay temporada anterior.");
+    return Tr.c("zianutilities.pase.admin.season_none_previous", "No hay temporada anterior.").withStyle(ChatFormatting.GRAY);
   }
 
   static Component seasonStarted(String id, String end) {
-    return Tr.c("zianutilities.pase.admin.season_new", "§aNueva temporada: %s. Termina el %s. La anterior queda como pase anterior.", id, end);
+    return Tr.c("zianutilities.pase.admin.season_new", "Nueva temporada: %s. Termina el %s. La anterior queda como pase anterior.", id, end).withStyle(ChatFormatting.GREEN);
   }
 
   static Component reloaded() {
-    return Tr.c("zianutilities.pase.admin.reloaded", "§aConfiguración del pase recargada.");
+    return Tr.c("zianutilities.pase.admin.reloaded", "Configuración del pase recargada.").withStyle(ChatFormatting.GREEN);
   }
 
   static Component reloadFailed(String error) {
-    return Tr.c("zianutilities.pase.admin.reload_failed", "§cConfiguración inválida, se conserva la anterior: %s", error);
+    return Tr.c("zianutilities.pase.admin.reload_failed", "Configuración inválida, se conserva la anterior: %s", error).withStyle(ChatFormatting.RED);
   }
 
   static Component playerReset(String player) {
-    return Tr.c("zianutilities.pase.admin.player_reset", "§aContadores de hoy de %s reiniciados (topes, misiones y exploración de la temporada).", player);
+    return Tr.c("zianutilities.pase.admin.player_reset", "Contadores de hoy de %s reiniciados (topes, misiones y exploración de la temporada).", player).withStyle(ChatFormatting.GREEN);
   }
 
   static Component failed(String error) {
-    return Tr.c("zianutilities.pase.err.failed", "§cNo se pudo completar la acción: %s", error);
+    return Tr.c("zianutilities.pase.err.failed", "No se pudo completar la acción: %s", error).withStyle(ChatFormatting.RED);
   }
 
   static Component failed(Component error) {
-    return Tr.c("zianutilities.pase.err.failed", "§cNo se pudo completar la acción: %s", error);
+    return Tr.c("zianutilities.pase.err.failed", "No se pudo completar la acción: %s", error).withStyle(ChatFormatting.RED);
   }
 
   static Component lockedFile() {
@@ -182,12 +191,12 @@ final class PaseMessages {
   // ---------------------------------------------------------------- rewards
 
   /** "one" text when n is 1, otherwise the "many" text; the many text gets the number (with separators) as its first argument. */
-  private static Component plural(long n, String lang, String oneKey, String oneEs, String manyKey, String manyEs, Object... rest) {
-    if (n == 1) return Tr.c(oneKey, oneEs, rest);
+  private static Component plural(ChatFormatting color, long n, String lang, String oneKey, String oneEs, String manyKey, String manyEs, Object... rest) {
+    if (n == 1) return Tr.c(oneKey, oneEs, rest).withStyle(color);
     Object[] all = new Object[rest.length + 1];
     all[0] = num(n, lang);
     System.arraycopy(rest, 0, all, 1, rest.length);
-    return Tr.c(manyKey, manyEs, all);
+    return Tr.c(manyKey, manyEs, all).withStyle(color);
   }
 
   static Component rewardItem(int count, Component name, String lang) {
@@ -211,54 +220,54 @@ final class PaseMessages {
   }
 
   static Component rewardClaimed(Component reward) {
-    return Tr.c("zianutilities.pase.msg.reward_claimed", "§a¡Premio reclamado: %s!", reward);
+    return Tr.c("zianutilities.pase.msg.reward_claimed", "¡Premio reclamado: %s!", reward).withStyle(ChatFormatting.GREEN);
   }
 
   static Component rewardsClaimed(long count, String lang) {
-    return plural(count, lang, "zianutilities.pase.msg.rewards_claimed.one", "§a¡Has reclamado 1 premio del pase!",
-        "zianutilities.pase.msg.rewards_claimed", "§a¡Has reclamado %s premios del pase!");
+    return plural(ChatFormatting.GREEN, count, lang, "zianutilities.pase.msg.rewards_claimed.one", "¡Has reclamado 1 premio del pase!",
+        "zianutilities.pase.msg.rewards_claimed", "¡Has reclamado %s premios del pase!");
   }
 
   static Component rewardsPending(long count, String lang) {
-    return plural(count, lang, "zianutilities.pase.msg.rewards_pending.one", "§eTienes 1 premio del pase pendiente. Usa /ZianUtilities pase reclamar.",
-        "zianutilities.pase.msg.rewards_pending", "§eTienes %s premios del pase pendientes. Usa /ZianUtilities pase reclamar.");
+    return plural(ChatFormatting.YELLOW, count, lang, "zianutilities.pase.msg.rewards_pending.one", "Tienes 1 premio del pase pendiente. Usa /ZianUtilities pase reclamar.",
+        "zianutilities.pase.msg.rewards_pending", "Tienes %s premios del pase pendientes. Usa /ZianUtilities pase reclamar.");
   }
 
   static Component rewardsNone() {
-    return Tr.c("zianutilities.pase.msg.rewards_none", "§7No tienes premios del pase pendientes.");
+    return Tr.c("zianutilities.pase.msg.rewards_none", "No tienes premios del pase pendientes.").withStyle(ChatFormatting.GRAY);
   }
 
   static Component remaining(long count, String lang) {
-    return plural(count, lang, "zianutilities.pase.msg.remaining.one", "§eQueda 1 premio: vuelve a usar /ZianUtilities pase reclamar.",
-        "zianutilities.pase.msg.remaining", "§eQuedan %s premios: vuelve a usar /ZianUtilities pase reclamar.");
+    return plural(ChatFormatting.YELLOW, count, lang, "zianutilities.pase.msg.remaining.one", "Queda 1 premio: vuelve a usar /ZianUtilities pase reclamar.",
+        "zianutilities.pase.msg.remaining", "Quedan %s premios: vuelve a usar /ZianUtilities pase reclamar.");
   }
 
   static Component uncertain(long count, String lang) {
-    return plural(count, lang, "zianutilities.pase.msg.reward_uncertain.one", "§c1 premio quedó en revisión: un administrador lo comprobará.",
-        "zianutilities.pase.msg.reward_uncertain", "§c%s premios quedaron en revisión: un administrador los comprobará.");
+    return plural(ChatFormatting.RED, count, lang, "zianutilities.pase.msg.reward_uncertain.one", "1 premio quedó en revisión: un administrador lo comprobará.",
+        "zianutilities.pase.msg.reward_uncertain", "%s premios quedaron en revisión: un administrador los comprobará.");
   }
 
   static Component proof() {
-    return Tr.c("zianutilities.pase.msg.reward_proof", "§7Tu Pokémon se está guardando; se confirmará en unos segundos.");
+    return Tr.c("zianutilities.pase.msg.reward_proof", "Tu Pokémon se está guardando; se confirmará en unos segundos.").withStyle(ChatFormatting.GRAY);
   }
 
   static Component premiumOn(String season) {
-    return Tr.c("zianutilities.pase.msg.premium_on", "§6¡Pase premium de %s activado! Usa /ZianUtilities pase reclamar para recoger tus premios.", season);
+    return Tr.c("zianutilities.pase.msg.premium_on", "¡Pase premium de %s activado! Usa /ZianUtilities pase reclamar para recoger tus premios.", season).withStyle(ChatFormatting.GOLD);
   }
 
   static Component itemDropped(Component item) {
-    return Tr.c("zianutilities.pase.msg.item_dropped", "§eTu inventario se llenó: %s se ha soltado a tus pies.", item);
+    return Tr.c("zianutilities.pase.msg.item_dropped", "Tu inventario se llenó: %s se ha soltado a tus pies.", item).withStyle(ChatFormatting.YELLOW);
   }
 
   /** Why prizes stay pending: a full inventory or PC has its own sentence, every other code becomes "N premios siguen pendientes (motivo)". */
   static Component blocked(String reason, long count, String lang) {
     return switch (reason == null ? "" : reason) {
-      case "INVENTORY_FULL" -> plural(count, lang, "zianutilities.pase.msg.inventory_full.one", "§eInventario lleno: libera espacio y vuelve a reclamar (1 premio pendiente).",
-          "zianutilities.pase.msg.inventory_full", "§eInventario lleno: libera espacio y vuelve a reclamar (%s premios pendientes).");
-      case "PC_FULL" -> plural(count, lang, "zianutilities.pase.msg.pc_full.one", "§eTu PC está lleno: libera espacio y vuelve a reclamar (1 premio pendiente).",
-          "zianutilities.pase.msg.pc_full", "§eTu PC está lleno: libera espacio y vuelve a reclamar (%s premios pendientes).");
-      default -> plural(count, lang, "zianutilities.pase.msg.reward_blocked.one", "§e1 premio sigue pendiente (%s).",
-          "zianutilities.pase.msg.reward_blocked", "§e%s premios siguen pendientes (%s).", reason(reason));
+      case "INVENTORY_FULL" -> plural(ChatFormatting.YELLOW, count, lang, "zianutilities.pase.msg.inventory_full.one", "Inventario lleno: libera espacio y vuelve a reclamar (1 premio pendiente).",
+          "zianutilities.pase.msg.inventory_full", "Inventario lleno: libera espacio y vuelve a reclamar (%s premios pendientes).");
+      case "PC_FULL" -> plural(ChatFormatting.YELLOW, count, lang, "zianutilities.pase.msg.pc_full.one", "Tu PC está lleno: libera espacio y vuelve a reclamar (1 premio pendiente).",
+          "zianutilities.pase.msg.pc_full", "Tu PC está lleno: libera espacio y vuelve a reclamar (%s premios pendientes).");
+      default -> plural(ChatFormatting.YELLOW, count, lang, "zianutilities.pase.msg.reward_blocked.one", "1 premio sigue pendiente (%s).",
+          "zianutilities.pase.msg.reward_blocked", "%s premios siguen pendientes (%s).", reason(reason));
     };
   }
 
@@ -290,7 +299,7 @@ final class PaseMessages {
       case "DELIVERY_NOT_PROVEN", "DELIVERY_MISMATCH" -> Tr.c("zianutilities.pase.reason.not_proven", "entrega no comprobada en el PC");
       case "COINS_UNCERTAIN" -> Tr.c("zianutilities.pase.reason.coins_uncertain", "monedas sin confirmar");
       case "COMMAND_RESULT" -> Tr.c("zianutilities.pase.reason.command_result", "el comando no confirmó su efecto");
-      default -> Tr.c("zianutilities.pase.reason.other", "razón %s", c);
+      default -> Tr.c("zianutilities.pase.reason.other", "motivo desconocido: %s", c);
     };
   }
 
@@ -314,73 +323,78 @@ final class PaseMessages {
   }
 
   static Component premiumGiven(String season, String player, String transaction) {
-    return Tr.c("zianutilities.pase.admin.premium_given", "§aPremium de %s dado a %s (transacción %s).", season, player, transaction);
+    return Tr.c("zianutilities.pase.admin.premium_given", "Premium de %s dado a %s (transacción %s).", season, player, transaction).withStyle(ChatFormatting.GREEN);
   }
 
   static Component premiumDuplicate(String transaction) {
-    return Tr.c("zianutilities.pase.admin.premium_duplicate", "§eLa transacción %s ya se usó: se ignora.", transaction);
+    return Tr.c("zianutilities.pase.admin.premium_duplicate", "La transacción %s ya se usó: se ignora.", transaction).withStyle(ChatFormatting.YELLOW);
   }
 
   static Component premiumRemoved(String season, String player, long dropped, String lang) {
-    return plural(dropped, lang, "zianutilities.pase.admin.premium_removed.one", "§aPremium de %s retirado a %s (1 premio sin entregar anulado).",
-        "zianutilities.pase.admin.premium_removed", "§aPremium de %2$s retirado a %3$s (%1$s premios sin entregar anulados).", season, player);
+    return plural(ChatFormatting.GREEN, dropped, lang, "zianutilities.pase.admin.premium_removed.one", "Premium de %s retirado a %s (1 premio sin entregar anulado).",
+        "zianutilities.pase.admin.premium_removed", "Premium de %2$s retirado a %3$s (%1$s premios sin entregar anulados).", season, player);
   }
 
   static Component premiumBadSeason(String current, String previous) {
-    return Tr.c("zianutilities.pase.admin.premium_bad_season", "§cLa temporada debe ser la actual (%s) o la anterior (%s).", current, previous == null ? "-" : previous);
+    if (previous == null) return Tr.c("zianutilities.pase.admin.premium_bad_season_current", "La temporada debe ser la actual (%s).", current).withStyle(ChatFormatting.RED);
+    return Tr.c("zianutilities.pase.admin.premium_bad_season", "La temporada debe ser la actual (%s) o la anterior (%s).", current, previous == null ? "-" : previous).withStyle(ChatFormatting.RED);
   }
 
   static Component premiumBadTransaction() {
-    return Tr.c("zianutilities.pase.admin.premium_bad_transaction", "§cTransacción no válida: letras, números, guion, guion bajo y punto (máximo 64).");
+    return Tr.c("zianutilities.pase.admin.premium_bad_transaction", "Transacción no válida: letras, números, guion, guion bajo y punto (máximo 64).").withStyle(ChatFormatting.RED);
   }
 
   static Component premiumFailed(Component error) {
-    return Tr.c("zianutilities.pase.admin.premium_failed", "§cNo se pudo dar el premium (se puede repetir el mismo comando): %s", error);
+    return Tr.c("zianutilities.pase.admin.premium_failed", "No se pudo dar el premium (se puede repetir el mismo comando): %s", error).withStyle(ChatFormatting.RED);
   }
 
   static Component premiumLocked() {
-    return Tr.c("zianutilities.pase.admin.premium_locked", "el archivo del pase del jugador está bloqueado");
+    return Tr.c("zianutilities.pase.admin.premium_locked", "El archivo del pase del jugador está bloqueado");
+  }
+
+  static Component premiumNotRegistered() {
+    return Tr.c("zianutilities.pase.admin.premium_not_registered", "El premium no quedó registrado");
   }
 
   static Component premiumTxUnreadable() {
-    return Tr.c("zianutilities.pase.admin.premium_tx_unreadable", "no se puede leer el archivo de transacciones (no se da ningún premium)");
+    return Tr.c("zianutilities.pase.admin.premium_tx_unreadable", "El archivo de transacciones no se puede leer; no se da ningún premium");
   }
 
   static Component premiumRemoveFailed() {
-    return Tr.c("zianutilities.pase.admin.premium_remove_failed", "§cNo se pudo retirar el premium: el archivo del jugador no se puede escribir.");
+    return Tr.c("zianutilities.pase.admin.premium_remove_failed", "No se pudo retirar el premium: el archivo del jugador no se puede escribir.").withStyle(ChatFormatting.RED);
   }
 
   /** What the OPs are told when a Tebex command fails: the reason, the transaction and the player. */
   static Component tebexProblem(Component reason, String transaction, String player) {
-    return Tr.c("zianutilities.pase.admin.tebex_problem", "§c[Tebex] %s (transacción %s, jugador %s)", reason, transaction, player);
+    return Tr.c("zianutilities.pase.admin.tebex_problem", "[Tebex] %s (transacción %s, jugador %s)", reason, transaction, player).withStyle(ChatFormatting.RED);
   }
 
   static Component tebexPending(String list) {
-    return Tr.c("zianutilities.pase.admin.tebex_pending", "§e[Tebex] Transacciones sin completar tras una caída: %s. Repite su comando para terminarlas.", list);
+    return Tr.c("zianutilities.pase.admin.tebex_pending", "[Tebex] Transacciones sin completar tras una caída: %s. Repite su comando para terminarlas.", list).withStyle(ChatFormatting.YELLOW);
   }
 
   static Component prizesHeader(String player, long pending, long delivered, long review, String lang) {
-    return Tr.c("zianutilities.pase.admin.prizes_header", "§6Premios de %s §7· pendientes §e%s§7 · entregados §a%s§7 · por revisar §c%s", player, num(pending, lang), num(delivered, lang), num(review, lang));
+    return Tr.c("zianutilities.pase.admin.prizes_header", "Premios de %s · pendientes %s · entregados %s · por revisar %s", player, hl(num(pending, lang), ChatFormatting.YELLOW), hl(num(delivered, lang), ChatFormatting.GREEN), hl(num(review, lang), ChatFormatting.RED)).withStyle(ChatFormatting.GOLD);
   }
 
   static Component prizesLine(String id, Component state, Component reason) {
-    return Tr.c("zianutilities.pase.admin.prizes_line", "  §7%s §8%s §7%s", id, state, reason);
+    return Tr.c("zianutilities.pase.admin.prizes_line", "  %s %s %s", id, state, reason).withStyle(ChatFormatting.GRAY);
   }
 
   static Component prizesMore(long count, String lang) {
-    return Tr.c("zianutilities.pase.admin.prizes_more", "  §7… y %s más", num(count, lang));
+    return Tr.c("zianutilities.pase.admin.prizes_more", "  … y %s más", num(count, lang)).withStyle(ChatFormatting.GRAY);
   }
 
   static Component prizesReopened(long count, String player, String lang) {
-    return plural(count, lang, "zianutilities.pase.admin.prizes_reopened.one", "§a1 premio por revisar de %s vuelve a pendiente.",
-        "zianutilities.pase.admin.prizes_reopened", "§a%s premios por revisar de %s vuelven a pendientes.", player);
+    return plural(ChatFormatting.GREEN, count, lang, "zianutilities.pase.admin.prizes_reopened.one", "1 premio por revisar de %s vuelve a pendiente.",
+        "zianutilities.pase.admin.prizes_reopened", "%s premios por revisar de %s vuelven a pendientes.", player);
   }
 
   static Component prizesOffline() {
-    return Tr.c("zianutilities.pase.admin.prizes_offline", "§7El jugador está desconectado: los entregará al conectarse y usar /ZianUtilities pase reclamar.");
+    return Tr.c("zianutilities.pase.admin.prizes_offline", "El jugador está desconectado: los entregará al conectarse y usar /ZianUtilities pase reclamar.").withStyle(ChatFormatting.GRAY);
   }
 
   static Component rewardsInvalid(Component problem) {
-    return Tr.c("zianutilities.pase.admin.rewards_invalid", "§c[Pase] Premios no disponibles: %s. Los niveles se siguen ganando y los premios quedan pendientes hasta que el archivo sea válido.", problem);
+    return Tr.c("zianutilities.pase.admin.rewards_invalid", "[Pase] Premios no disponibles: %s. Los niveles se siguen ganando y los premios quedan pendientes hasta que el archivo sea válido.", problem).withStyle(ChatFormatting.RED);
   }
 }

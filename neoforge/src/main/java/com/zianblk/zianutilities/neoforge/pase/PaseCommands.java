@@ -144,6 +144,7 @@ final class PaseCommands {
       case BAD_SEASON -> s.sendFailure(Messages.format(PaseMessages.premiumBadSeason(PaseModule.seasons.current().id(), PaseModule.seasons.previous() == null ? null : PaseModule.seasons.previous().id())));
       case BAD_TRANSACTION -> s.sendFailure(Messages.format(PaseMessages.premiumBadTransaction()));
       case LOCKED -> s.sendFailure(Messages.format(PaseMessages.premiumFailed(PaseMessages.premiumLocked())));
+      case NOT_REGISTERED -> s.sendFailure(Messages.format(PaseMessages.premiumFailed(PaseMessages.premiumNotRegistered())));
       case TX_UNREADABLE -> s.sendFailure(Messages.format(PaseMessages.premiumFailed(PaseMessages.premiumTxUnreadable())));
       default -> s.sendFailure(Messages.format(PaseMessages.premiumFailed(Component.literal(r.detail()))));
     }
@@ -197,7 +198,7 @@ final class PaseCommands {
       long open = pending + review;
       for (Prize z : p.prizes.values()) {
         if (z.state == Prize.State.DELIVERED) continue;
-        if (shown >= 20) break;
+        if (shown >= 8) break;
         shown++;
         say(s, PaseMessages.prizesLine(z.id, PaseMessages.state(z.state), PaseMessages.reason(z.reason)));
       }

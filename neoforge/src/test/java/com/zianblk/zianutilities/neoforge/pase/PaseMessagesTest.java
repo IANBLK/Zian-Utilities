@@ -37,7 +37,8 @@ class PaseMessagesTest {
 
     @Test void everyMessageWithTypedArgumentsBuildsAndRenders() {
         for (MissionType t : MissionType.values()) {
-            renders(PaseMessages.missionName(t, 3));
+            renders(PaseMessages.missionName(t, 3, "es_es"));
+            renders(PaseMessages.missionName(t, 1, "en_us"));
             renders(PaseMessages.missionDone(t, 3, 300, "es_es"));
             renders(PaseMessages.missionShort(t));
         }
@@ -145,5 +146,27 @@ class PaseMessagesTest {
         assertTrue(wrapper.getArgs()[2] instanceof Component, "the nested problem is a translatable component too");
         renders(PaseMessages.rewardsInvalid(shown));
         renders(PaseMessages.problem(new IllegalStateException("raw")));
+    }
+
+    @Test void colorsAreAppliedToTheWholeMessageInCodeAndNeverBreakAfterAnArgument() {
+        assertEquals(net.minecraft.ChatFormatting.GREEN.getColor(), PaseMessages.rewardsClaimed(12, "es_es").getStyle().getColor().getValue());
+        assertEquals(net.minecraft.ChatFormatting.GREEN.getColor(), PaseMessages.rewardsClaimed(1, "es_es").getStyle().getColor().getValue());
+        assertEquals(net.minecraft.ChatFormatting.YELLOW.getColor(), PaseMessages.rewardsPending(1500, "es_es").getStyle().getColor().getValue());
+        assertEquals(net.minecraft.ChatFormatting.RED.getColor(), PaseMessages.uncertain(2, "en_us").getStyle().getColor().getValue());
+        assertFalse(PaseMessages.rewardsClaimed(12, "es_es").getString().contains("§"));
+    }
+
+    @Test void unknownReasonsAndStatusesAreTranslatableAndTheCountsOfAMissionHavePluralForms() {
+        var other = (net.minecraft.network.chat.contents.TranslatableContents) PaseMessages.reason("SOMETHING_ELSE").getContents();
+        assertEquals("zianutilities.pase.reason.other", other.getKey());
+        assertTrue(PaseMessages.reason("SOMETHING_ELSE").getString().startsWith("motivo desconocido"));
+        assertTrue(PaseMessages.missionName(MissionType.TRADE, 1, "es_es").getString().contains("1 vez"));
+        assertTrue(PaseMessages.missionName(MissionType.TRADE, 3, "es_es").getString().contains("3 veces"));
+        assertTrue(PaseMessages.missionName(MissionType.BREAK_BLOCKS, 1500, "es_es").getString().contains("1.500 bloques"));
+        assertEquals("zianutilities.pase.mission.fish.one", ((net.minecraft.network.chat.contents.TranslatableContents) PaseMessages.missionName(MissionType.FISH, 1, "en_us").getContents()).getKey());
+        assertFalse(PaseMessages.premiumBadSeason("temporada-1", null).getString().contains("(-)"));
+        assertFalse(PaseMessages.premiumBadSeason("temporada-1", null).getString().contains("anterior"));
+        renders(PaseMessages.premiumNotRegistered());
+        assertTrue(PaseMessages.premiumLocked().getString().charAt(0) == 'E' && PaseMessages.premiumTxUnreadable().getString().charAt(0) == 'E');
     }
 }

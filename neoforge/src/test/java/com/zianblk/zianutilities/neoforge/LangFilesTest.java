@@ -43,6 +43,14 @@ class LangFilesTest {
         }
     }
 
+    /** The pass colors its messages in code (withStyle on the whole component): a legacy section sign in a lang text is cut after the first argument. */
+    @Test void passMessagesCarryNoColorCodesInTheLangFiles() throws Exception {
+        for (var name : new String[] {"es_es.json", "es_mx.json", "en_us.json"})
+            load(name).forEach((key, text) -> {
+                if (key.startsWith("zianutilities.pase.")) assertTrue(!text.contains("§"), key + " en " + name);
+            });
+    }
+
     @Test void mexicanSpanishMatchesSpain() throws Exception {
         assertEquals(load("es_es.json"), load("es_mx.json"));
     }
