@@ -117,7 +117,7 @@ final class PaseMessages {
       for (var m : v.missions()) {
         out.add(m.done()
             ? Tr.c("zianutilities.pase.view.mission_done", "    ✔ %s · +%s XP", missionShort(m.type()), hl(num(m.xp(), lang), ChatFormatting.YELLOW)).withStyle(ChatFormatting.GREEN)
-            : Tr.c("zianutilities.pase.view.mission", "    ▸ %s %s/%s · +%s XP", missionShort(m.type()), hl(m.progress(), ChatFormatting.DARK_GRAY), hl(m.target(), ChatFormatting.DARK_GRAY), hl(num(m.xp(), lang), ChatFormatting.YELLOW)).withStyle(ChatFormatting.GRAY));
+            : Tr.c("zianutilities.pase.view.mission", "    ▸ %s %s/%s · +%s XP", missionShort(m.type()), hl(num(m.progress(), lang), ChatFormatting.WHITE), hl(num(m.target(), lang), ChatFormatting.GRAY), hl(num(m.xp(), lang), ChatFormatting.YELLOW)).withStyle(ChatFormatting.GRAY));
       }
     }
     return out;
