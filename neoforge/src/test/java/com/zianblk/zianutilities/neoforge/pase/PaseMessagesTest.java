@@ -87,19 +87,63 @@ class PaseMessagesTest {
 
     @Test void rewardMessagesBuildAndRenderWithValidArguments() {
         Component item = Component.literal("Diamante");
+        String es = "es_es";
+        for (long n : new long[] {1, 2, 1500}) {
+            for (Component c : List.of(
+                PaseMessages.rewardsClaimed(n, es), PaseMessages.rewardsPending(n, es), PaseMessages.remaining(n, es), PaseMessages.uncertain(n, es),
+                PaseMessages.blocked("INVENTORY_FULL", n, es), PaseMessages.blocked("PC_FULL", n, es), PaseMessages.blocked("CONFIG_INVALID", n, es), PaseMessages.blocked("algo raro", n, es), PaseMessages.blocked(null, n, es),
+                PaseMessages.premiumRemoved("temporada-1", "Ian", n, es), PaseMessages.prizesReopened(n, "Ian", es), PaseMessages.prizesMore(n, es),
+                PaseMessages.prizesHeader("Ian", n, 10, 1, es)))
+                renders(c);
+        }
         for (Component c : List.of(
-            PaseMessages.rewardItem(4, item), PaseMessages.rewardCoins(32L, Component.literal("goldcoin")), PaseMessages.rewardPokemon(Component.literal("Eevee")),
-            PaseMessages.rewardPokemonRandom(), PaseMessages.rewardCommand(), PaseMessages.rewardClaimed(PaseMessages.rewardItem(4, item)), PaseMessages.rewardsClaimed(12),
-            PaseMessages.rewardsPending(3), PaseMessages.rewardsNone(), PaseMessages.uncertain(2), PaseMessages.proof(), PaseMessages.premiumOn("temporada-2"),
-            PaseMessages.blocked("INVENTORY_FULL", 3), PaseMessages.blocked("PC_FULL", 1), PaseMessages.blocked("CONFIG_INVALID", 5), PaseMessages.blocked("algo raro", 1), PaseMessages.blocked(null, 1),
+            PaseMessages.rewardItem(4, item, es), PaseMessages.rewardCoins(32L, Component.literal("goldcoin"), es), PaseMessages.rewardPokemon(Component.literal("Eevee")),
+            PaseMessages.rewardPokemonRandom(), PaseMessages.rewardCommand(), PaseMessages.rewardClaimed(PaseMessages.rewardItem(4, item, es)),
+            PaseMessages.rewardsNone(), PaseMessages.proof(), PaseMessages.premiumOn("temporada-2"), PaseMessages.itemDropped(item),
             PaseMessages.premiumGiven("temporada-2", java.util.UUID.randomUUID().toString(), "tbx-1"), PaseMessages.premiumDuplicate("tbx-1"),
-            PaseMessages.premiumRemoved("temporada-1", "Ian", 4), PaseMessages.premiumBadSeason("temporada-2", "temporada-1"), PaseMessages.premiumBadSeason("temporada-1", null),
-            PaseMessages.premiumBadTransaction(), PaseMessages.premiumFailed("boom"), PaseMessages.premiumRemoveFailed(), PaseMessages.prizesHeader("Ian", 3, 10, 1),
-            PaseMessages.prizesLine("temporada-1|free|1|0", "PENDING", "INVENTORY_FULL"), PaseMessages.prizesMore(7), PaseMessages.prizesReopened(2, "Ian", ""),
-            PaseMessages.prizesOffline(), PaseMessages.rewardsInvalid("falta el archivo")))
+            PaseMessages.premiumBadSeason("temporada-2", "temporada-1"), PaseMessages.premiumBadSeason("temporada-1", null),
+            PaseMessages.premiumBadTransaction(), PaseMessages.premiumFailed(Component.literal("boom")), PaseMessages.premiumFailed(PaseMessages.premiumLocked()),
+            PaseMessages.premiumFailed(PaseMessages.premiumTxUnreadable()), PaseMessages.premiumRemoveFailed(),
+            PaseMessages.tebexProblem(PaseMessages.premiumBadTransaction(), "tbx-1", "uuid"), PaseMessages.tebexPending("tbx-1, tbx-2"),
+            PaseMessages.prizesLine("temporada-1|free|1|base", PaseMessages.state(com.zianblk.zianutilities.core.pase.Prize.State.PENDING), PaseMessages.reason("INVENTORY_FULL")),
+            PaseMessages.prizesOffline(), PaseMessages.failed(PaseMessages.lockedFile()), PaseMessages.failed(PaseMessages.pickOne())))
             renders(c);
-        for (String code : new String[] {"CONFIG_INVALID", "NO_ECONOMY", "UNSUPPORTED_CURRENCY", "unsupported_currency", "wallet_full", "GENERATION_DISABLED", "NO_SPECIES", "COMMAND_NOT_ALLOWED", "COMMAND_REJECTED", "BAD_ITEM", "BAD_PLAYER_NAME", "DESCONOCIDO"})
+        for (var state : com.zianblk.zianutilities.core.pase.Prize.State.values()) renders(PaseMessages.state(state));
+        for (String code : new String[] {"INVENTORY_FULL", "PC_FULL", "CONFIG_INVALID", "NO_ECONOMY", "UNSUPPORTED_CURRENCY", "unsupported_currency", "wallet_full", "GENERATION_DISABLED", "NO_SPECIES", "COMMAND_NOT_ALLOWED", "COMMAND_REJECTED", "BAD_ITEM", "BAD_PLAYER_NAME",
+            "NO_PREMIUM", "RESUME", "INTERRUPTED", "ADMIN_REDELIVER", "PROOF", "SAVE_FAILED", "CHECK_FAILED", "EXCEPTION", "DELIVERY_NOT_PROVEN", "DELIVERY_MISMATCH", "COINS_insufficient", "COMMAND_RESULT_0", "DESCONOCIDO"})
             renders(PaseMessages.reason(code));
-        assertFalse(PaseMessages.blocked("CONFIG_INVALID", 5).getString().contains("CONFIG_INVALID"));
+        assertTrue(PaseMessages.reason("").getString().isEmpty());
+        assertFalse(PaseMessages.blocked("CONFIG_INVALID", 5, es).getString().contains("CONFIG_INVALID"));
+        assertFalse(PaseMessages.reason("INVENTORY_FULL").getString().contains("INVENTORY_FULL"));
+        assertFalse(PaseMessages.state(com.zianblk.zianutilities.core.pase.Prize.State.UNCERTAIN).getString().contains("UNCERTAIN"));
+    }
+
+    @Test void countsUseThePluralFormAndThousandsGetASeparator() {
+        assertTrue(PaseMessages.rewardsPending(1, "es_es").getString().contains("1 premio del pase pendiente"));
+        assertTrue(PaseMessages.rewardsPending(2, "es_es").getString().contains("2 premios"));
+        assertTrue(PaseMessages.rewardsClaimed(1, "es_es").getString().contains("1 premio "));
+        assertEquals("zianutilities.pase.msg.rewards_pending.one", ((net.minecraft.network.chat.contents.TranslatableContents) PaseMessages.rewardsPending(1, "en_us").getContents()).getKey());
+        assertEquals("zianutilities.pase.msg.rewards_pending", ((net.minecraft.network.chat.contents.TranslatableContents) PaseMessages.rewardsPending(7, "en_us").getContents()).getKey());
+        assertTrue(PaseMessages.remaining(1, "es_es").getString().contains("Queda 1 premio"));
+        assertTrue(PaseMessages.remaining(5, "es_es").getString().contains("Quedan 5 premios"));
+        assertTrue(PaseMessages.rewardCoins(1500, Component.literal("oro"), "es_es").getString().contains("1.500"));
+        assertTrue(PaseMessages.rewardCoins(1500, Component.literal("gold"), "en_us").getString().contains("1,500"));
+        assertTrue(PaseMessages.prizesHeader("Ian", 12345, 1, 0, "es_es").getString().contains("12.345"));
+        assertTrue(PaseMessages.premiumRemoved("temporada-2", "Ian", 1500, "es_es").getString().contains("1.500"));
+        assertTrue(PaseMessages.premiumRemoved("temporada-2", "Ian", 1500, "es_es").getString().indexOf("temporada-2") < PaseMessages.premiumRemoved("temporada-2", "Ian", 1500, "es_es").getString().indexOf("Ian"));
+    }
+
+    @Test void seasonFileProblemsAreTranslatableWithTheirLevelTrackAndField() {
+        String bad = "{\"formatVersion\":1,\"levels\":{\"7\":{\"free\":[{\"type\":\"item\",\"item\":\"minecraft:bread\",\"count\":0,\"id\":\"a\"}]}}}";
+        var e = org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> PaseRewardJson.parseSeason(bad, 200));
+        Component shown = PaseMessages.problem(e);
+        renders(shown);
+        var wrapper = (net.minecraft.network.chat.contents.TranslatableContents) shown.getContents();
+        assertEquals("zianutilities.pase.problem.at", wrapper.getKey());
+        assertEquals(7, wrapper.getArgs()[0]);
+        assertEquals("free", wrapper.getArgs()[1]);
+        assertTrue(wrapper.getArgs()[2] instanceof Component, "the nested problem is a translatable component too");
+        renders(PaseMessages.rewardsInvalid(shown));
+        renders(PaseMessages.problem(new IllegalStateException("raw")));
     }
 }

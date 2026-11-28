@@ -80,7 +80,7 @@ class PaseRewardsTest {
   private static final class Crash extends Error {}
 
   /** A "disk": every save keeps the JSON, so a restart is reading the last one. */
-  private static final class Disk implements PrizeClaimer.Saver {
+  private static class Disk implements PrizeClaimer.Saver {
     String last;
     boolean failing;
 
@@ -122,10 +122,10 @@ class PaseRewardsTest {
     p.progress(CUR).extraXp = 10L * rules.extraLevelXp();
     p.premium.add(CUR);
     sync(p);
-    PaseReward first = p.prizes.get(Prize.idOf(CUR, Prize.Track.EXTRA, 5, 0)).reward;
+    PaseReward first = p.prizes.get(Prize.idOf(CUR, Prize.Track.EXTRA, 5, "0")).reward;
     p.prizes.clear();
     sync(p);
-    assertEquals(first, p.prizes.get(Prize.idOf(CUR, Prize.Track.EXTRA, 5, 0)).reward);
+    assertEquals(first, p.prizes.get(Prize.idOf(CUR, Prize.Track.EXTRA, 5, "0")).reward);
   }
 
   // ---------------------------------------------------------------- planner
@@ -238,7 +238,7 @@ class PaseRewardsTest {
     engine.adminGiveLevels(id, 4);
     PlayerPase p = player();
     sync(p);
-    String stuck = Prize.idOf(CUR, Prize.Track.FREE, 2, 0);
+    String stuck = Prize.idOf(CUR, Prize.Track.FREE, 2, "base");
     var fake = new Fake();
     fake.block.add(stuck);
     var report = PrizeClaimer.claim(p, fake, new Disk(), m -> { }, 2L);
@@ -285,7 +285,7 @@ class PaseRewardsTest {
     engine.adminGiveLevels(id, 5);
     PlayerPase p = player();
     sync(p);
-    String victim = Prize.idOf(CUR, Prize.Track.FREE, 3, 0);
+    String victim = Prize.idOf(CUR, Prize.Track.FREE, 3, "base");
     var fake = new Fake();
     fake.crashOn = victim;
     var disk = new Disk();
@@ -298,20 +298,21 @@ class PaseRewardsTest {
     var again = new Fake();
     PrizeClaimer.claim(back, again, new Disk(), m -> { }, 3L);
     assertFalse(again.given.contains(victim), "an uncertain prize is not delivered by a normal claim");
-    assertEquals(Prize.State.DELIVERED, back.prizes.get(Prize.idOf(CUR, Prize.Track.FREE, 1, 0)).state);
+    assertEquals(Prize.State.UNCERTAIN, back.prizes.get(Prize.idOf(CUR, Prize.Track.FREE, 1, "base")).state, "the items of one batch share one DELIVERING write: all of them are uncertain after a crash");
 
-    assertEquals(1, PrizeClaimer.reopen(back));
+    assertEquals(5, PrizeClaimer.reopen(back));
     var admin = new Fake();
     PrizeClaimer.claim(back, admin, new Disk(), m -> { }, 4L);
-    assertEquals(List.of(victim), admin.given);
+    assertEquals(5, admin.given.size());
+    assertTrue(admin.given.contains(victim));
     assertEquals(Prize.State.DELIVERED, back.prizes.get(victim).state);
   }
 
   @Test void coinsAndPokemonInterruptedMidwayResumeWithTheSameIdsInsteadOfBecomingUncertain() {
     PlayerPase p = player();
-    Prize coins = new Prize(CUR, Prize.Track.FREE, 10, 1, PaseReward.coins("avecoins:coppercoin", 32));
-    Prize mon = new Prize(CUR, Prize.Track.FREE, 25, 1, example.level(25).free().stream().filter(r -> r.kind() == PaseReward.Kind.POKEMON).findFirst().orElseThrow());
-    Prize command = new Prize(CUR, Prize.Track.FREE, 11, 0, PaseReward.command("say hola {player}"));
+    Prize coins = new Prize(CUR, Prize.Track.FREE, 10, "coins", PaseReward.coins("avecoins:coppercoin", 32));
+    Prize mon = new Prize(CUR, Prize.Track.FREE, 25, "pokemon", example.level(25).free().stream().filter(r -> r.kind() == PaseReward.Kind.POKEMON).findFirst().orElseThrow());
+    Prize command = new Prize(CUR, Prize.Track.FREE, 11, "cmd", PaseReward.command("say hola {player}"));
     for (Prize z : List.of(coins, mon, command)) {
       z.state = Prize.State.DELIVERING;
       p.prizes.put(z.id, z);
@@ -345,7 +346,7 @@ class PaseRewardsTest {
   }
 
   @Test void theExampleFileRoundTripsAndEveryRewardKindSurvives() {
-    String json = PaseSeasonExample.json();
+    String json = PaseSeasonExample.json(200);
     assertEquals(example, PaseRewardJson.parseSeason(json, 200));
     assertTrue(json.contains("\"formatVersion\": 1"));
     var all = List.of(PaseReward.item("minecraft:diamond_sword", 1, "minecraft:enchantments={levels:{'minecraft:sharpness':3}}"), PaseReward.coins("avecoins:goldcoin", 5),
@@ -355,7 +356,7 @@ class PaseRewardsTest {
   }
 
   @Test void aBadSeasonFileIsRefusedWholeSoTheRewardsModuleStaysClosed() {
-    String good = PaseSeasonExample.json();
+    String good = PaseSeasonExample.json(200);
     assertThrows(IllegalArgumentException.class, () -> PaseRewardJson.parseSeason("{ broken", 200));
     assertThrows(IllegalArgumentException.class, () -> PaseRewardJson.parseSeason(good.replace("\"formatVersion\": 1", "\"formatVersion\": 2"), 200));
     assertThrows(IllegalArgumentException.class, () -> PaseRewardJson.parseSeason(good.replace("\"formatVersion\": 1,", ""), 200));
@@ -402,7 +403,7 @@ class PaseRewardsTest {
     assertEquals("cobblemon:pikachu", back.prizes.get(u.id).detail);
     assertEquals(3, back.prizes.get(u.id).attempts);
     assertThrows(RuntimeException.class, () -> PaseStateJson.readPlayer(json.replaceFirst("\"state\": \"PENDING\"", "\"state\": \"SENT\""), id));
-    assertThrows(RuntimeException.class, () -> PaseStateJson.readPlayer(json.replaceFirst("\"id\": \"temporada-2\\|free\\|1\\|0\"", "\"id\": \"otra\""), id));
+    assertThrows(RuntimeException.class, () -> PaseStateJson.readPlayer(json.replaceFirst("\"id\": \"temporada-2\\|free\\|1\\|base\"", "\"id\": \"otra\""), id));
   }
 
   // ---------------------------------------------------------------- Tebex transactions
@@ -448,5 +449,124 @@ class PaseRewardsTest {
     assertThrows(IOException.class, () -> tx.begin("tbx-2", id, CUR, 1L) , "nothing is written over a file that could not be read");
     assertEquals("{\"formatVersion\":9,\"transactions\":{}}", Files.readString(file));
     assertNotNull(tx);
+  }
+
+  // ---------------------------------------------------------------- stable reward ids
+
+  private SeasonRewards with(int level, List<PaseReward> free) {
+    Map<Integer, SeasonRewards.Level> levels = new java.util.TreeMap<>(example.levels());
+    levels.put(level, new SeasonRewards.Level(free, example.level(level).premium()));
+    return new SeasonRewards(example.levelCap(), levels, example.extraEvery(), example.loot());
+  }
+
+  @Test void editingALevelThatWasAlreadyClaimedNeverDuplicatesNorLosesAndANewIdArrives() {
+    engine.adminGiveLevels(id, 8);
+    PlayerPase p = player();
+    sync(p);
+    var fake = new Fake();
+    PrizeClaimer.claim(p, fake, new Disk(), m -> { }, 2L);
+    int total = p.prizes.size();
+    List<String> givenBefore = new ArrayList<>(fake.given);
+    PaseReward bread = example.level(5).free().get(0);
+    // insert a new reward first, delete the one of level 4, reverse level 6 (two rewards there after the insert)
+    SeasonRewards edited = with(5, List.of(PaseReward.item("minecraft:cookie", 3, null).withId("cookie"), bread));
+    edited = new SeasonRewards(edited.levelCap(), new java.util.TreeMap<>(edited.levels()) {{ put(4, new SeasonRewards.Level(List.of(), example.level(4).premium())); }}, edited.extraEvery(), edited.loot());
+    SeasonRewards finalEdited = edited;
+    assertEquals(1, PrizePlanner.sync(p, rules, List.of(PREV, CUR), s -> finalEdited, 3L), "only the new id is created");
+    assertEquals(total + 1, p.prizes.size(), "the deleted reward's prize is not lost from the journal");
+    PrizeClaimer.claim(p, fake, new Disk(), m -> { }, 4L);
+    assertEquals(1, fake.given.size() - givenBefore.size());
+    assertEquals(Prize.idOf(CUR, Prize.Track.FREE, 5, "cookie"), fake.given.get(fake.given.size() - 1));
+    assertEquals(0, PrizePlanner.sync(p, rules, List.of(PREV, CUR), s -> finalEdited, 5L), "running it again adds nothing");
+  }
+
+  @Test void prizesCreatedWithListPositionsAreNotDuplicatedByTheNewIds() {
+    engine.adminGiveLevels(id, 6);
+    PlayerPase p = player();
+    sync(p);
+    String json = PaseStateJson.writePlayer(p).replaceAll("\\|base\"", "|0\"").replaceAll("\"key\": \"base\"", "\"index\": 0");
+    PlayerPase old = PaseStateJson.readPlayer(json, id);
+    assertEquals(p.prizes.size(), old.prizes.size());
+    assertTrue(old.prizes.containsKey(Prize.idOf(CUR, Prize.Track.FREE, 3, "0")), "the old id is kept");
+    assertEquals(0, sync(old), "the levels with old-style prizes are considered planned: nothing new is created for them");
+    // a premium bought later still gets its own prizes (those levels were never planned for the paid track)
+    old.premium.add(CUR);
+    assertEquals(rewardsUpTo(6, true), sync(old));
+    PlayerPase back = PaseStateJson.readPlayer(PaseStateJson.writePlayer(old), id);
+    assertEquals(0, sync(back), "the marker survives a save and a load");
+  }
+
+  @Test void aSeasonFileWithAMissingDuplicatedOrBadRewardIdFailsClosed() {
+    String head = "{\"formatVersion\":1,\"levels\":{\"1\":{\"free\":[";
+    String bread = "{\"type\":\"item\",\"item\":\"minecraft:bread\",\"count\":1";
+    assertEquals(1, PaseRewardJson.parseSeason(head + bread + ",\"id\":\"a\"}]}}}", 200).levels().size());
+    var missing = assertThrows(IllegalArgumentException.class, () -> PaseRewardJson.parseSeason(head + bread + "}]}}}", 200));
+    assertEquals("zianutilities.pase.problem.at", ((com.zianblk.zianutilities.neoforge.LocalizedException.Info) missing).key());
+    assertThrows(IllegalArgumentException.class, () -> PaseRewardJson.parseSeason(head + bread + ",\"id\":\"a\"}," + bread + ",\"id\":\"a\"}]}}}", 200));
+    assertThrows(IllegalArgumentException.class, () -> PaseRewardJson.parseSeason(head + bread + ",\"id\":\"a|b\"}]}}}", 200));
+    assertEquals(2, PaseRewardJson.parseSeason(head + bread + ",\"id\":\"a\"}," + bread + ",\"id\":\"b\"}]}}}", 200).level(1).free().size());
+  }
+
+  // ---------------------------------------------------------------- batches, refunds, RCT cap
+
+  @Test void aClaimGivesAtMost25PrizesAndTheItemsOfABatchAreMarkedWithOneWrite() {
+    engine.adminGiveLevels(id, 30);
+    PlayerPase p = player();
+    sync(p);
+    var counting = new Disk() {
+      int saves;
+      @Override public void save(PlayerPase q) throws IOException { saves++; super.save(q); }
+    };
+    var fake = new Fake();
+    var report = PrizeClaimer.claim(p, fake, counting, m -> { }, 2L, PrizeClaimer.BATCH);
+    long items = report.delivered().stream().filter(z -> z.reward.kind() == PaseReward.Kind.ITEM).count();
+    assertEquals(25, fake.given.size());
+    assertEquals(p.prizes.size() - 25, report.remaining());
+    assertTrue(counting.saves <= 2 + (25 - items) * 2, "items share a single DELIVERING write: " + counting.saves + " writes for " + items + " items");
+    int more = PrizeClaimer.claim(p, new Fake(), counting, m -> { }, 3L, PrizeClaimer.BATCH).delivered().size();
+    assertEquals(p.prizes.size() - 25, more);
+  }
+
+  @Test void aReopenedPrizeOfAPaidTrackIsNotDeliveredWithoutThePremium() {
+    PlayerPase p = player();
+    p.progress(CUR).xp = 3L * rules.xpPerLevel();
+    p.premium.add(CUR);
+    sync(p);
+    for (Prize z : p.prizes.values()) z.state = Prize.State.UNCERTAIN;
+    p.premium.remove(CUR);
+    int reopened = PrizeClaimer.reopen(p);
+    assertEquals(rewardsUpTo(3, false), reopened);
+    assertTrue(p.prizes.values().stream().filter(Prize::premiumOnly).allMatch(z -> z.state == Prize.State.UNCERTAIN));
+  }
+
+  /** Stand-ins for the Zian-RCT classes, so the reflection can be tried without RCT. */
+  public static final class FakeRuntime {
+    public static FakeRuntime getInstance() { return new FakeRuntime(); }
+    public FakeData getData(Object player) { return new FakeData(); }
+  }
+
+  public static final class FakeData {
+    public int getLevelCap() { return 37; }
+  }
+
+  public static final class BrokenRuntime {
+    public static BrokenRuntime getInstance() { throw new IllegalStateException("not ready"); }
+  }
+
+  @Test void theRctLevelCapIsReadByReflectionAndFallsBackToNothingWhenItCannotBeRead() {
+    assertEquals(37, RctLevelCap.of(FakeRuntime.class.getName(), "player"));
+    assertEquals(Integer.MAX_VALUE, RctLevelCap.of("no.such.Runtime", "player"));
+    assertEquals(Integer.MAX_VALUE, RctLevelCap.of(BrokenRuntime.class.getName(), "player"));
+    assertEquals(Integer.MAX_VALUE, RctLevelCap.of(RctLevelCap.RUNTIME, "player"), "Zian-RCT is not on the test classpath");
+    assertEquals(30, Math.min(30, RctLevelCap.of(FakeRuntime.class.getName(), "player")));
+    assertEquals(37, Math.min(50, RctLevelCap.of(FakeRuntime.class.getName(), "player")));
+  }
+
+  @Test void pendingTebexTransactionsAreListed(@TempDir Path dir) throws Exception {
+    var tx = new PaseTransactions(dir.resolve("transactions.json"));
+    tx.begin("tbx-a", id, CUR, 1L);
+    tx.begin("tbx-b", id, CUR, 2L);
+    tx.applied("tbx-b");
+    assertEquals(List.of("tbx-a"), tx.pendingIds());
   }
 }

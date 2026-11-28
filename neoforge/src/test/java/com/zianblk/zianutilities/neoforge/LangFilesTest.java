@@ -50,13 +50,15 @@ class LangFilesTest {
     /** Todo Tr.c/Tr.s/Tr.enc y translatableWithFallback del codigo tiene su clave en es_es con el mismo espanol de respaldo. */
     @Test void codeFallbacksMatchSpanishLang() throws Exception {
         var es = load("es_es.json");
-        var calls = Pattern.compile("(?:\\bTr\\.(?:c|s|enc)|translatableWithFallback|LocalizedException\\.(?:State|Argument))\\(\\s*" + STRING + ",\\s*" + STRING);
+        var calls = Pattern.compile("(?:\\bTr\\.(?:c|s|enc)|translatableWithFallback|LocalizedException\\.(?:State|Argument)|\\bbad)\\(\\s*" + STRING + ",\\s*" + STRING);
         int checked = 0;
         try (Stream<Path> files = Files.walk(sources())) {
             for (Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {
                 var m = calls.matcher(Files.readString(file, StandardCharsets.UTF_8));
                 while (m.find()) {
                     var key = m.group(1);
+                    // PaseRewardJson.bad("range", ...) and friends: short keys under the pass problem prefix
+                    if (!key.contains(".") && m.group().startsWith("bad(") || (!key.contains(".") && m.group().contains(".bad("))) key = "zianutilities.pase.problem." + key;
                     if (!key.contains("zianutilities")) continue;
                     assertTrue(es.containsKey(key), file.getFileName() + ": falta la clave " + key);
                     assertEquals(unescape(m.group(2)), es.get(key), file.getFileName() + ": respaldo distinto en " + key);
