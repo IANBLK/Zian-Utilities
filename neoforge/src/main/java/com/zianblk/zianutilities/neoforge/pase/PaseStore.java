@@ -62,6 +62,13 @@ final class PaseStore implements PaseEngine.Store {
     return p;
   }
 
+  /** Writes one player now (the delivery journal needs this before a reward is given). Throws if it cannot, so nothing is given. */
+  synchronized void saveNow(PlayerPase p) throws IOException {
+    if (p.locked) throw new IOException("el archivo del pase de " + p.id + " está bloqueado");
+    atomic(playerFile(p.id), PaseStateJson.writePlayer(p));
+    p.dirty = false;
+  }
+
   /** Writes every changed player. Returns false if any write failed (it stays dirty and is tried again). */
   synchronized boolean flush() {
     boolean ok = true;

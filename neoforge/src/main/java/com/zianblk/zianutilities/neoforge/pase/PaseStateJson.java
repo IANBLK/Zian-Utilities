@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.zianblk.zianutilities.core.pase.LevelEvent;
 import com.zianblk.zianutilities.core.pase.PlayerPase;
+import com.zianblk.zianutilities.core.pase.Prize;
 import com.zianblk.zianutilities.core.pase.Season;
 import com.zianblk.zianutilities.core.pase.SeasonBook;
 import java.time.Instant;
@@ -18,10 +19,11 @@ import java.util.UUID;
 /**
  * Reading and writing of the pass data files (players/&lt;uuid&gt;.json and seasons.json). Every file carries formatVersion.
  * A newer version, a missing one or a broken file throws and is never overwritten. Version 1 is the first: older
- * versions would be migrated in {@link #migrate}, which today has nothing to do; fields added later are optional.
+ * versions are migrated in {@link #migrate}: version 1 files have no prize journal, which the planner rebuilds from the XP
+ * (so levels reached before the rewards existed become pending prizes); fields added later are optional.
  */
 final class PaseStateJson {
-  static final int FORMAT_VERSION = 1;
+  static final int FORMAT_VERSION = 2;
 
   private PaseStateJson() {}
 
@@ -54,6 +56,25 @@ final class PaseStateJson {
         JsonObject ev = e.getAsJsonObject();
         p.events.add(new LevelEvent(ev.get("season").getAsString(), ev.get("level").getAsInt(), ev.get("extra").getAsBoolean(), ev.get("at").getAsLong()));
       }
+    if (o.has("prizes"))
+      for (JsonElement e : o.getAsJsonArray("prizes")) {
+        JsonObject z = e.getAsJsonObject();
+        // Journals written when ids were list positions have "index" and no "key": their levels are marked as already planned
+        // so the planner never adds a second prize for the same reward under a new id.
+        boolean legacy = !z.has("key");
+        Prize prize = new Prize(z.get("season").getAsString(), Prize.Track.valueOf(z.get("track").getAsString().toUpperCase(java.util.Locale.ROOT)),
+            z.get("level").getAsInt(), legacy ? String.valueOf(z.get("index").getAsInt()) : z.get("key").getAsString(), PaseRewardJson.reward(z.getAsJsonObject("reward")));
+        if (legacy && prize.track != Prize.Track.EXTRA) p.legacyLevels.add(Prize.levelKey(prize.seasonId, prize.track, prize.level));
+        if (!prize.id.equals(z.get("id").getAsString())) throw new IllegalArgumentException("premio con id incoherente: " + z.get("id").getAsString());
+        prize.state = Prize.State.valueOf(z.get("state").getAsString());
+        prize.reason = z.has("reason") ? z.get("reason").getAsString() : "";
+        prize.detail = z.has("detail") ? z.get("detail").getAsString() : "";
+        prize.attempts = z.has("attempts") ? z.get("attempts").getAsInt() : 0;
+        prize.updated = z.has("updated") ? z.get("updated").getAsLong() : 0;
+        if (p.prizes.put(prize.id, prize) != null) throw new IllegalArgumentException("premio repetido en el diario: " + prize.id);
+      }
+    if (o.has("legacyLevels")) for (JsonElement e : o.getAsJsonArray("legacyLevels")) p.legacyLevels.add(e.getAsString());
+    com.zianblk.zianutilities.core.pase.PrizeClaimer.recover(p);
     if (o.has("explored"))
       for (var e : o.getAsJsonObject("explored").entrySet()) {
         Set<String> set = new LinkedHashSet<>();
@@ -100,6 +121,24 @@ final class PaseStateJson {
       events.add(e);
     }
     o.add("events", events);
+    JsonArray prizes = new JsonArray();
+    for (Prize z : p.prizes.values()) {
+      JsonObject e = new JsonObject();
+      e.addProperty("id", z.id);
+      e.addProperty("season", z.seasonId);
+      e.addProperty("track", z.track.name().toLowerCase(java.util.Locale.ROOT));
+      e.addProperty("level", z.level);
+      e.addProperty("key", z.key);
+      e.addProperty("state", z.state.name());
+      e.addProperty("reason", z.reason);
+      e.addProperty("detail", z.detail);
+      e.addProperty("attempts", z.attempts);
+      e.addProperty("updated", z.updated);
+      e.add("reward", PaseRewardJson.toJson(z.reward));
+      prizes.add(e);
+    }
+    o.add("prizes", prizes);
+    o.add("legacyLevels", strings(p.legacyLevels));
     JsonObject explored = new JsonObject();
     for (var e : p.explored.entrySet()) explored.add(e.getKey(), strings(e.getValue()));
     o.add("explored", explored);

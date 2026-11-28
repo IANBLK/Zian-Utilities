@@ -3,6 +3,15 @@ package com.zianblk.zianutilities.neoforge.pase;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.LongArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.zianblk.zianutilities.core.pase.PlayerPase;
+import com.zianblk.zianutilities.core.pase.Prize;
+import com.zianblk.zianutilities.core.pase.PrizeClaimer;
+import java.util.UUID;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.GameProfileArgument;
+import net.minecraft.commands.arguments.UuidArgument;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.zianblk.zianutilities.core.pase.Season;
 import com.zianblk.zianutilities.neoforge.Messages;
@@ -19,7 +28,8 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * /ZianUtilities pase ver (permission zianutilities.pase.use, everybody unless LuckPerms denies it).
  * /ZianUtilities pase admin ... (zianutilities.admin.pase, OP only unless LuckPerms grants it): xp dar|quitar, nivel dar,
- * temporada ver|nueva, recargar, jugador reiniciar. Every admin node has its own .requires: under Youer the root is public.
+ * temporada ver|nueva, recargar, jugador reiniciar, premium dar|quitar (Tebex, works from the console) and premios ver|reentregar.
+ * /ZianUtilities pase reclamar delivers the pending rewards of the player. Every admin node has its own .requires: under Youer the root is public.
  */
 final class PaseCommands {
   private PaseCommands() {}
@@ -27,6 +37,15 @@ final class PaseCommands {
   private static boolean use(CommandSourceStack s) { return s.getPlayer() != null && UtilitiesPermissions.allows(s, "pase.use", false); }
 
   private static boolean admin(CommandSourceStack s) { return UtilitiesPermissions.allows(s, "admin.pase", true); }
+
+  /** Tebex and refunds: only a real OP level 4 (the console always has it). LuckPerms nodes never grant these two. */
+  private static boolean tebex(CommandSourceStack s) { return s.hasPermission(4); }
+
+  /** The language of the sender for number formatting; the console gets Spanish. */
+  private static String lang(CommandSourceStack s) {
+    ServerPlayer p = s.getPlayer();
+    return p == null ? "es_es" : PaseSources.lang(p);
+  }
 
   private static void say(CommandSourceStack s, Component c) { s.sendSuccess(() -> Messages.format(c), false); }
 
@@ -39,6 +58,7 @@ final class PaseCommands {
   static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
     LiteralArgumentBuilder<CommandSourceStack> pase = Commands.literal("pase").requires(s -> true);
     pase.then(Commands.literal("ver").requires(PaseCommands::use).executes(c -> view(c.getSource())));
+    pase.then(Commands.literal("reclamar").requires(PaseCommands::use).executes(c -> claim(c.getSource())));
 
     LiteralArgumentBuilder<CommandSourceStack> admin = Commands.literal("admin").requires(PaseCommands::admin);
     admin.then(Commands.literal("xp").requires(PaseCommands::admin)
@@ -56,6 +76,20 @@ final class PaseCommands {
     admin.then(Commands.literal("jugador").requires(PaseCommands::admin)
         .then(Commands.literal("reiniciar").requires(PaseCommands::admin).then(Commands.argument("jugador", EntityArgument.player())
             .executes(c -> resetPlayer(c.getSource(), EntityArgument.getPlayer(c, "jugador"))))));
+    SuggestionProvider<CommandSourceStack> seasons = (c, b) -> SharedSuggestionProvider.suggest(PaseModule.active() ? PaseRewards.seasonIds() : java.util.List.of(), b);
+    admin.then(Commands.literal("premium").requires(PaseCommands::tebex)
+        .then(Commands.literal("dar").requires(PaseCommands::tebex).then(Commands.argument("uuid", UuidArgument.uuid())
+            .then(Commands.argument("temporada", StringArgumentType.word()).suggests(seasons)
+                .then(Commands.argument("transaction", StringArgumentType.word())
+                    .executes(c -> premiumGive(c.getSource(), UuidArgument.getUuid(c, "uuid"), StringArgumentType.getString(c, "temporada"), StringArgumentType.getString(c, "transaction")))))))
+        .then(Commands.literal("quitar").requires(PaseCommands::tebex).then(Commands.argument("uuid", UuidArgument.uuid())
+            .then(Commands.argument("temporada", StringArgumentType.word()).suggests(seasons)
+                .executes(c -> premiumRemove(c.getSource(), UuidArgument.getUuid(c, "uuid"), StringArgumentType.getString(c, "temporada")))))));
+    admin.then(Commands.literal("premios").requires(PaseCommands::admin)
+        .then(Commands.literal("ver").requires(PaseCommands::admin).then(Commands.argument("jugador", GameProfileArgument.gameProfile())
+            .executes(c -> prizesView(c.getSource(), GameProfileArgument.getGameProfiles(c, "jugador").stream().toList()))))
+        .then(Commands.literal("reentregar").requires(PaseCommands::admin).then(Commands.argument("jugador", GameProfileArgument.gameProfile())
+            .executes(c -> prizesRedeliver(c.getSource(), GameProfileArgument.getGameProfiles(c, "jugador").stream().toList())))));
     pase.then(admin);
     dispatcher.register(Commands.literal(ZianUtilitiesMod.COMMAND_ROOT).requires(s -> true).then(pase));
   }
@@ -68,7 +102,7 @@ final class PaseCommands {
     if (!ready(s)) return 0;
     var v = PaseModule.engine.view(s.getPlayer().getUUID());
     if (v == null) {
-      s.sendFailure(Messages.format(PaseMessages.failed("archivo del pase ilegible")));
+      s.sendFailure(Messages.format(PaseMessages.failed(PaseMessages.lockedFile())));
       return 0;
     }
     var rules = PaseModule.config.rules();
@@ -79,6 +113,129 @@ final class PaseCommands {
       first = false;
     }
     return 1;
+  }
+
+  private static int claim(CommandSourceStack s) {
+    if (!ready(s)) return 0;
+    try {
+      return PaseRewards.claim(s.getPlayer()).delivered().size();
+    } catch (RuntimeException failure) {
+      PaseModule.LOG.error("Reclamar premios falló para {}", s.getTextName(), failure);
+      s.sendFailure(Messages.format(PaseMessages.failed(String.valueOf(failure.getMessage()))));
+      return 0;
+    }
+  }
+
+  private static int premiumGive(CommandSourceStack s, UUID id, String season, String transaction) {
+    if (!ready(s)) return 0;
+    var r = PaseRewards.premiumGive(id, season, transaction);
+    String what = "premium dar " + id + " " + season + " " + transaction;
+    switch (r.status()) {
+      case GIVEN -> {
+        done(s, what);
+        say(s, PaseMessages.premiumGiven(season, id.toString(), transaction));
+        return 1;
+      }
+      case DUPLICATE -> {
+        done(s, what + " (repetida, ignorada)");
+        say(s, PaseMessages.premiumDuplicate(transaction));
+        return 1;
+      }
+      case BAD_SEASON -> s.sendFailure(Messages.format(PaseMessages.premiumBadSeason(PaseModule.seasons.current().id(), PaseModule.seasons.previous() == null ? null : PaseModule.seasons.previous().id())));
+      case BAD_TRANSACTION -> s.sendFailure(Messages.format(PaseMessages.premiumBadTransaction()));
+      case LOCKED -> s.sendFailure(Messages.format(PaseMessages.premiumFailed(PaseMessages.premiumLocked())));
+      case NOT_REGISTERED -> s.sendFailure(Messages.format(PaseMessages.premiumFailed(PaseMessages.premiumNotRegistered())));
+      case TX_UNREADABLE -> s.sendFailure(Messages.format(PaseMessages.premiumFailed(PaseMessages.premiumTxUnreadable())));
+      default -> s.sendFailure(Messages.format(PaseMessages.premiumFailed(Component.literal(r.detail()))));
+    }
+    return 0;
+  }
+
+  private static int premiumRemove(CommandSourceStack s, UUID id, String season) {
+    if (!ready(s)) return 0;
+    var seasons = PaseModule.seasons;
+    if (!season.equals(seasons.current().id()) && (seasons.previous() == null || !season.equals(seasons.previous().id()))) {
+      s.sendFailure(Messages.format(PaseMessages.premiumBadSeason(seasons.current().id(), seasons.previous() == null ? null : seasons.previous().id())));
+      return 0;
+    }
+    int dropped = PaseRewards.premiumRemove(id, season);
+    if (dropped < 0) {
+      s.sendFailure(Messages.format(PaseMessages.premiumRemoveFailed()));
+      return 0;
+    }
+    done(s, "premium quitar " + id + " " + season);
+    say(s, PaseMessages.premiumRemoved(season, id.toString(), dropped, lang(s)));
+    return 1;
+  }
+
+  private static com.mojang.authlib.GameProfile single(CommandSourceStack s, java.util.List<com.mojang.authlib.GameProfile> profiles) {
+    if (profiles.size() == 1) return profiles.get(0);
+    s.sendFailure(Messages.format(PaseMessages.failed(PaseMessages.pickOne())));
+    return null;
+  }
+
+  private static int prizesView(CommandSourceStack s, java.util.List<com.mojang.authlib.GameProfile> profiles) {
+    if (!ready(s)) return 0;
+    var profile = single(s, profiles);
+    if (profile == null) return 0;
+    boolean online = PaseModule.server.getPlayerList().getPlayer(profile.getId()) != null;
+    PlayerPase p = PaseModule.store.get(profile.getId());
+    try {
+      if (p.locked) {
+        s.sendFailure(Messages.format(PaseMessages.failed(PaseMessages.lockedFile())));
+        return 0;
+      }
+      long pending = 0, delivered = 0, review = 0;
+      for (Prize z : p.prizes.values()) {
+        switch (z.state) {
+          case DELIVERED -> delivered++;
+          case UNCERTAIN -> review++;
+          default -> pending++;
+        }
+      }
+      say(s, PaseMessages.prizesHeader(profile.getName(), pending, delivered, review, lang(s)));
+      int shown = 0;
+      long open = pending + review;
+      for (Prize z : p.prizes.values()) {
+        if (z.state == Prize.State.DELIVERED) continue;
+        if (shown >= 8) break;
+        shown++;
+        say(s, PaseMessages.prizesLine(z.id, PaseMessages.state(z.state), PaseMessages.reason(z.reason)));
+      }
+      if (open > shown) say(s, PaseMessages.prizesMore(open - shown, lang(s)));
+      return 1;
+    } finally {
+      if (!online) PaseModule.store.release(profile.getId());
+    }
+  }
+
+  private static int prizesRedeliver(CommandSourceStack s, java.util.List<com.mojang.authlib.GameProfile> profiles) {
+    if (!ready(s)) return 0;
+    var profile = single(s, profiles);
+    if (profile == null) return 0;
+    ServerPlayer online = PaseModule.server.getPlayerList().getPlayer(profile.getId());
+    PlayerPase p = PaseModule.store.get(profile.getId());
+    try {
+      if (p.locked) {
+        s.sendFailure(Messages.format(PaseMessages.failed(PaseMessages.lockedFile())));
+        return 0;
+      }
+      int reopened = PrizeClaimer.reopen(p);
+      PaseModule.store.saveNow(p);
+      done(s, "premios reentregar " + profile.getName() + " (" + reopened + " reabiertos)");
+      say(s, PaseMessages.prizesReopened(reopened, profile.getName(), lang(s)));
+      if (online == null) {
+        say(s, PaseMessages.prizesOffline());
+        return 1;
+      }
+      return Math.max(1, PaseRewards.claim(online).delivered().size());
+    } catch (java.io.IOException | RuntimeException failure) {
+      PaseModule.LOG.error("Reentregar premios de {} falló", profile.getName(), failure);
+      s.sendFailure(Messages.format(PaseMessages.failed(String.valueOf(failure.getMessage()))));
+      return 0;
+    } finally {
+      if (online == null) PaseModule.store.release(profile.getId());
+    }
   }
 
   private static int giveXp(CommandSourceStack s, ServerPlayer p, long xp) {
