@@ -165,7 +165,7 @@ final class PaseSmokeRewards {
     Map<Integer, SeasonRewards.Level> levels = new TreeMap<>(base.levels());
     SeasonRewards.Level three = levels.get(3);
     List<PaseReward> free = new ArrayList<>(three.free());
-    free.add(PaseReward.command("say hola {player}"));
+    free.add(PaseReward.command("say hola {player}").withId("hola"));
     levels.put(3, new SeasonRewards.Level(free, three.premium()));
     return new SeasonRewards(base.levelCap(), levels, base.extraEvery(), base.loot());
   }
@@ -176,6 +176,7 @@ final class PaseSmokeRewards {
     STEPS.add(once(PaseSmokeRewards::closedRewards));
     STEPS.add(once(PaseSmokeRewards::freeTrack));
     STEPS.add(once(PaseSmokeRewards::toLevel25));
+    STEPS.add(once(PaseSmokeRewards::claimAfterGenerations));
     STEPS.add(() -> allPokemonDelivered(ID4));
     STEPS.add(once(PaseSmokeRewards::pokemonInPc));
     STEPS.add(once(PaseSmokeRewards::tebex));
@@ -232,8 +233,12 @@ final class PaseSmokeRewards {
     if (mon.state == Prize.State.PENDING) {
       check("NO_SPECIES".equals(mon.reason), "the generation filter leaves the random Pokemon pending, not lost: " + mon.reason);
       new com.zianblk.zianutilities.neoforge.generation.NeoForgeGenerationStateStore(PaseModule.server).save(com.zianblk.zianutilities.core.generation.GenerationState.Companion.all());
-      check(run("ZianUtilities pase reclamar", p4.createCommandSourceStack()) >= 0, "claim again once the generations are enabled");
     }
+  }
+
+  /** The generation state is cached for one tick, so the claim after the change runs in the next tick (its own step). */
+  private static void claimAfterGenerations() throws Exception {
+    check(claimAll(p4) >= 0, "claim again once the generations are enabled");
   }
 
   private static void pokemonInPc() throws Exception {
